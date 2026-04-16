@@ -104,6 +104,7 @@
             overflow-x: auto;
             padding: 10px 0 20px;
             gap: 10px;
+            scrollbar-width: none;
         }
 
         .playlist-tab {
@@ -144,9 +145,10 @@
 
         .card-label { padding: 8px; font-size: 0.8rem; display: flex; flex-direction: column; gap: 5px; }
         .label-top { display: flex; justify-content: space-between; align-items: center; }
-        .video-title { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 70%; }
+        .video-title { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 70%; font-weight: bold; }
+        .video-tags-display { font-size: 0.65rem; color: #555; font-style: italic; }
         
-        .card-actions { display: flex; gap: 10px; justify-content: flex-end; }
+        .card-actions { display: flex; gap: 12px; justify-content: flex-end; padding-top: 5px; }
         .icon-btn { cursor: pointer; font-size: 1rem; opacity: 0.7; transition: 0.2s; }
         .icon-btn:hover { opacity: 1; transform: scale(1.1); }
 
@@ -200,7 +202,7 @@
     </div>
 
     <div class="toolbar">
-        <input type="text" id="search-bar" class="search-input" placeholder="Search archive..." oninput="refreshUI()">
+        <input type="text" id="search-bar" class="search-input" placeholder="Search archive by title or tags..." oninput="refreshUI()">
         <button class="btn" onclick="toggleSummon()">Summon +</button>
     </div>
 
@@ -217,6 +219,8 @@
             <input type="text" id="in-title">
             <label>Video URL</label>
             <input type="text" id="in-url">
+            <label>Tags (comma separated)</label>
+            <input type="text" id="in-tags" placeholder="e.g. ambient, ritual">
             <label>Thumbnail (Optional)</label>
             <input type="file" id="in-thumb" accept="image/*">
             <label>Playlist</label>
@@ -224,7 +228,7 @@
                 <option value="General">General Archive</option>
                 <option value="NEW_PLAYLIST">+ Create New...</option>
             </select>
-            <input type="text" id="in-new-playlist" placeholder="Name" style="display:none;">
+            <input type="text" id="in-new-playlist" placeholder="Playlist Name" style="display:none;">
             <button class="btn" style="width:100%" onclick="saveVideo()">Save</button>
             <button class="btn" style="width:100%; margin-top:10px; background:#222;" onclick="toggleSummon()">Cancel</button>
         </div>
@@ -259,14 +263,22 @@
         function saveVideo() {
             const title = document.getElementById('in-title').value;
             const url = document.getElementById('in-url').value;
+            const tags = document.getElementById('in-tags').value;
             const thumbFile = document.getElementById('in-thumb').files[0];
             let playlist = document.getElementById('playlist-select').value;
-            if (playlist === "NEW_PLAYLIST") playlist = document.getElementById('in-new-playlist').value || "General";
             
+            if (playlist === "NEW_PLAYLIST") playlist = document.getElementById('in-new-playlist').value || "General";
             if (!title || !url) return alert("Required fields missing.");
 
             const pushData = (imgData) => {
-                db.ref('vault').push({ title, url, playlist, customThumb: imgData || "", timestamp: Date.now() });
+                db.ref('vault').push({ 
+                    title, 
+                    url, 
+                    tags, 
+                    playlist, 
+                    customThumb: imgData || "", 
+                    timestamp: Date.now() 
+                });
                 toggleSummon();
                 document.querySelectorAll('#summon-modal input').forEach(i => i.value = "");
             };
@@ -321,7 +333,8 @@
             const term = document.getElementById('search-bar').value.toLowerCase();
             grid.innerHTML = "";
             archive.forEach(v => {
-                if ((currentPlaylist === 'All' || v.playlist === currentPlaylist) && v.title.toLowerCase().includes(term)) {
+                const matchesSearch = v.title.toLowerCase().includes(term) || (v.tags && v.tags.toLowerCase().includes(term));
+                if ((currentPlaylist === 'All' || v.playlist === currentPlaylist) && matchesSearch) {
                     const card = document.createElement('div');
                     card.className = "video-card";
                     const thumb = v.customThumb ? `<img src="${v.customThumb}">` : `<video preload="metadata"><source src="${v.url}#t=1"></video>`;
@@ -329,6 +342,7 @@
                         <div class="thumb-box" onclick="play('${v.url}', '${v.title.replace(/'/g, "\\'")}', '${v.playlist}')">${thumb}</div>
                         <div class="card-label">
                             <div class="label-top"><span class="video-title">${v.title}</span></div>
+                            <div class="video-tags-display">${v.tags ? v.tags : ''}</div>
                             <div class="card-actions">
                                 <span class="icon-btn" onclick="triggerUpdateThumb('${v.id}')" title="Change Image">🖼️</span>
                                 <span class="icon-btn" onclick="deleteVideo('${v.id}', '${v.title.replace(/'/g, "\\'")}')" style="color:var(--gothic-red)">🗑</span>
