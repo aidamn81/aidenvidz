@@ -68,76 +68,42 @@
         .toolbar {
             width: 95%;
             padding: 20px 0 10px;
-            display: flex;
-            gap: 10px;
-            flex-wrap: wrap;
-            justify-content: center;
+            display: flex; gap: 10px; flex-wrap: wrap; justify-content: center;
         }
 
         .search-input {
-            background: #111;
-            border: 1px solid #333;
-            color: white;
-            padding: 10px 20px;
-            border-radius: 25px;
-            flex-grow: 1;
-            min-width: 250px;
-            outline: none;
+            background: #111; border: 1px solid #333; color: white;
+            padding: 10px 20px; border-radius: 25px; flex-grow: 1;
+            min-width: 250px; outline: none;
         }
 
         .btn {
-            background: var(--gothic-red);
-            color: white;
-            border: none;
-            padding: 10px 20px;
-            cursor: pointer;
-            text-transform: uppercase;
-            font-size: 0.75rem;
-            border-radius: 4px;
-            letter-spacing: 1px;
-            font-weight: bold;
+            background: var(--gothic-red); color: white; border: none;
+            padding: 10px 20px; cursor: pointer; text-transform: uppercase;
+            font-size: 0.75rem; border-radius: 4px; letter-spacing: 1px; font-weight: bold;
         }
 
         #playlist-bar {
-            width: 95%;
-            display: flex;
-            overflow-x: auto;
-            padding: 10px 0 20px;
-            gap: 10px;
-            scrollbar-width: none;
+            width: 95%; display: flex; overflow-x: auto; padding: 10px 0 20px; gap: 10px;
         }
 
         .playlist-tab {
-            border: 1px solid #333;
-            background: #0d0d0d;
-            color: #777;
-            padding: 6px 15px;
-            border-radius: 20px;
-            font-size: 0.8rem;
-            cursor: pointer;
-            white-space: nowrap;
+            border: 1px solid #333; background: #0d0d0d; color: #777;
+            padding: 6px 15px; border-radius: 20px; font-size: 0.8rem;
+            cursor: pointer; white-space: nowrap;
         }
 
-        .playlist-tab.active {
-            border-color: var(--gold);
-            color: var(--gold);
-        }
+        .playlist-tab.active { border-color: var(--gold); color: var(--gold); }
 
         /* --- GRID --- */
         #video-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-            gap: 15px;
-            width: 95%;
-            padding-bottom: 60px;
+            display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+            gap: 15px; width: 95%; padding-bottom: 60px;
         }
 
         .video-card {
-            background: #0d0d0d;
-            border: 1px solid #1a1a1a;
-            border-radius: 4px;
-            overflow: hidden;
-            position: relative;
+            background: #0d0d0d; border: 1px solid #1a1a1a;
+            border-radius: 4px; overflow: hidden; position: relative;
         }
 
         .thumb-box { width: 100%; height: 110px; background: #000; position: relative; cursor: pointer; }
@@ -154,39 +120,23 @@
 
         /* --- MODALS --- */
         #summon-modal {
-            display: none;
-            position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.92);
-            z-index: 1000;
-            justify-content: center;
-            align-items: center;
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.92); z-index: 1000; justify-content: center; align-items: center;
         }
 
         .modal-box {
-            background: #111;
-            padding: 25px;
-            border: 1px solid var(--gothic-red);
-            width: 90%;
-            max-width: 420px;
-            border-radius: 8px;
+            background: #111; padding: 25px; border: 1px solid var(--gothic-red);
+            width: 90%; max-width: 420px; border-radius: 8px;
         }
 
         select, input {
-            width: 100%;
-            padding: 10px;
-            margin-bottom: 12px;
-            background: #000;
-            border: 1px solid #333;
-            color: white;
-            border-radius: 4px;
+            width: 100%; padding: 10px; margin-bottom: 12px;
+            background: #000; border: 1px solid #333; color: white; border-radius: 4px;
         }
 
         label { font-size: 0.7rem; color: var(--gold); display: block; margin-bottom: 4px; text-transform: uppercase; }
 
-        @media (max-width: 768px) {
-            #video-grid { grid-template-columns: 1fr 1fr; }
-        }
+        @media (max-width: 768px) { #video-grid { grid-template-columns: 1fr 1fr; } }
     </style>
 </head>
 <body>
@@ -202,35 +152,41 @@
     </div>
 
     <div class="toolbar">
-        <input type="text" id="search-bar" class="search-input" placeholder="Search archive by title or tags..." oninput="refreshUI()">
-        <button class="btn" onclick="toggleSummon()">Summon +</button>
+        <input type="text" id="search-bar" class="search-input" placeholder="Search archive..." oninput="refreshUI()">
+        <button class="btn" onclick="openSummon()">Summon +</button>
     </div>
 
     <div id="playlist-bar"></div>
-
     <div id="video-grid"></div>
 
     <input type="file" id="update-thumb-input" style="display:none;" accept="image/*" onchange="processUpdateThumb(this)">
 
     <div id="summon-modal">
         <div class="modal-box">
-            <h2 style="margin-top:0; color:var(--gothic-red);">NEW VISION</h2>
+            <h2 id="modal-header" style="margin-top:0; color:var(--gothic-red);">NEW VISION</h2>
+            <input type="hidden" id="edit-id">
+            
             <label>Title</label>
             <input type="text" id="in-title">
+            
             <label>Video URL</label>
             <input type="text" id="in-url">
-            <label>Tags (comma separated)</label>
-            <input type="text" id="in-tags" placeholder="e.g. ambient, ritual">
-            <label>Thumbnail (Optional)</label>
+            
+            <label>Tags</label>
+            <input type="text" id="in-tags" placeholder="e.g. ritual, dark">
+            
+            <label id="thumb-label">Thumbnail (Optional)</label>
             <input type="file" id="in-thumb" accept="image/*">
+            
             <label>Playlist</label>
             <select id="playlist-select" onchange="checkNewPlaylist(this.value)">
                 <option value="General">General Archive</option>
                 <option value="NEW_PLAYLIST">+ Create New...</option>
             </select>
             <input type="text" id="in-new-playlist" placeholder="Playlist Name" style="display:none;">
-            <button class="btn" style="width:100%" onclick="saveVideo()">Save</button>
-            <button class="btn" style="width:100%; margin-top:10px; background:#222;" onclick="toggleSummon()">Cancel</button>
+            
+            <button class="btn" style="width:100%" onclick="saveVideo()">Commit to Vault</button>
+            <button class="btn" style="width:100%; margin-top:10px; background:#222;" onclick="closeSummon()">Cancel</button>
         </div>
     </div>
 
@@ -251,16 +207,37 @@
         let currentPlaylist = 'All';
         let updatingId = null;
 
-        function toggleSummon() {
-            const m = document.getElementById('summon-modal');
-            m.style.display = (m.style.display === 'flex') ? 'none' : 'flex';
+        function openSummon() {
+            document.getElementById('modal-header').innerText = "NEW VISION";
+            document.getElementById('edit-id').value = "";
+            document.getElementById('summon-modal').style.display = 'flex';
+        }
+
+        function closeSummon() {
+            document.getElementById('summon-modal').style.display = 'none';
+            document.querySelectorAll('#summon-modal input').forEach(i => i.value = "");
+            document.getElementById('in-new-playlist').style.display = "none";
+            document.getElementById('playlist-select').value = "General";
         }
 
         function checkNewPlaylist(val) {
             document.getElementById('in-new-playlist').style.display = (val === "NEW_PLAYLIST") ? "block" : "none";
         }
 
+        function triggerEdit(id) {
+            const v = archive.find(item => item.id === id);
+            if(!v) return;
+            document.getElementById('modal-header').innerText = "EDIT VISION";
+            document.getElementById('edit-id').value = v.id;
+            document.getElementById('in-title').value = v.title;
+            document.getElementById('in-url').value = v.url;
+            document.getElementById('in-tags').value = v.tags || "";
+            document.getElementById('playlist-select').value = v.playlist || "General";
+            document.getElementById('summon-modal').style.display = 'flex';
+        }
+
         function saveVideo() {
+            const id = document.getElementById('edit-id').value;
             const title = document.getElementById('in-title').value;
             const url = document.getElementById('in-url').value;
             const tags = document.getElementById('in-tags').value;
@@ -271,21 +248,21 @@
             if (!title || !url) return alert("Required fields missing.");
 
             const pushData = (imgData) => {
-                db.ref('vault').push({ 
-                    title, 
-                    url, 
-                    tags, 
-                    playlist, 
-                    customThumb: imgData || "", 
-                    timestamp: Date.now() 
-                });
-                toggleSummon();
-                document.querySelectorAll('#summon-modal input').forEach(i => i.value = "");
+                const payload = { title, url, tags, playlist, timestamp: Date.now() };
+                if(imgData) payload.customThumb = imgData;
+
+                if(id) {
+                    db.ref('vault/' + id).update(payload);
+                } else {
+                    payload.customThumb = imgData || "";
+                    db.ref('vault').push(payload);
+                }
+                closeSummon();
             };
 
             if (thumbFile) {
                 const r = new FileReader(); r.onload = (e) => pushData(e.target.result); r.readAsDataURL(thumbFile);
-            } else pushData("");
+            } else pushData(null);
         }
 
         db.ref('vault').on('value', snap => {
@@ -342,8 +319,9 @@
                         <div class="thumb-box" onclick="play('${v.url}', '${v.title.replace(/'/g, "\\'")}', '${v.playlist}')">${thumb}</div>
                         <div class="card-label">
                             <div class="label-top"><span class="video-title">${v.title}</span></div>
-                            <div class="video-tags-display">${v.tags ? v.tags : ''}</div>
+                            <div class="video-tags-display">${v.tags || ''}</div>
                             <div class="card-actions">
+                                <span class="icon-btn" onclick="triggerEdit('${v.id}')" title="Edit Details">✏️</span>
                                 <span class="icon-btn" onclick="triggerUpdateThumb('${v.id}')" title="Change Image">🖼️</span>
                                 <span class="icon-btn" onclick="deleteVideo('${v.id}', '${v.title.replace(/'/g, "\\'")}')" style="color:var(--gothic-red)">🗑</span>
                             </div>
