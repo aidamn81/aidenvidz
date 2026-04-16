@@ -145,48 +145,14 @@
             position: relative;
         }
 
-        .video-card:hover {
-            border-color: var(--gold);
-            transform: translateY(-3px);
-        }
+        .video-card:hover { border-color: var(--gold); transform: translateY(-3px); }
 
-        .thumb-box {
-            width: 100%;
-            height: 110px;
-            background: #000;
-            position: relative;
-        }
+        .thumb-box { width: 100%; height: 110px; background: #000; position: relative; }
+        .thumb-box video { width: 100%; height: 100%; object-fit: cover; opacity: 0.6; pointer-events: none; }
 
-        .thumb-box video {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            opacity: 0.6;
-            pointer-events: none;
-        }
-
-        .card-label {
-            padding: 8px;
-            font-size: 0.8rem;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .video-title {
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            max-width: 80%;
-        }
-
-        .trash-icon {
-            color: #600;
-            font-size: 1rem;
-            padding: 0 5px;
-            transition: 0.2s;
-        }
-
+        .card-label { padding: 8px; font-size: 0.8rem; display: flex; justify-content: space-between; align-items: center; }
+        .video-title { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 80%; }
+        .trash-icon { color: #600; font-size: 1rem; padding: 0 5px; transition: 0.2s; cursor: pointer; }
         .trash-icon:hover { color: var(--gothic-red); transform: scale(1.2); }
 
         /* --- SUMMON MODAL --- */
@@ -209,9 +175,7 @@
             border-radius: 8px;
         }
 
-        .modal-box h2 { margin-top: 0; color: var(--gothic-red); letter-spacing: 2px; }
-
-        input {
+        select, input {
             width: 100%;
             padding: 12px;
             margin-bottom: 15px;
@@ -233,9 +197,7 @@
 
     <div id="theater-section">
         <div class="player-wrapper">
-            <video id="master-player" controls preload="metadata">
-                <source id="master-source" src="">
-            </video>
+            <video id="master-player" controls preload="metadata"><source id="master-source" src=""></video>
             <div class="now-playing">
                 <span id="playing-title" style="color:var(--gold)">Awaiting Vision...</span>
                 <span id="playing-list" style="color:#444; font-style: italic;"></span>
@@ -244,7 +206,7 @@
     </div>
 
     <div class="toolbar">
-        <input type="text" id="search-bar" class="search-input" placeholder="Search by title or tags..." oninput="refreshUI()">
+        <input type="text" id="search-bar" class="search-input" placeholder="Search archive..." oninput="refreshUI()">
         <button class="btn" onclick="toggleSummon()">Summon +</button>
     </div>
 
@@ -258,16 +220,22 @@
         <div class="modal-box">
             <h2>NEW VISION</h2>
             <input type="text" id="in-title" placeholder="Title">
-            <input type="text" id="in-url" placeholder="Direct Video URL (ends in .mp4)">
-            <input type="text" id="in-tags" placeholder="Tags (e.g. ambient, ritual)">
-            <input type="text" id="in-playlist" placeholder="Playlist (e.g. Rituals)">
+            <input type="text" id="in-url" placeholder="Direct Video URL (.mp4)">
+            <input type="text" id="in-tags" placeholder="Tags">
+            
+            <label style="font-size: 0.7rem; color: var(--gold); margin-bottom: 5px; display: block;">PLAYLIST:</label>
+            <select id="playlist-select" onchange="checkNewPlaylist(this.value)">
+                <option value="General">General Archive</option>
+                <option value="NEW_PLAYLIST" style="color: var(--gold);">+ Create New Playlist</option>
+            </select>
+            <input type="text" id="in-new-playlist" placeholder="New Playlist Name" style="display:none;">
+
             <button class="btn" style="width:100%" onclick="saveVideo()">Save to Vault</button>
             <button class="btn" style="width:100%; margin-top:10px; background:#222;" onclick="toggleSummon()">Cancel</button>
         </div>
     </div>
 
     <script>
-        // --- FIREBASE CONFIG ---
         const firebaseConfig = {
             apiKey: "AIzaSyB95B-M07ZWK0SW5JFCt3uawB3erjjhMCM",
             authDomain: "aidenvidz.firebaseapp.com",
@@ -283,65 +251,64 @@
         let archive = [];
         let currentPlaylist = 'All';
 
-        // --- CORE FUNCTIONS ---
-
         function toggleSummon() {
             const m = document.getElementById('summon-modal');
             m.style.display = (m.style.display === 'flex') ? 'none' : 'flex';
+        }
+
+        function checkNewPlaylist(val) {
+            document.getElementById('in-new-playlist').style.display = (val === "NEW_PLAYLIST") ? "block" : "none";
         }
 
         function saveVideo() {
             const title = document.getElementById('in-title').value;
             const url = document.getElementById('in-url').value;
             const tags = document.getElementById('in-tags').value;
-            const playlist = document.getElementById('in-playlist').value || "General";
-
-            if(!title || !url) return alert("Title and URL are required.");
+            let playlist = document.getElementById('playlist-select').value;
+            
+            if (playlist === "NEW_PLAYLIST") playlist = document.getElementById('in-new-playlist').value || "General";
+            if (!title || !url) return alert("Title and URL required.");
 
             db.ref('vault').push({ title, url, tags, playlist, timestamp: Date.now() });
-            
             toggleSummon();
             document.querySelectorAll('#summon-modal input').forEach(i => i.value = "");
+            document.getElementById('playlist-select').value = "General";
+            document.getElementById('in-new-playlist').style.display = "none";
         }
 
         db.ref('vault').on('value', snap => {
             const data = snap.val();
             archive = [];
-            for(let id in data) {
-                archive.push({ id, ...data[id] });
-            }
-            archive.sort((a, b) => b.timestamp - a.timestamp); // Newest first
+            for(let id in data) archive.push({ id, ...data[id] });
+            archive.sort((a, b) => b.timestamp - a.timestamp);
             renderPlaylists();
             refreshUI();
         });
 
         function renderPlaylists() {
             const bar = document.getElementById('playlist-bar');
-            const lists = [...new Set(archive.map(v => v.playlist))];
+            const select = document.getElementById('playlist-select');
+            const lists = [...new Set(archive.map(v => v.playlist))].filter(l => l && l !== "General");
+            
             bar.innerHTML = `<div class="playlist-tab ${currentPlaylist === 'All' ? 'active' : ''}" onclick="setPlaylist('All')">All Archives</div>`;
+            select.innerHTML = `<option value="General">General Archive</option>`;
+            
             lists.forEach(l => {
-                if (l) {
-                    bar.innerHTML += `<div class="playlist-tab ${currentPlaylist === l ? 'active' : ''}" onclick="setPlaylist('${l}')">${l}</div>`;
-                }
+                bar.innerHTML += `<div class="playlist-tab ${currentPlaylist === l ? 'active' : ''}" onclick="setPlaylist('${l}')">${l}</div>`;
+                select.innerHTML += `<option value="${l}">${l}</option>`;
             });
+            select.innerHTML += `<option value="NEW_PLAYLIST" style="color: var(--gold);">+ Create New Playlist</option>`;
         }
 
-        function setPlaylist(name) {
-            currentPlaylist = name;
-            renderPlaylists();
-            refreshUI();
-        }
+        function setPlaylist(name) { currentPlaylist = name; renderPlaylists(); refreshUI(); }
 
         function refreshUI() {
             const grid = document.getElementById('video-grid');
             const term = document.getElementById('search-bar').value.toLowerCase();
             grid.innerHTML = "";
-
             archive.forEach(v => {
-                const inList = (currentPlaylist === 'All' || v.playlist === currentPlaylist);
-                const inSearch = v.title.toLowerCase().includes(term) || (v.tags && v.tags.toLowerCase().includes(term));
-
-                if (inList && inSearch) {
+                if ((currentPlaylist === 'All' || v.playlist === currentPlaylist) && 
+                    (v.title.toLowerCase().includes(term) || (v.tags && v.tags.toLowerCase().includes(term)))) {
                     const card = document.createElement('div');
                     card.className = "video-card";
                     card.innerHTML = `
@@ -351,8 +318,7 @@
                         <div class="card-label">
                             <span class="video-title">${v.title}</span>
                             <span class="trash-icon" onclick="deleteVideo('${v.id}', '${v.title.replace(/'/g, "\\'")}')">🗑</span>
-                        </div>
-                    `;
+                        </div>`;
                     grid.appendChild(card);
                 }
             });
@@ -361,28 +327,18 @@
         function play(url, title, list) {
             const p = document.getElementById('master-player');
             const s = document.getElementById('master-source');
-            
-            // Handle relative pCloud links if necessary
             if (url.startsWith('//')) url = 'https:' + url;
-
             s.src = url;
             p.load();
-            
-            const playPromise = p.play();
-            if (playPromise !== undefined) {
-                playPromise.catch(() => { console.log("Manual play required."); });
-            }
-
+            p.play().catch(() => {});
             document.getElementById('playing-title').innerText = title;
             document.getElementById('playing-list').innerText = "In: " + list;
             window.scrollTo({ top: 0, behavior: 'smooth' });
         }
 
         function deleteVideo(id, title) {
-            const confirmed = confirm(`Are you certain you wish to banish "${title}" from the vault forever?`);
-            if (confirmed) {
-                db.ref('vault/' + id).remove()
-                    .catch(e => alert("Ritual failed: " + e.message));
+            if (confirm(`Are you certain you wish to banish "${title}" from the vault?`)) {
+                db.ref('vault/' + id).remove().catch(e => alert(e.message));
             }
         }
     </script>
