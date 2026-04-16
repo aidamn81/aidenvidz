@@ -4,186 +4,77 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Gothic Video Vault</title>
-    
     <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-database-compat.js"></script>
 
     <style>
-        :root {
-            --gothic-red: #4a0404;
-            --deep-black: #050505;
-            --gold: #c5a059;
-            --soft-white: #e0e0e0;
-        }
+        :root { --gothic-red: #4a0404; --deep-black: #050505; --gold: #c5a059; --soft-white: #e0e0e0; }
+        body { background-color: var(--deep-black); color: var(--soft-white); font-family: 'Garamond', serif; margin: 0; display: flex; flex-direction: column; align-items: center; }
+        
+        /* --- THEATER PLAYER --- */
+        #theater-section { width: 100%; background: #000; padding: 15px; border-bottom: 2px solid var(--gothic-red); display: flex; justify-content: center; }
+        .player-wrapper { width: 60%; max-width: 650px; box-shadow: 0 0 20px rgba(74,4,4,0.5); border-radius: 8px; overflow: hidden; }
+        video { width: 100%; aspect-ratio: 16/9; display: block; background: #000; }
+        .now-playing { padding: 8px; background: #0a0a0a; border-top: 1px solid #222; font-size: 0.8rem; display: flex; justify-content: space-between; }
 
-        body {
-            background-color: var(--deep-black);
-            color: var(--soft-white);
-            font-family: 'Garamond', serif;
-            margin: 0;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-        }
-
-        /* --- MINI PLAYER --- */
-        #theater-section {
-            width: 100%;
-            background: #000;
-            padding: 20px 0;
-            border-bottom: 1px solid var(--gothic-red);
-            display: flex;
-            justify-content: center;
-        }
-
-        .player-wrapper {
-            width: 70%; /* Smaller player size */
-            max-width: 700px;
-            box-shadow: 0 0 50px rgba(0,0,0,1), 0 0 10px var(--gothic-red);
-        }
-
-        video {
-            width: 100%;
-            aspect-ratio: 16/9;
-            display: block;
-            border: 1px solid #222;
-        }
-
-        /* --- TOOLBAR --- */
-        .controls {
-            width: 90%;
-            display: flex;
-            justify-content: space-between;
-            padding: 20px 0;
-            gap: 10px;
-        }
-
-        .search-input {
-            flex-grow: 1;
-            background: #111;
-            border: 1px solid #333;
-            color: white;
-            padding: 10px;
-            border-radius: 20px;
-        }
-
-        .btn {
-            background: var(--gothic-red);
-            color: white;
-            border: none;
-            padding: 10px 20px;
-            cursor: pointer;
-            text-transform: uppercase;
-            font-size: 0.7rem;
-            letter-spacing: 1px;
-        }
+        /* --- PLAYLIST & CONTROLS --- */
+        .toolbar { width: 95%; padding: 15px 0; display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
+        .search-input { background: #111; border: 1px solid #333; color: white; padding: 8px 15px; border-radius: 20px; flex-grow: 1; min-width: 200px; }
+        .btn { background: var(--gothic-red); color: white; border: none; padding: 8px 15px; cursor: pointer; text-transform: uppercase; font-size: 0.7rem; border-radius: 4px; }
+        .playlist-tab { border: 1px solid #333; background: #111; color: #888; margin-right: 5px; cursor: pointer; padding: 5px 12px; border-radius: 15px; font-size: 0.75rem; }
+        .playlist-tab.active { border-color: var(--gold); color: var(--gold); }
 
         /* --- THUMBNAIL GRID --- */
-        #video-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-            gap: 15px;
-            width: 95%;
-            padding-bottom: 50px;
-        }
+        #video-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 12px; width: 95%; padding: 20px 0; }
+        .video-card { background: #0d0d0d; border: 1px solid #1a1a1a; cursor: pointer; transition: 0.2s; border-radius: 4px; overflow: hidden; }
+        .video-card:hover { border-color: var(--gold); transform: scale(1.02); }
+        .thumb-box { width: 100%; height: 100px; background: #000; position: relative; }
+        .thumb-box video { width: 100%; height: 100%; object-fit: cover; opacity: 0.5; }
+        .card-label { padding: 6px; font-size: 0.75rem; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
-        .video-card {
-            background: #0d0d0d;
-            border: 1px solid #1a1a1a;
-            cursor: pointer;
-            transition: 0.3s;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .video-card:hover {
-            border-color: var(--gold);
-            transform: scale(1.03);
-        }
-
-        /* Video Thumbnail Logic */
-        .thumb-container {
-            width: 100%;
-            height: 120px;
-            background: #000;
-            overflow: hidden;
-            pointer-events: none; /* User can't click the mini-video directly */
-        }
-
-        .thumb-container video {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            opacity: 0.6;
-        }
-
-        .card-label {
-            padding: 8px;
-            font-size: 0.85rem;
-            text-align: center;
-            border-top: 1px solid #1a1a1a;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-
-        /* --- MODAL --- */
-        #summon-modal {
-            display: none;
-            position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.95);
-            z-index: 100;
-            justify-content: center; align-items: center;
-        }
-
-        .modal-box {
-            background: #111;
-            padding: 30px;
-            border: 1px solid var(--gothic-red);
-            width: 90%; max-width: 400px;
-        }
-
-        input { width: 100%; padding: 10px; margin-bottom: 10px; background: #000; color: white; border: 1px solid #333; }
-
-        @media (max-width: 600px) {
-            .player-wrapper { width: 95%; }
-            #video-grid { grid-template-columns: 1fr 1fr; }
-        }
+        /* --- SUMMON MODAL --- */
+        #summon-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 100; justify-content: center; align-items: center; }
+        .modal-box { background: #111; padding: 25px; border: 1px solid var(--gothic-red); width: 90%; max-width: 400px; border-radius: 8px; }
+        input, select { width: 100%; padding: 10px; margin-bottom: 12px; background: #000; border: 1px solid #333; color: white; border-radius: 4px; }
     </style>
 </head>
 <body>
 
     <div id="theater-section">
         <div class="player-wrapper">
-            <video id="master-player" controls preload="auto">
-                <source id="master-source" src="">
-            </video>
-            <div style="padding: 10px; background: #0a0a0a; font-size: 0.9rem;">
-                <span id="playing-title" style="color:var(--gold)">Select a video...</span>
+            <video id="master-player" controls preload="metadata"><source id="master-source" src=""></video>
+            <div class="now-playing">
+                <span id="playing-title" style="color:var(--gold)">Select a Vision...</span>
+                <span id="playing-list" style="color:#555"></span>
             </div>
         </div>
     </div>
 
-    <div class="controls">
-        <input type="text" id="search-bar" class="search-input" placeholder="Filter vault..." oninput="search()">
+    <div class="toolbar">
+        <input type="text" id="search-bar" class="search-input" placeholder="Search archive..." oninput="refreshUI()">
         <button class="btn" onclick="openSummon()">Summon +</button>
     </div>
+
+    <div id="playlist-bar" style="width: 95%; display: flex; overflow-x: auto; padding-bottom: 10px;">
+        <div class="playlist-tab active" onclick="setPlaylist('All')">All</div>
+        </div>
 
     <div id="video-grid"></div>
 
     <div id="summon-modal">
         <div class="modal-box">
-            <h2 style="color:var(--gothic-red); margin-top:0;">New Vision</h2>
+            <h3 style="color:var(--gothic-red); margin-top:0;">New Vision</h3>
             <input type="text" id="title-in" placeholder="Title">
-            <input type="text" id="url-in" placeholder="Any Video Link (pCloud, Web, etc)">
-            <input type="text" id="tags-in" placeholder="Tags">
-            <button class="btn" style="width:100%" onclick="saveVideo()">Add to Vault</button>
+            <input type="text" id="url-in" placeholder="pCloud Direct Link (must end in .mp4)">
+            <input type="text" id="tags-in" placeholder="Tags (comma separated)">
+            <input type="text" id="playlist-in" placeholder="Playlist Name (e.g. Rituals)">
+            <button class="btn" style="width:100%" onclick="saveVideo()">Save to Vault</button>
             <button class="btn" style="width:100%; margin-top:10px; background:#222;" onclick="openSummon()">Cancel</button>
         </div>
     </div>
 
     <script>
+        // Your Firebase Credentials
         const firebaseConfig = {
             apiKey: "AIzaSyB95B-M07ZWK0SW5JFCt3uawB3erjjhMCM",
             authDomain: "aidenvidz.firebaseapp.com",
@@ -197,65 +88,67 @@
         const db = firebase.database();
 
         let archive = [];
+        let currentPlaylist = 'All';
 
-        function openSummon() {
-            const m = document.getElementById('summon-modal');
-            m.style.display = (m.style.display === 'flex') ? 'none' : 'flex';
-        }
+        function openSummon() { const m = document.getElementById('summon-modal'); m.style.display = (m.style.display === 'flex') ? 'none' : 'flex'; }
 
         function saveVideo() {
             const title = document.getElementById('title-in').value;
             const url = document.getElementById('url-in').value;
             const tags = document.getElementById('tags-in').value;
-            if(!title || !url) return;
-            
-            db.ref('vault').push({ title, url, tags });
+            const playlist = document.getElementById('playlist-in').value || "General";
+            if(!title || !url) return alert("Title and URL required");
+            db.ref('vault').push({ title, url, tags, playlist });
             openSummon();
-            document.getElementById('title-in').value = "";
-            document.getElementById('url-in').value = "";
+            document.querySelectorAll('input').forEach(i => i.value = "");
         }
 
         db.ref('vault').on('value', snap => {
             const data = snap.val();
             archive = [];
-            const grid = document.getElementById('video-grid');
-            grid.innerHTML = "";
-            
-            for(let id in data) {
-                const v = data[id];
-                archive.push(v);
-                const card = document.createElement('div');
-                card.className = "video-card";
-                card.onclick = () => play(v.url, v.title);
-                card.innerHTML = `
-                    <div class="thumb-container">
-                        <video preload="metadata">
-                            <source src="${v.url}#t=1">
-                        </video>
-                    </div>
-                    <div class="card-label">${v.title}</div>
-                `;
-                grid.appendChild(card);
-            }
+            for(let id in data) archive.push(data[id]);
+            renderPlaylists();
+            refreshUI();
         });
 
-        function play(url, title) {
+        function renderPlaylists() {
+            const bar = document.getElementById('playlist-bar');
+            const lists = [...new Set(archive.map(v => v.playlist))];
+            bar.innerHTML = `<div class="playlist-tab ${currentPlaylist==='All'?'active':''}" onclick="setPlaylist('All')">All</div>`;
+            lists.forEach(l => {
+                bar.innerHTML += `<div class="playlist-tab ${currentPlaylist===l?'active':''}" onclick="setPlaylist('${l}')">${l}</div>`;
+            });
+        }
+
+        function setPlaylist(name) { currentPlaylist = name; renderPlaylists(); refreshUI(); }
+
+        function refreshUI() {
+            const grid = document.getElementById('video-grid');
+            const term = document.getElementById('search-bar').value.toLowerCase();
+            grid.innerHTML = "";
+            
+            archive.forEach(v => {
+                const inList = (currentPlaylist === 'All' || v.playlist === currentPlaylist);
+                const inSearch = v.title.toLowerCase().includes(term) || (v.tags && v.tags.toLowerCase().includes(term));
+                
+                if(inList && inSearch) {
+                    const card = document.createElement('div');
+                    card.className = "video-card";
+                    card.onclick = () => play(v.url, v.title, v.playlist);
+                    card.innerHTML = `<div class="thumb-box"><video preload="metadata"><source src="${v.url}#t=1"></video></div><div class="card-label">${v.title}</div>`;
+                    grid.appendChild(card);
+                }
+            });
+        }
+
+        function play(url, title, list) {
             const p = document.getElementById('master-player');
             const s = document.getElementById('master-source');
             s.src = url;
-            p.load();
-            p.play();
+            p.load(); p.play();
             document.getElementById('playing-title').innerText = title;
+            document.getElementById('playing-list').innerText = "In: " + list;
             window.scrollTo({top: 0, behavior: 'smooth'});
-        }
-
-        function search() {
-            const term = document.getElementById('search-bar').value.toLowerCase();
-            const cards = document.querySelectorAll('.video-card');
-            archive.forEach((v, i) => {
-                const match = v.title.toLowerCase().includes(term) || v.tags.toLowerCase().includes(term);
-                cards[i].style.display = match ? "block" : "none";
-            });
         }
     </script>
 </body>
