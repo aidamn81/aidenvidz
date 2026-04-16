@@ -14,7 +14,6 @@
             --deep-black: #050505;
             --gold: #c5a059;
             --soft-white: #e0e0e0;
-            --dark-gray: #111;
         }
 
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
@@ -65,7 +64,7 @@
             justify-content: space-between;
         }
 
-        /* --- TOOLBAR & NAVIGATION --- */
+        /* --- TOOLBAR --- */
         .toolbar {
             width: 95%;
             padding: 20px 0 10px;
@@ -105,7 +104,6 @@
             overflow-x: auto;
             padding: 10px 0 20px;
             gap: 10px;
-            scrollbar-width: none;
         }
 
         .playlist-tab {
@@ -117,16 +115,14 @@
             font-size: 0.8rem;
             cursor: pointer;
             white-space: nowrap;
-            transition: 0.3s;
         }
 
         .playlist-tab.active {
             border-color: var(--gold);
             color: var(--gold);
-            background: #151515;
         }
 
-        /* --- THUMBNAIL GRID --- */
+        /* --- GRID --- */
         #video-grid {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
@@ -138,31 +134,23 @@
         .video-card {
             background: #0d0d0d;
             border: 1px solid #1a1a1a;
-            cursor: pointer;
-            transition: 0.2s;
             border-radius: 4px;
             overflow: hidden;
             position: relative;
         }
 
-        .video-card:hover { border-color: var(--gold); transform: translateY(-3px); }
+        .thumb-box { width: 100%; height: 110px; background: #000; position: relative; cursor: pointer; }
+        .thumb-box video, .thumb-box img { width: 100%; height: 100%; object-fit: cover; opacity: 0.6; }
 
-        .thumb-box { width: 100%; height: 110px; background: #000; position: relative; overflow: hidden;}
+        .card-label { padding: 8px; font-size: 0.8rem; display: flex; flex-direction: column; gap: 5px; }
+        .label-top { display: flex; justify-content: space-between; align-items: center; }
+        .video-title { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 70%; }
         
-        .thumb-box video, .thumb-box img { 
-            width: 100%; 
-            height: 100%; 
-            object-fit: cover; 
-            opacity: 0.6; 
-            pointer-events: none; 
-        }
+        .card-actions { display: flex; gap: 10px; justify-content: flex-end; }
+        .icon-btn { cursor: pointer; font-size: 1rem; opacity: 0.7; transition: 0.2s; }
+        .icon-btn:hover { opacity: 1; transform: scale(1.1); }
 
-        .card-label { padding: 8px; font-size: 0.8rem; display: flex; justify-content: space-between; align-items: center; }
-        .video-title { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 80%; }
-        .trash-icon { color: #600; font-size: 1rem; padding: 0 5px; transition: 0.2s; cursor: pointer; }
-        .trash-icon:hover { color: var(--gothic-red); transform: scale(1.2); }
-
-        /* --- SUMMON MODAL --- */
+        /* --- MODALS --- */
         #summon-modal {
             display: none;
             position: fixed;
@@ -180,8 +168,6 @@
             width: 90%;
             max-width: 420px;
             border-radius: 8px;
-            max-height: 90vh;
-            overflow-y: auto;
         }
 
         select, input {
@@ -192,15 +178,11 @@
             border: 1px solid #333;
             color: white;
             border-radius: 4px;
-            outline: none;
-            font-size: 0.9rem;
         }
 
-        label { font-size: 0.7rem; color: var(--gold); margin-bottom: 4px; display: block; text-transform: uppercase; }
+        label { font-size: 0.7rem; color: var(--gold); display: block; margin-bottom: 4px; text-transform: uppercase; }
 
-        /* --- RESPONSIVE --- */
         @media (max-width: 768px) {
-            .player-wrapper { width: 95%; }
             #video-grid { grid-template-columns: 1fr 1fr; }
         }
     </style>
@@ -212,7 +194,7 @@
             <video id="master-player" controls preload="metadata"><source id="master-source" src=""></video>
             <div class="now-playing">
                 <span id="playing-title" style="color:var(--gold)">Awaiting Vision...</span>
-                <span id="playing-list" style="color:#444; font-style: italic;"></span>
+                <span id="playing-list" style="color:#444;"></span>
             </div>
         </div>
     </div>
@@ -222,36 +204,28 @@
         <button class="btn" onclick="toggleSummon()">Summon +</button>
     </div>
 
-    <div id="playlist-bar">
-        <div class="playlist-tab active" onclick="setPlaylist('All')">All Archives</div>
-    </div>
+    <div id="playlist-bar"></div>
 
     <div id="video-grid"></div>
 
+    <input type="file" id="update-thumb-input" style="display:none;" accept="image/*" onchange="processUpdateThumb(this)">
+
     <div id="summon-modal">
         <div class="modal-box">
-            <h2 style="margin-top:0; color:var(--gothic-red); letter-spacing:2px;">NEW VISION</h2>
-            
+            <h2 style="margin-top:0; color:var(--gothic-red);">NEW VISION</h2>
             <label>Title</label>
-            <input type="text" id="in-title" placeholder="Vision Name">
-            
+            <input type="text" id="in-title">
             <label>Video URL</label>
-            <input type="text" id="in-url" placeholder="Direct .mp4 Link">
-            
-            <label>Custom Thumbnail (Optional)</label>
+            <input type="text" id="in-url">
+            <label>Thumbnail (Optional)</label>
             <input type="file" id="in-thumb" accept="image/*">
-            
             <label>Playlist</label>
             <select id="playlist-select" onchange="checkNewPlaylist(this.value)">
                 <option value="General">General Archive</option>
-                <option value="NEW_PLAYLIST" style="color: var(--gold);">+ Create New Playlist</option>
+                <option value="NEW_PLAYLIST">+ Create New...</option>
             </select>
-            <input type="text" id="in-new-playlist" placeholder="New Playlist Name" style="display:none;">
-
-            <label>Tags</label>
-            <input type="text" id="in-tags" placeholder="ambient, ritual, etc">
-
-            <button class="btn" style="width:100%" onclick="saveVideo()">Save to Vault</button>
+            <input type="text" id="in-new-playlist" placeholder="Name" style="display:none;">
+            <button class="btn" style="width:100%" onclick="saveVideo()">Save</button>
             <button class="btn" style="width:100%; margin-top:10px; background:#222;" onclick="toggleSummon()">Cancel</button>
         </div>
     </div>
@@ -271,6 +245,7 @@
 
         let archive = [];
         let currentPlaylist = 'All';
+        let updatingId = null;
 
         function toggleSummon() {
             const m = document.getElementById('summon-modal');
@@ -284,42 +259,28 @@
         function saveVideo() {
             const title = document.getElementById('in-title').value;
             const url = document.getElementById('in-url').value;
-            const tags = document.getElementById('in-tags').value;
             const thumbFile = document.getElementById('in-thumb').files[0];
             let playlist = document.getElementById('playlist-select').value;
-            
             if (playlist === "NEW_PLAYLIST") playlist = document.getElementById('in-new-playlist').value || "General";
-            if (!title || !url) return alert("Title and URL required.");
+            
+            if (!title || !url) return alert("Required fields missing.");
 
             const pushData = (imgData) => {
-                db.ref('vault').push({ 
-                    title, 
-                    url, 
-                    tags, 
-                    playlist, 
-                    customThumb: imgData || "",
-                    timestamp: Date.now() 
-                });
+                db.ref('vault').push({ title, url, playlist, customThumb: imgData || "", timestamp: Date.now() });
                 toggleSummon();
                 document.querySelectorAll('#summon-modal input').forEach(i => i.value = "");
-                document.getElementById('playlist-select').value = "General";
-                document.getElementById('in-new-playlist').style.display = "none";
             };
 
             if (thumbFile) {
-                const reader = new FileReader();
-                reader.onload = (e) => pushData(e.target.result);
-                reader.readAsDataURL(thumbFile);
-            } else {
-                pushData("");
-            }
+                const r = new FileReader(); r.onload = (e) => pushData(e.target.result); r.readAsDataURL(thumbFile);
+            } else pushData("");
         }
 
         db.ref('vault').on('value', snap => {
             const data = snap.val();
             archive = [];
             for(let id in data) archive.push({ id, ...data[id] });
-            archive.sort((a, b) => b.timestamp - a.timestamp);
+            archive.sort((a,b) => b.timestamp - a.timestamp);
             renderPlaylists();
             refreshUI();
         });
@@ -328,42 +289,50 @@
             const bar = document.getElementById('playlist-bar');
             const select = document.getElementById('playlist-select');
             const lists = [...new Set(archive.map(v => v.playlist))].filter(l => l && l !== "General");
-            
-            bar.innerHTML = `<div class="playlist-tab ${currentPlaylist === 'All' ? 'active' : ''}" onclick="setPlaylist('All')">All Archives</div>`;
+            bar.innerHTML = `<div class="playlist-tab ${currentPlaylist === 'All' ? 'active' : ''}" onclick="setPlaylist('All')">All</div>`;
             select.innerHTML = `<option value="General">General Archive</option>`;
-            
             lists.forEach(l => {
                 bar.innerHTML += `<div class="playlist-tab ${currentPlaylist === l ? 'active' : ''}" onclick="setPlaylist('${l}')">${l}</div>`;
                 select.innerHTML += `<option value="${l}">${l}</option>`;
             });
-            select.innerHTML += `<option value="NEW_PLAYLIST" style="color: var(--gold);">+ Create New Playlist</option>`;
+            select.innerHTML += `<option value="NEW_PLAYLIST">+ Create New...</option>`;
         }
 
         function setPlaylist(name) { currentPlaylist = name; renderPlaylists(); refreshUI(); }
+
+        function triggerUpdateThumb(id) {
+            updatingId = id;
+            document.getElementById('update-thumb-input').click();
+        }
+
+        function processUpdateThumb(input) {
+            if (input.files && input.files[0] && updatingId) {
+                const r = new FileReader();
+                r.onload = (e) => {
+                    db.ref(`vault/${updatingId}`).update({ customThumb: e.target.result });
+                    updatingId = null;
+                };
+                r.readAsDataURL(input.files[0]);
+            }
+        }
 
         function refreshUI() {
             const grid = document.getElementById('video-grid');
             const term = document.getElementById('search-bar').value.toLowerCase();
             grid.innerHTML = "";
             archive.forEach(v => {
-                if ((currentPlaylist === 'All' || v.playlist === currentPlaylist) && 
-                    (v.title.toLowerCase().includes(term) || (v.tags && v.tags.toLowerCase().includes(term)))) {
-                    
+                if ((currentPlaylist === 'All' || v.playlist === currentPlaylist) && v.title.toLowerCase().includes(term)) {
                     const card = document.createElement('div');
                     card.className = "video-card";
-                    
-                    // Logic: Use customThumb if available, otherwise use video preview
-                    const thumbContent = v.customThumb 
-                        ? `<img src="${v.customThumb}" alt="thumb">` 
-                        : `<video preload="metadata"><source src="${v.url}#t=1"></video>`;
-
+                    const thumb = v.customThumb ? `<img src="${v.customThumb}">` : `<video preload="metadata"><source src="${v.url}#t=1"></video>`;
                     card.innerHTML = `
-                        <div class="thumb-box" onclick="play('${v.url}', '${v.title.replace(/'/g, "\\'")}', '${v.playlist}')">
-                            ${thumbContent}
-                        </div>
+                        <div class="thumb-box" onclick="play('${v.url}', '${v.title.replace(/'/g, "\\'")}', '${v.playlist}')">${thumb}</div>
                         <div class="card-label">
-                            <span class="video-title">${v.title}</span>
-                            <span class="trash-icon" onclick="deleteVideo('${v.id}', '${v.title.replace(/'/g, "\\'")}')">🗑</span>
+                            <div class="label-top"><span class="video-title">${v.title}</span></div>
+                            <div class="card-actions">
+                                <span class="icon-btn" onclick="triggerUpdateThumb('${v.id}')" title="Change Image">🖼️</span>
+                                <span class="icon-btn" onclick="deleteVideo('${v.id}', '${v.title.replace(/'/g, "\\'")}')" style="color:var(--gothic-red)">🗑</span>
+                            </div>
                         </div>`;
                     grid.appendChild(card);
                 }
@@ -374,18 +343,14 @@
             const p = document.getElementById('master-player');
             const s = document.getElementById('master-source');
             if (url.startsWith('//')) url = 'https:' + url;
-            s.src = url;
-            p.load();
-            p.play().catch(() => {});
+            s.src = url; p.load(); p.play().catch(()=>{});
             document.getElementById('playing-title').innerText = title;
             document.getElementById('playing-list').innerText = "In: " + list;
             window.scrollTo({ top: 0, behavior: 'smooth' });
         }
 
         function deleteVideo(id, title) {
-            if (confirm(`Are you certain you wish to banish "${title}" from the vault?`)) {
-                db.ref('vault/' + id).remove().catch(e => alert(e.message));
-            }
+            if (confirm(`Banish "${title}"?`)) db.ref('vault/' + id).remove();
         }
     </script>
 </body>
