@@ -4,77 +4,270 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Gothic Video Vault</title>
+    
     <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-database-compat.js"></script>
 
     <style>
-        :root { --gothic-red: #4a0404; --deep-black: #050505; --gold: #c5a059; --soft-white: #e0e0e0; }
-        body { background-color: var(--deep-black); color: var(--soft-white); font-family: 'Garamond', serif; margin: 0; display: flex; flex-direction: column; align-items: center; }
-        
-        /* --- THEATER PLAYER --- */
-        #theater-section { width: 100%; background: #000; padding: 15px; border-bottom: 2px solid var(--gothic-red); display: flex; justify-content: center; }
-        .player-wrapper { width: 60%; max-width: 650px; box-shadow: 0 0 20px rgba(74,4,4,0.5); border-radius: 8px; overflow: hidden; }
-        video { width: 100%; aspect-ratio: 16/9; display: block; background: #000; }
-        .now-playing { padding: 8px; background: #0a0a0a; border-top: 1px solid #222; font-size: 0.8rem; display: flex; justify-content: space-between; }
+        :root {
+            --gothic-red: #4a0404;
+            --deep-black: #050505;
+            --gold: #c5a059;
+            --soft-white: #e0e0e0;
+            --dark-gray: #111;
+        }
 
-        /* --- PLAYLIST & CONTROLS --- */
-        .toolbar { width: 95%; padding: 15px 0; display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
-        .search-input { background: #111; border: 1px solid #333; color: white; padding: 8px 15px; border-radius: 20px; flex-grow: 1; min-width: 200px; }
-        .btn { background: var(--gothic-red); color: white; border: none; padding: 8px 15px; cursor: pointer; text-transform: uppercase; font-size: 0.7rem; border-radius: 4px; }
-        .playlist-tab { border: 1px solid #333; background: #111; color: #888; margin-right: 5px; cursor: pointer; padding: 5px 12px; border-radius: 15px; font-size: 0.75rem; }
-        .playlist-tab.active { border-color: var(--gold); color: var(--gold); }
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+        body {
+            background-color: var(--deep-black);
+            color: var(--soft-white);
+            font-family: 'Garamond', serif;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            overflow-x: hidden;
+        }
+
+        /* --- THEATER PLAYER --- */
+        #theater-section {
+            width: 100%;
+            background: #000;
+            padding: 15px;
+            border-bottom: 2px solid var(--gothic-red);
+            display: flex;
+            justify-content: center;
+        }
+
+        .player-wrapper {
+            width: 75%;
+            max-width: 700px;
+            box-shadow: 0 0 30px rgba(74,4,4,0.4);
+            border-radius: 8px;
+            overflow: hidden;
+            background: #000;
+        }
+
+        video {
+            width: 100%;
+            aspect-ratio: 16/9;
+            display: block;
+            background: #000;
+        }
+
+        .now-playing {
+            padding: 10px;
+            background: #0a0a0a;
+            border-top: 1px solid #222;
+            font-size: 0.9rem;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        /* --- TOOLBAR & NAVIGATION --- */
+        .toolbar {
+            width: 95%;
+            padding: 20px 0 10px;
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .search-input {
+            background: #111;
+            border: 1px solid #333;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 25px;
+            flex-grow: 1;
+            min-width: 250px;
+            outline: none;
+        }
+
+        .btn {
+            background: var(--gothic-red);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            cursor: pointer;
+            text-transform: uppercase;
+            font-size: 0.75rem;
+            border-radius: 4px;
+            letter-spacing: 1px;
+            font-weight: bold;
+        }
+
+        #playlist-bar {
+            width: 95%;
+            display: flex;
+            overflow-x: auto;
+            padding: 10px 0 20px;
+            gap: 10px;
+            scrollbar-width: none;
+        }
+
+        .playlist-tab {
+            border: 1px solid #333;
+            background: #0d0d0d;
+            color: #777;
+            padding: 6px 15px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            cursor: pointer;
+            white-space: nowrap;
+            transition: 0.3s;
+        }
+
+        .playlist-tab.active {
+            border-color: var(--gold);
+            color: var(--gold);
+            background: #151515;
+        }
 
         /* --- THUMBNAIL GRID --- */
-        #video-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 12px; width: 95%; padding: 20px 0; }
-        .video-card { background: #0d0d0d; border: 1px solid #1a1a1a; cursor: pointer; transition: 0.2s; border-radius: 4px; overflow: hidden; }
-        .video-card:hover { border-color: var(--gold); transform: scale(1.02); }
-        .thumb-box { width: 100%; height: 100px; background: #000; position: relative; }
-        .thumb-box video { width: 100%; height: 100%; object-fit: cover; opacity: 0.5; }
-        .card-label { padding: 6px; font-size: 0.75rem; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        #video-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+            gap: 15px;
+            width: 95%;
+            padding-bottom: 60px;
+        }
+
+        .video-card {
+            background: #0d0d0d;
+            border: 1px solid #1a1a1a;
+            cursor: pointer;
+            transition: 0.2s;
+            border-radius: 4px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .video-card:hover {
+            border-color: var(--gold);
+            transform: translateY(-3px);
+        }
+
+        .thumb-box {
+            width: 100%;
+            height: 110px;
+            background: #000;
+            position: relative;
+        }
+
+        .thumb-box video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            opacity: 0.6;
+            pointer-events: none;
+        }
+
+        .card-label {
+            padding: 8px;
+            font-size: 0.8rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .video-title {
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 80%;
+        }
+
+        .trash-icon {
+            color: #600;
+            font-size: 1rem;
+            padding: 0 5px;
+            transition: 0.2s;
+        }
+
+        .trash-icon:hover { color: var(--gothic-red); transform: scale(1.2); }
 
         /* --- SUMMON MODAL --- */
-        #summon-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 100; justify-content: center; align-items: center; }
-        .modal-box { background: #111; padding: 25px; border: 1px solid var(--gothic-red); width: 90%; max-width: 400px; border-radius: 8px; }
-        input, select { width: 100%; padding: 10px; margin-bottom: 12px; background: #000; border: 1px solid #333; color: white; border-radius: 4px; }
+        #summon-modal {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.92);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-box {
+            background: #111;
+            padding: 30px;
+            border: 1px solid var(--gothic-red);
+            width: 90%;
+            max-width: 420px;
+            border-radius: 8px;
+        }
+
+        .modal-box h2 { margin-top: 0; color: var(--gothic-red); letter-spacing: 2px; }
+
+        input {
+            width: 100%;
+            padding: 12px;
+            margin-bottom: 15px;
+            background: #000;
+            border: 1px solid #333;
+            color: white;
+            border-radius: 4px;
+            outline: none;
+        }
+
+        /* --- RESPONSIVE --- */
+        @media (max-width: 768px) {
+            .player-wrapper { width: 95%; }
+            #video-grid { grid-template-columns: 1fr 1fr; }
+        }
     </style>
 </head>
 <body>
 
     <div id="theater-section">
         <div class="player-wrapper">
-            <video id="master-player" controls preload="metadata"><source id="master-source" src=""></video>
+            <video id="master-player" controls preload="metadata">
+                <source id="master-source" src="">
+            </video>
             <div class="now-playing">
-                <span id="playing-title" style="color:var(--gold)">Select a Vision...</span>
-                <span id="playing-list" style="color:#555"></span>
+                <span id="playing-title" style="color:var(--gold)">Awaiting Vision...</span>
+                <span id="playing-list" style="color:#444; font-style: italic;"></span>
             </div>
         </div>
     </div>
 
     <div class="toolbar">
-        <input type="text" id="search-bar" class="search-input" placeholder="Search archive..." oninput="refreshUI()">
-        <button class="btn" onclick="openSummon()">Summon +</button>
+        <input type="text" id="search-bar" class="search-input" placeholder="Search by title or tags..." oninput="refreshUI()">
+        <button class="btn" onclick="toggleSummon()">Summon +</button>
     </div>
 
-    <div id="playlist-bar" style="width: 95%; display: flex; overflow-x: auto; padding-bottom: 10px;">
-        <div class="playlist-tab active" onclick="setPlaylist('All')">All</div>
-        </div>
+    <div id="playlist-bar">
+        <div class="playlist-tab active" onclick="setPlaylist('All')">All Archives</div>
+    </div>
 
     <div id="video-grid"></div>
 
     <div id="summon-modal">
         <div class="modal-box">
-            <h3 style="color:var(--gothic-red); margin-top:0;">New Vision</h3>
-            <input type="text" id="title-in" placeholder="Title">
-            <input type="text" id="url-in" placeholder="pCloud Direct Link (must end in .mp4)">
-            <input type="text" id="tags-in" placeholder="Tags (comma separated)">
-            <input type="text" id="playlist-in" placeholder="Playlist Name (e.g. Rituals)">
+            <h2>NEW VISION</h2>
+            <input type="text" id="in-title" placeholder="Title">
+            <input type="text" id="in-url" placeholder="Direct Video URL (ends in .mp4)">
+            <input type="text" id="in-tags" placeholder="Tags (e.g. ambient, ritual)">
+            <input type="text" id="in-playlist" placeholder="Playlist (e.g. Rituals)">
             <button class="btn" style="width:100%" onclick="saveVideo()">Save to Vault</button>
-            <button class="btn" style="width:100%; margin-top:10px; background:#222;" onclick="openSummon()">Cancel</button>
+            <button class="btn" style="width:100%; margin-top:10px; background:#222;" onclick="toggleSummon()">Cancel</button>
         </div>
     </div>
 
     <script>
-        // Your Firebase Credentials
+        // --- FIREBASE CONFIG ---
         const firebaseConfig = {
             apiKey: "AIzaSyB95B-M07ZWK0SW5JFCt3uawB3erjjhMCM",
             authDomain: "aidenvidz.firebaseapp.com",
@@ -90,23 +283,34 @@
         let archive = [];
         let currentPlaylist = 'All';
 
-        function openSummon() { const m = document.getElementById('summon-modal'); m.style.display = (m.style.display === 'flex') ? 'none' : 'flex'; }
+        // --- CORE FUNCTIONS ---
+
+        function toggleSummon() {
+            const m = document.getElementById('summon-modal');
+            m.style.display = (m.style.display === 'flex') ? 'none' : 'flex';
+        }
 
         function saveVideo() {
-            const title = document.getElementById('title-in').value;
-            const url = document.getElementById('url-in').value;
-            const tags = document.getElementById('tags-in').value;
-            const playlist = document.getElementById('playlist-in').value || "General";
-            if(!title || !url) return alert("Title and URL required");
-            db.ref('vault').push({ title, url, tags, playlist });
-            openSummon();
-            document.querySelectorAll('input').forEach(i => i.value = "");
+            const title = document.getElementById('in-title').value;
+            const url = document.getElementById('in-url').value;
+            const tags = document.getElementById('in-tags').value;
+            const playlist = document.getElementById('in-playlist').value || "General";
+
+            if(!title || !url) return alert("Title and URL are required.");
+
+            db.ref('vault').push({ title, url, tags, playlist, timestamp: Date.now() });
+            
+            toggleSummon();
+            document.querySelectorAll('#summon-modal input').forEach(i => i.value = "");
         }
 
         db.ref('vault').on('value', snap => {
             const data = snap.val();
             archive = [];
-            for(let id in data) archive.push(data[id]);
+            for(let id in data) {
+                archive.push({ id, ...data[id] });
+            }
+            archive.sort((a, b) => b.timestamp - a.timestamp); // Newest first
             renderPlaylists();
             refreshUI();
         });
@@ -114,28 +318,41 @@
         function renderPlaylists() {
             const bar = document.getElementById('playlist-bar');
             const lists = [...new Set(archive.map(v => v.playlist))];
-            bar.innerHTML = `<div class="playlist-tab ${currentPlaylist==='All'?'active':''}" onclick="setPlaylist('All')">All</div>`;
+            bar.innerHTML = `<div class="playlist-tab ${currentPlaylist === 'All' ? 'active' : ''}" onclick="setPlaylist('All')">All Archives</div>`;
             lists.forEach(l => {
-                bar.innerHTML += `<div class="playlist-tab ${currentPlaylist===l?'active':''}" onclick="setPlaylist('${l}')">${l}</div>`;
+                if (l) {
+                    bar.innerHTML += `<div class="playlist-tab ${currentPlaylist === l ? 'active' : ''}" onclick="setPlaylist('${l}')">${l}</div>`;
+                }
             });
         }
 
-        function setPlaylist(name) { currentPlaylist = name; renderPlaylists(); refreshUI(); }
+        function setPlaylist(name) {
+            currentPlaylist = name;
+            renderPlaylists();
+            refreshUI();
+        }
 
         function refreshUI() {
             const grid = document.getElementById('video-grid');
             const term = document.getElementById('search-bar').value.toLowerCase();
             grid.innerHTML = "";
-            
+
             archive.forEach(v => {
                 const inList = (currentPlaylist === 'All' || v.playlist === currentPlaylist);
                 const inSearch = v.title.toLowerCase().includes(term) || (v.tags && v.tags.toLowerCase().includes(term));
-                
-                if(inList && inSearch) {
+
+                if (inList && inSearch) {
                     const card = document.createElement('div');
                     card.className = "video-card";
-                    card.onclick = () => play(v.url, v.title, v.playlist);
-                    card.innerHTML = `<div class="thumb-box"><video preload="metadata"><source src="${v.url}#t=1"></video></div><div class="card-label">${v.title}</div>`;
+                    card.innerHTML = `
+                        <div class="thumb-box" onclick="play('${v.url}', '${v.title.replace(/'/g, "\\'")}', '${v.playlist}')">
+                            <video preload="metadata"><source src="${v.url}#t=1"></video>
+                        </div>
+                        <div class="card-label">
+                            <span class="video-title">${v.title}</span>
+                            <span class="trash-icon" onclick="deleteVideo('${v.id}', '${v.title.replace(/'/g, "\\'")}')">🗑</span>
+                        </div>
+                    `;
                     grid.appendChild(card);
                 }
             });
@@ -144,11 +361,29 @@
         function play(url, title, list) {
             const p = document.getElementById('master-player');
             const s = document.getElementById('master-source');
+            
+            // Handle relative pCloud links if necessary
+            if (url.startsWith('//')) url = 'https:' + url;
+
             s.src = url;
-            p.load(); p.play();
+            p.load();
+            
+            const playPromise = p.play();
+            if (playPromise !== undefined) {
+                playPromise.catch(() => { console.log("Manual play required."); });
+            }
+
             document.getElementById('playing-title').innerText = title;
             document.getElementById('playing-list').innerText = "In: " + list;
-            window.scrollTo({top: 0, behavior: 'smooth'});
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function deleteVideo(id, title) {
+            const confirmed = confirm(`Are you certain you wish to banish "${title}" from the vault forever?`);
+            if (confirmed) {
+                db.ref('vault/' + id).remove()
+                    .catch(e => alert("Ritual failed: " + e.message));
+            }
         }
     </script>
 </body>
