@@ -147,8 +147,15 @@
 
         .video-card:hover { border-color: var(--gold); transform: translateY(-3px); }
 
-        .thumb-box { width: 100%; height: 110px; background: #000; position: relative; }
-        .thumb-box video { width: 100%; height: 100%; object-fit: cover; opacity: 0.6; pointer-events: none; }
+        .thumb-box { width: 100%; height: 110px; background: #000; position: relative; overflow: hidden;}
+        
+        .thumb-box video, .thumb-box img { 
+            width: 100%; 
+            height: 100%; 
+            object-fit: cover; 
+            opacity: 0.6; 
+            pointer-events: none; 
+        }
 
         .card-label { padding: 8px; font-size: 0.8rem; display: flex; justify-content: space-between; align-items: center; }
         .video-title { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 80%; }
@@ -168,23 +175,28 @@
 
         .modal-box {
             background: #111;
-            padding: 30px;
+            padding: 25px;
             border: 1px solid var(--gothic-red);
             width: 90%;
             max-width: 420px;
             border-radius: 8px;
+            max-height: 90vh;
+            overflow-y: auto;
         }
 
         select, input {
             width: 100%;
-            padding: 12px;
-            margin-bottom: 15px;
+            padding: 10px;
+            margin-bottom: 12px;
             background: #000;
             border: 1px solid #333;
             color: white;
             border-radius: 4px;
             outline: none;
+            font-size: 0.9rem;
         }
+
+        label { font-size: 0.7rem; color: var(--gold); margin-bottom: 4px; display: block; text-transform: uppercase; }
 
         /* --- RESPONSIVE --- */
         @media (max-width: 768px) {
@@ -218,17 +230,26 @@
 
     <div id="summon-modal">
         <div class="modal-box">
-            <h2>NEW VISION</h2>
-            <input type="text" id="in-title" placeholder="Title">
-            <input type="text" id="in-url" placeholder="Direct Video URL (.mp4)">
-            <input type="text" id="in-tags" placeholder="Tags">
+            <h2 style="margin-top:0; color:var(--gothic-red); letter-spacing:2px;">NEW VISION</h2>
             
-            <label style="font-size: 0.7rem; color: var(--gold); margin-bottom: 5px; display: block;">PLAYLIST:</label>
+            <label>Title</label>
+            <input type="text" id="in-title" placeholder="Vision Name">
+            
+            <label>Video URL</label>
+            <input type="text" id="in-url" placeholder="Direct .mp4 Link">
+            
+            <label>Custom Thumbnail (Optional)</label>
+            <input type="file" id="in-thumb" accept="image/*">
+            
+            <label>Playlist</label>
             <select id="playlist-select" onchange="checkNewPlaylist(this.value)">
                 <option value="General">General Archive</option>
                 <option value="NEW_PLAYLIST" style="color: var(--gold);">+ Create New Playlist</option>
             </select>
             <input type="text" id="in-new-playlist" placeholder="New Playlist Name" style="display:none;">
+
+            <label>Tags</label>
+            <input type="text" id="in-tags" placeholder="ambient, ritual, etc">
 
             <button class="btn" style="width:100%" onclick="saveVideo()">Save to Vault</button>
             <button class="btn" style="width:100%; margin-top:10px; background:#222;" onclick="toggleSummon()">Cancel</button>
@@ -264,16 +285,34 @@
             const title = document.getElementById('in-title').value;
             const url = document.getElementById('in-url').value;
             const tags = document.getElementById('in-tags').value;
+            const thumbFile = document.getElementById('in-thumb').files[0];
             let playlist = document.getElementById('playlist-select').value;
             
             if (playlist === "NEW_PLAYLIST") playlist = document.getElementById('in-new-playlist').value || "General";
             if (!title || !url) return alert("Title and URL required.");
 
-            db.ref('vault').push({ title, url, tags, playlist, timestamp: Date.now() });
-            toggleSummon();
-            document.querySelectorAll('#summon-modal input').forEach(i => i.value = "");
-            document.getElementById('playlist-select').value = "General";
-            document.getElementById('in-new-playlist').style.display = "none";
+            const pushData = (imgData) => {
+                db.ref('vault').push({ 
+                    title, 
+                    url, 
+                    tags, 
+                    playlist, 
+                    customThumb: imgData || "",
+                    timestamp: Date.now() 
+                });
+                toggleSummon();
+                document.querySelectorAll('#summon-modal input').forEach(i => i.value = "");
+                document.getElementById('playlist-select').value = "General";
+                document.getElementById('in-new-playlist').style.display = "none";
+            };
+
+            if (thumbFile) {
+                const reader = new FileReader();
+                reader.onload = (e) => pushData(e.target.result);
+                reader.readAsDataURL(thumbFile);
+            } else {
+                pushData("");
+            }
         }
 
         db.ref('vault').on('value', snap => {
@@ -309,11 +348,18 @@
             archive.forEach(v => {
                 if ((currentPlaylist === 'All' || v.playlist === currentPlaylist) && 
                     (v.title.toLowerCase().includes(term) || (v.tags && v.tags.toLowerCase().includes(term)))) {
+                    
                     const card = document.createElement('div');
                     card.className = "video-card";
+                    
+                    // Logic: Use customThumb if available, otherwise use video preview
+                    const thumbContent = v.customThumb 
+                        ? `<img src="${v.customThumb}" alt="thumb">` 
+                        : `<video preload="metadata"><source src="${v.url}#t=1"></video>`;
+
                     card.innerHTML = `
                         <div class="thumb-box" onclick="play('${v.url}', '${v.title.replace(/'/g, "\\'")}', '${v.playlist}')">
-                            <video preload="metadata"><source src="${v.url}#t=1"></video>
+                            ${thumbContent}
                         </div>
                         <div class="card-label">
                             <span class="video-title">${v.title}</span>
