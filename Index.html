@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Gothic Video Vault</title>
+    
+    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-database-compat.js"></script>
+
+    <style>
+        :root {
+            --gothic-red: #4a0404;
+            --deep-black: #0a0a0a;
+            --gold: #c5a059;
+            --soft-white: #e0e0e0;
+        }
+
+        body {
+            background-color: var(--deep-black);
+            color: var(--soft-white);
+            font-family: 'Garamond', serif;
+            margin: 0;
+            overflow-x: hidden;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        /* Gothic Banner Header */
+        header {
+            width: 100%;
+            height: 150px;
+            background: linear-gradient(to bottom, #1a1a1a, #000);
+            border-bottom: 2px solid var(--gothic-red);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.8);
+            position: relative;
+        }
+
+        header h1 {
+            font-size: 2.5rem;
+            letter-spacing: 5px;
+            color: var(--soft-white);
+            text-shadow: 0 0 10px var(--gothic-red);
+            text-transform: uppercase;
+        }
+
+        /* Main Video Player Area */
+        #main-player-container {
+            width: 90%;
+            max-width: 1000px;
+            margin-top: 20px;
+            background: #000;
+            border: 1px solid #333;
+            box-shadow: 0 0 30px rgba(0,0,0,1);
+        }
+
+        video {
+            width: 100%;
+            display: block;
+            outline: none;
+        }
+
+        /* Video Controls & Info */
+        #video-info {
+            padding: 15px;
+            border-top: 1px solid var(--gothic-red);
+            background: #111;
+        }
+
+        /* Video Grid (Gothic Archive Style) */
+        #video-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 20px;
+            width: 90%;
+            padding: 40px 0;
+        }
+
+        .video-card {
+            background: #161616;
+            border: 1px solid #222;
+            cursor: pointer;
+            transition: transform 0.2s, border-color 0.2s;
+            position: relative;
+        }
+
+        .video-card:hover {
+            transform: translateY(-5px);
+            border-color: var(--gold);
+        }
+
+        /* Extracting Thumbnail Logic */
+        .video-card video {
+            width: 100%;
+            height: 160px;
+            object-fit: cover;
+            pointer-events: none; /* Prevents playing in grid */
+        }
+
+        .card-details {
+            padding: 10px;
+        }
+
+        .card-details h3 { margin: 0; font-size: 1.1rem; color: var(--soft-white); }
+        .card-details p { font-size: 0.8rem; color: #888; margin: 5px 0 0; }
+
+        /* Summoning Form (Input) */
+        #summon-box {
+            background: #1a1a1a;
+            border: 1px solid var(--gothic-red);
+            padding: 20px;
+            width: 80%;
+            max-width: 500px;
+            margin: 20px 0;
+        }
+
+        input, select, button {
+            width: 100%;
+            margin-bottom: 10px;
+            padding: 10px;
+            background: #000;
+            color: white;
+            border: 1px solid #444;
+            box-sizing: border-box;
+        }
+
+        button {
+            background: var(--gothic-red);
+            border: none;
+            cursor: pointer;
+            text-transform: uppercase;
+            font-weight: bold;
+        }
+
+        button:hover { background: #7a0606; }
+
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>Gothic Vault</h1>
+    </header>
+
+    <div id="main-player-container">
+        <video id="master-player" controls preload="metadata">
+            <source src="" id="video-source">
+        </video>
+        <div id="video-info">
+            <h2 id="now-playing-title">Select a Vision...</h2>
+            <p id="now-playing-tags"></p>
+        </div>
+    </div>
+
+    <div id="summon-box">
+        <h3>Summon New Video</h3>
+        <input type="text" id="vid-name" placeholder="Video Title">
+        <input type="text" id="vid-url" placeholder="pCloud Direct Link">
+        <input type="text" id="vid-tags" placeholder="Tags (comma separated)">
+        <select id="vid-playlist">
+            <option value="General">General Archive</option>
+            <option value="Rituals">Rituals</option>
+            <option value="Shadows">Shadows</option>
+        </select>
+        <button onclick="summonVideo()">Add to Vault</button>
+    </div>
+
+    <div id="video-grid"></div>
+
+    <script>
+        // --- FIREBASE CONFIGURATION ---
+        const firebaseConfig = {
+            apiKey: "YOUR_API_KEY",
+            databaseURL: "YOUR_DATABASE_URL",
+            projectId: "YOUR_PROJECT_ID"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+
+        // --- CORE FUNCTIONS ---
+
+        function summonVideo() {
+            const name = document.getElementById('vid-name').value;
+            const url = document.getElementById('vid-url').value;
+            const tags = document.getElementById('vid-tags').value;
+            const playlist = document.getElementById('vid-playlist').value;
+
+            if (!name || !url) return alert("Missing link or title.");
+
+            db.ref('vault').push({
+                name, url, tags, playlist,
+                timestamp: Date.now()
+            });
+
+            // Clear inputs
+            document.getElementById('vid-name').value = "";
+            document.getElementById('vid-url').value = "";
+        }
+
+        // --- RENDER LOGIC ---
+        db.ref('vault').on('value', (snapshot) => {
+            const grid = document.getElementById('video-grid');
+            grid.innerHTML = "";
+            const data = snapshot.val();
+
+            for (let id in data) {
+                const video = data[id];
+                const card = document.createElement('div');
+                card.className = "video-card";
+                card.onclick = () => loadVideo(video.url, video.name, video.tags);
+
+                // This video tag acts as the thumbnail by loading the first frame (preload="metadata")
+                card.innerHTML = `
+                    <video preload="metadata">
+                        <source src="${video.url}#t=0.5">
+                    </video>
+                    <div class="card-details">
+                        <h3>${video.name}</h3>
+                        <p>${video.playlist} | ${video.tags}</p>
+                    </div>
+                `;
+                grid.appendChild(card);
+            }
+        });
+
+        function loadVideo(url, name, tags) {
+            const player = document.getElementById('master-player');
+            const source = document.getElementById('video-source');
+            
+            source.src = url;
+            player.load();
+            player.play();
+
+            document.getElementById('now-playing-title').innerText = name;
+            document.getElementById('now-playing-tags').innerText = "Tags: " + tags;
+            
+            // Scroll to top to see the player
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+    </script>
+</body>
+</html>
