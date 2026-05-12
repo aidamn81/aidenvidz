@@ -14,8 +14,7 @@
             --gothic-black: #0a0a0a;
             --gothic-gold: #c5a059;
             --gothic-red: #4a0404;
-            --gothic-grey: #1a1a1a;
-            --grid-line: rgba(197, 160, 89, 0.05);
+            --grid-color: rgba(197, 160, 89, 0.05);
         }
 
         body, html {
@@ -28,100 +27,68 @@
             touch-action: none;
         }
 
-        /* --- THE INFINITE CANVAS --- */
-        #viewport {
-            width: 100vw; height: 100vh;
-            overflow: auto;
-            position: relative;
-            cursor: grab;
+        #auth-overlay {
+            position: fixed; top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: radial-gradient(circle, #111 0%, #000 100%);
+            display: flex; flex-direction: column;
+            justify-content: center; align-items: center;
+            z-index: 9999;
         }
+
+        .auth-container {
+            border: 1px solid var(--gothic-gold);
+            padding: 60px 40px;
+            text-align: center;
+            background: rgba(10, 10, 10, 0.9);
+        }
+
+        .ritual-btn {
+            background: none;
+            color: var(--gothic-gold);
+            border: 1px solid var(--gothic-gold);
+            padding: 15px 40px;
+            cursor: pointer;
+            text-transform: uppercase;
+            letter-spacing: 4px;
+        }
+
+        #archive-ui { display: none; width: 100%; height: 100%; position: relative; }
+
+        #viewport { width: 100vw; height: 100vh; overflow: auto; position: relative; }
 
         #canvas {
             width: 5000px; height: 5000px;
             position: absolute;
-            background-color: var(--gothic-black);
-            /* Formation Grid - Visible only in Edit Mode via JS class */
-            background-image: radial-gradient(var(--grid-line) 1px, transparent 1px);
+            background-image: radial-gradient(var(--grid-color) 1px, transparent 1px);
             background-size: 50px 50px;
-            transition: background-image 0.3s ease;
         }
 
-        #canvas.edit-mode {
-            --grid-line: rgba(197, 160, 89, 0.15);
-        }
-
-        /* --- RELICS & FOLDERS --- */
-        .relic {
-            position: absolute;
-            min-width: 100px; min-height: 100px;
-            border: 1px solid transparent;
-            cursor: move;
-            transition: border 0.3s ease;
-        }
-
-        .edit-mode .relic {
-            border: 1px dashed var(--gothic-gold);
-        }
-
-        .relic img {
-            width: 100%; height: auto;
-            display: block;
-            pointer-events: none;
-        }
-
-        /* --- INTERFACE --- */
-        .ui-panel {
-            position: fixed; bottom: 30px; left: 50%;
-            transform: translateX(-50%);
-            display: flex; gap: 20px;
-            background: rgba(0, 0, 0, 0.9);
-            padding: 15px 30px;
-            border: 1px solid var(--gothic-gold);
-            backdrop-filter: blur(8px);
-            z-index: 1000;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-        }
-
-        .btn {
-            color: var(--gothic-gold);
-            text-transform: uppercase;
-            font-size: 11px;
-            letter-spacing: 2px;
-            cursor: pointer;
-            background: none;
-            border: none;
-            padding: 5px 10px;
-        }
-
-        .btn:hover { text-shadow: 0 0 10px var(--gothic-gold); }
-
-        #loading-shroud {
-            position: fixed; top: 0; left: 0;
-            width: 100%; height: 100%;
-            background: var(--gothic-black);
-            display: flex; justify-content: center; align-items: center;
-            z-index: 10000;
-        }
+        .status-text { margin-top: 20px; font-size: 12px; letter-spacing: 2px; height: 20px; opacity: 0.8; }
     </style>
 </head>
 <body>
 
-    <div id="loading-shroud">VERIFYING IDENTITY...</div>
-
-    <div id="viewport">
-        <div id="canvas">
-            </div>
+    <div id="auth-overlay">
+        <div class="auth-container">
+            <h1 style="letter-spacing: 8px; font-weight: 300; margin-bottom: 40px;">THE GOTHIC ARCHIVE</h1>
+            <button id="summon-btn" class="ritual-btn" onclick="summonArchive()">Summon Archive</button>
+            <div id="status" class="status-text"></div>
+        </div>
     </div>
 
-    <div class="ui-panel">
-        <div class="btn" onclick="toggleEdit()">Edit Mode</div>
-        <div class="btn" onclick="saveArchive()">Seal Progress</div>
-        <div class="btn" onclick="centerCanvas()">Recenter</div>
-        <div class="btn" onclick="banish()" style="color: var(--gothic-red);">Banish</div>
+    <div id="archive-ui">
+        <div id="viewport">
+            <div id="canvas">
+                </div>
+        </div>
+        <div style="position:fixed; bottom:30px; left:50%; transform:translateX(-50%); display:flex; gap:20px; z-index:1000;">
+            <button onclick="saveArchive()" style="background:rgba(0,0,0,0.8); border:1px solid var(--gothic-gold); color:var(--gothic-gold); padding:10px 20px; cursor:pointer;">SEAL</button>
+            <button onclick="banishArchive()" style="background:rgba(0,0,0,0.8); border:1px solid var(--gothic-red); color:var(--gothic-red); padding:10px 20px; cursor:pointer;">BANISH</button>
+        </div>
     </div>
 
     <script>
-        // --- FIREBASE CONFIG ---
         const firebaseConfig = {
             apiKey: "AIzaSyB95B-M07ZWK0SW5JFCt3uawB3erjjhMCM",
             authDomain: "aidenvidz.firebaseapp.com",
@@ -135,64 +102,77 @@
         firebase.initializeApp(firebaseConfig);
         const auth = firebase.auth();
         const db = firebase.database();
+        const provider = new firebase.auth.GoogleAuthProvider();
         const MASTER_UID = "ca58db7b-32a7-4ebe-b918-754161bd1fe0";
 
-        // --- SECURITY GATE ---
+        function setStatus(msg) { document.getElementById('status').innerText = msg; }
+
+        async function summonArchive() {
+            try {
+                setStatus("Opening Gate...");
+                // Force local storage persistence
+                await auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL);
+                // Use Redirect to bypass iPad Popup Blockers
+                await auth.signInWithRedirect(provider);
+            } catch (error) {
+                setStatus("Error: " + error.message);
+            }
+        }
+
+        // Handle the return from Redirect
+        auth.getRedirectResult().then((result) => {
+            if (result.user) {
+                localStorage.setItem('ritual_active', 'true');
+            }
+        }).catch(error => {
+            if (error.code !== 'auth/no-auth-event') setStatus(error.message);
+        });
+
         auth.onAuthStateChanged((user) => {
-            if (!user || user.uid !== MASTER_UID) {
-                // If not logged in as Master, kick back to login.html
-                window.location.href = "login.html";
+            const overlay = document.getElementById('auth-overlay');
+            const ui = document.getElementById('archive-ui');
+
+            if (user) {
+                if (user.uid === MASTER_UID) {
+                    setStatus("Master Verified.");
+                    localStorage.removeItem('ritual_active');
+                    overlay.style.display = 'none';
+                    ui.style.display = 'block';
+                    loadArchive();
+                } else {
+                    setStatus("Access Denied.");
+                    auth.signOut();
+                }
             } else {
-                document.getElementById('loading-shroud').style.display = 'none';
-                console.log("Welcome, Master Aiden.");
-                loadArchive();
-                centerCanvas();
+                // If we are waiting for a redirect, don't show the login button yet
+                if (localStorage.getItem('ritual_active')) {
+                    setStatus("Verifying Identity...");
+                } else {
+                    overlay.style.display = 'flex';
+                    ui.style.display = 'none';
+                }
             }
         });
 
-        // --- ARCHIVE CORE MECHANICS ---
-        let isEditMode = false;
-
-        function toggleEdit() {
-            isEditMode = !isEditMode;
-            document.getElementById('canvas').classList.toggle('edit-mode', isEditMode);
-            alert(isEditMode ? "Edit Mode Active: Soft Snap Enabled" : "Edit Mode Locked");
+        function banishArchive() {
+            localStorage.removeItem('ritual_active');
+            auth.signOut().then(() => window.location.reload());
         }
 
-        function centerCanvas() {
-            const viewport = document.getElementById('viewport');
-            viewport.scrollLeft = (5000 - window.innerWidth) / 2;
-            viewport.scrollTop = (5000 - window.innerHeight) / 2;
-        }
-
-        function banish() {
-            auth.signOut().then(() => { window.location.href = "login.html"; });
-        }
-
-        // --- DATA PERSISTENCE ---
         function saveArchive() {
             const user = auth.currentUser;
-            const relics = []; // Logic to gather relic positions would go here
-            
-            db.ref('archive/' + user.uid).set({
-                lastUpdated: Date.now(),
-                // relics: relics
-            }).then(() => alert("Archive Sealed in Europe-West."));
+            if (user && user.uid === MASTER_UID) {
+                db.ref('archive/' + user.uid).set({ lastUpdated: Date.now() })
+                .then(() => alert("Sealed."));
+            }
         }
 
         function loadArchive() {
-            const user = auth.currentUser;
-            db.ref('archive/' + user.uid).once('value').then(snap => {
-                const data = snap.val();
-                if (data) {
-                    console.log("Restoring relics from:", new Date(data.lastUpdated));
-                    // Logic to render relics from database
-                }
-            });
+            // Recenter viewport
+            const v = document.getElementById('viewport');
+            v.scrollLeft = (5000 - window.innerWidth) / 2;
+            v.scrollTop = (5000 - window.innerHeight) / 2;
         }
-
-        // --- DRAG & SNAP (Simplified for iPad) ---
-        // Preservation of "Resize by finger" and "Snap to Grid" logic goes here
     </script>
 </body>
 </html>
