@@ -38,19 +38,23 @@
         }
 
         .player-wrapper {
-            width: 85%; max-width: 800px;
+            width: 95%; max-width: 850px;
             box-shadow: 0 0 40px rgba(74,4,4,0.5);
             border-radius: 8px; overflow: hidden; background: #000;
+            aspect-ratio: 16/9; position: relative;
         }
 
-        /* iPad specific video fix */
-        video {
-            width: 100%; aspect-ratio: 16/9; display: block; background: #000;
+        /* NEW: The Embed Frame Fix */
+        iframe {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            border: none; background: #000;
         }
 
         .now-playing {
-            padding: 12px; background: #0a0a0a; border-top: 1px solid #1a1a1a;
-            font-size: 0.9rem; display: flex; justify-content: space-between;
+            width: 95%; max-width: 850px; padding: 12px; 
+            background: #0a0a0a; border: 1px solid #1a1a1a;
+            border-top: none; font-size: 0.9rem; display: flex; 
+            justify-content: space-between; border-radius: 0 0 8px 8px;
         }
 
         /* --- UI COMPONENTS --- */
@@ -64,8 +68,10 @@
 
         #video-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 15px; width: 95%; padding-bottom: 80px; }
         .video-card { background: #0d0d0d; border: 1px solid #1a1a1a; border-radius: 4px; overflow: hidden; }
-        .thumb-box { width: 100%; height: 115px; background: #000; cursor: pointer; overflow: hidden; display: flex; align-items: center; justify-content: center; }
-        .thumb-box img, .thumb-box video { width: 100%; height: 100%; object-fit: cover; opacity: 0.5; }
+        .thumb-box { width: 100%; height: 115px; background: #000; cursor: pointer; position: relative; display: flex; align-items: center; justify-content: center; }
+        .thumb-box img { width: 100%; height: 100%; object-fit: cover; opacity: 0.5; }
+        .play-overlay { position: absolute; font-size: 2rem; opacity: 0.4; }
+        
         .card-label { padding: 10px; font-size: 0.8rem; }
         .card-actions { display: flex; gap: 14px; justify-content: flex-end; margin-top: 8px; border-top: 1px solid #1a1a1a; padding-top: 8px; }
         .icon-btn { cursor: pointer; opacity: 0.6; }
@@ -83,34 +89,28 @@
 
     <div id="theater-section">
         <div class="player-wrapper">
-            <video id="master-player" controls playsinline webkit-playsinline crossorigin="anonymous" preload="metadata">
-                <source id="master-source" src="" type="video/mp4">
-            </video>
-            <div class="now-playing">
-                <span id="playing-title" style="color:var(--gold)">Awaiting Vision...</span>
-                <span id="playing-list" style="color:#555; font-size: 0.7rem;"></span>
-            </div>
+            <iframe id="master-frame" src="about:blank" allowfullscreen allow="autoplay"></iframe>
         </div>
+    </div>
+    <div class="now-playing">
+        <span id="playing-title" style="color:var(--gold)">Select a Vision Below</span>
+        <span id="playing-list" style="color:#555; font-size: 0.7rem;"></span>
     </div>
 
     <div class="toolbar">
-        <input type="text" id="search-bar" class="search-input" placeholder="Search title or tags..." oninput="refreshUI()">
+        <input type="text" id="search-bar" class="search-input" placeholder="Search archive..." oninput="refreshUI()">
         <button class="btn" onclick="openSummon()">Summon +</button>
     </div>
 
     <div id="playlist-bar"></div>
     <div id="video-grid"></div>
 
-    <input type="file" id="update-thumb-input" style="display:none;" accept="image/*" onchange="processUpdateThumb(this)">
-
     <div id="summon-modal">
         <div class="modal-box">
             <h2 id="modal-header" style="color:var(--gothic-red);">NEW VISION</h2>
             <input type="hidden" id="edit-id">
             <input type="text" id="in-title" placeholder="Title">
-            <input type="text" id="in-url" placeholder="pCloud Link (show?code=...)">
-            <input type="text" id="in-tags" placeholder="Tags">
-            <label style="color:var(--gold); font-size:0.7rem;">Playlist</label>
+            <input type="text" id="in-url" placeholder="pCloud Link">
             <select id="playlist-select" onchange="checkNewPlaylist(this.value)">
                 <option value="General">General Archive</option>
                 <option value="NEW_PLAYLIST">+ New Playlist</option>
@@ -137,36 +137,26 @@
         let archive = [];
         let currentPlaylist = 'All';
 
-        db.ref(".info/connected").on("value", (snap) => {
+        db.ref(".info/connected").on("value", snap => {
             const s = document.getElementById('connection-status');
             s.innerText = snap.val() ? "VAULT STATUS: ONLINE" : "VAULT STATUS: OFFLINE";
             s.style.color = snap.val() ? "var(--gold)" : "var(--gothic-red)";
         });
 
         function play(url, title, list) {
-            const player = document.getElementById('master-player');
+            const frame = document.getElementById('master-frame');
             const display = document.getElementById('playing-title');
             
-            // Critical pCloud Fix
-            let finalUrl = url.replace('show?code=', 'dl?code=');
+            // CONVERT TO EMBED LINK
+            // pCloud standard: publink/show?code=...
+            // pCloud embed: publink/show?code=...&mode=video
+            let embedUrl = url;
+            if (embedUrl.includes('show?code=')) {
+                embedUrl = embedUrl.replace('show?code=', 'show?code=') + "&mode=video";
+            }
             
-            display.innerText = "Resurrecting...";
-            
-            // iPad "Hard Reload" Sequence
-            player.pause();
-            player.removeAttribute('src'); 
-            player.load();
-            
-            // Injecting directly into the player for better Safari compatibility
-            player.src = finalUrl;
-            player.load();
-
-            player.play().then(() => {
-                display.innerText = title;
-            }).catch(e => {
-                display.innerText = "Tap Video to Start";
-            });
-
+            frame.src = embedUrl;
+            display.innerText = title;
             document.getElementById('playing-list').innerText = "ARCHIVE: " + list;
             window.scrollTo({ top: 0, behavior: 'smooth' });
         }
@@ -195,10 +185,12 @@
                 if ((currentPlaylist === 'All' || v.playlist === currentPlaylist) && v.title.toLowerCase().includes(term)) {
                     const card = document.createElement('div');
                     card.className = "video-card";
-                    const directThumb = v.url.replace('show?code=', 'dl?code=');
-                    const thumb = v.customThumb ? `<img src="${v.customThumb}">` : `<video muted playsinline><source src="${directThumb}#t=1"></video>`;
+                    const thumb = v.customThumb ? `<img src="${v.customThumb}">` : `<div style="color:#222; font-size:2rem;">👁️</div>`;
                     card.innerHTML = `
-                        <div class="thumb-box" onclick="play('${v.url}', '${v.title.replace(/'/g, "\\'")}', '${v.playlist}')">${thumb}</div>
+                        <div class="thumb-box" onclick="play('${v.url}', '${v.title.replace(/'/g, "\\'")}', '${v.playlist}')">
+                            ${thumb}
+                            <div class="play-overlay">▶</div>
+                        </div>
                         <div class="card-label">
                             <div class="video-title">${v.title}</div>
                             <div class="card-actions">
@@ -211,7 +203,6 @@
             });
         }
 
-        // Standard helpers
         function openSummon() { document.getElementById('summon-modal').style.display = 'flex'; }
         function closeSummon() { document.getElementById('summon-modal').style.display = 'none'; }
         function checkNewPlaylist(v) { document.getElementById('in-new-playlist').style.display = v === 'NEW_PLAYLIST' ? 'block' : 'none'; }
