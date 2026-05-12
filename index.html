@@ -7,11 +7,13 @@
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
+    
     <style>
         :root {
             --gothic-black: #0a0a0a;
             --gothic-gold: #c5a059;
             --gothic-red: #4a0404;
+            --gothic-grey: #1a1a1a;
         }
 
         body, html {
@@ -21,13 +23,14 @@
             color: var(--gothic-gold);
             font-family: 'Crimson Text', serif;
             overflow: hidden;
+            touch-action: none; /* Essential for iPad gestures */
         }
 
-        /* --- Login Overlay --- */
+        /* --- AUTH OVERLAY --- */
         #auth-overlay {
             position: fixed; top: 0; left: 0;
             width: 100%; height: 100%;
-            background: rgba(0, 0, 0, 0.98);
+            background: radial-gradient(circle, #111 0%, #000 100%);
             display: flex; flex-direction: column;
             justify-content: center; align-items: center;
             z-index: 9999;
@@ -35,65 +38,100 @@
 
         .auth-container {
             border: 1px solid var(--gothic-gold);
-            padding: 50px;
+            padding: 60px 40px;
             text-align: center;
-            background: #111;
-            box-shadow: 0 0 40px rgba(197, 160, 89, 0.1);
+            background: rgba(10, 10, 10, 0.9);
+            box-shadow: 0 0 50px rgba(197, 160, 89, 0.1);
+            border-radius: 2px;
         }
 
-        .btn-google {
+        .ritual-btn {
             background: none;
             color: var(--gothic-gold);
             border: 1px solid var(--gothic-gold);
-            padding: 15px 30px;
+            padding: 15px 40px;
             cursor: pointer;
             text-transform: uppercase;
-            letter-spacing: 3px;
-            transition: 0.3s;
+            letter-spacing: 4px;
+            font-size: 14px;
+            transition: all 0.5s ease;
+            margin-top: 20px;
         }
 
-        .btn-google:hover {
+        .ritual-btn:hover {
             background: var(--gothic-gold);
-            color: black;
+            color: var(--gothic-black);
+            box-shadow: 0 0 15px var(--gothic-gold);
         }
 
-        /* --- Main UI --- */
-        #archive-ui { display: none; width: 100%; height: 100%; }
+        /* --- ARCHIVE UI --- */
+        #archive-ui {
+            display: none; /* Hidden until Master is verified */
+            width: 100%; height: 100%;
+            position: relative;
+        }
+
+        #canvas {
+            width: 5000px; height: 5000px;
+            position: absolute;
+            background-color: var(--gothic-black);
+            background-image: radial-gradient(var(--gothic-grey) 1px, transparent 1px);
+            background-size: 50px 50px;
+        }
 
         .menu-bar {
-            position: fixed; bottom: 20px; left: 50%;
+            position: fixed; bottom: 30px; left: 50%;
             transform: translateX(-50%);
-            display: flex; gap: 20px;
-            background: rgba(10, 10, 10, 0.9);
-            padding: 12px 25px;
+            display: flex; gap: 25px;
+            background: rgba(0, 0, 0, 0.85);
+            padding: 15px 30px;
             border: 1px solid var(--gothic-gold);
-            z-index: 100;
+            backdrop-filter: blur(5px);
+            z-index: 1000;
         }
 
-        .btn { color: var(--gothic-gold); cursor: pointer; text-transform: uppercase; font-size: 12px; }
+        .menu-item {
+            color: var(--gothic-gold);
+            text-transform: uppercase;
+            font-size: 11px;
+            letter-spacing: 2px;
+            cursor: pointer;
+            opacity: 0.8;
+        }
+
+        .menu-item:hover { opacity: 1; }
+
+        #error-msg {
+            color: var(--gothic-red);
+            margin-top: 20px;
+            font-size: 13px;
+            max-width: 250px;
+        }
     </style>
 </head>
 <body>
 
     <div id="auth-overlay">
         <div class="auth-container">
-            <h1 style="letter-spacing: 5px; margin-bottom: 30px;">THE GOTHIC ARCHIVE</h1>
-            <button class="btn-google" onclick="loginWithGoogle()">Summon Archive</button>
-            <p id="auth-error" style="color: var(--gothic-red); margin-top: 20px; font-size: 14px;"></p>
+            <h1 style="letter-spacing: 8px; font-weight: 300; margin-bottom: 40px;">THE GOTHIC ARCHIVE</h1>
+            <button class="ritual-btn" onclick="summonArchive()">Summon Archive</button>
+            <div id="error-msg"></div>
         </div>
     </div>
 
     <div id="archive-ui">
-        <div id="canvas" style="width:5000px; height:5000px; position:absolute;"></div>
+        <div id="canvas">
+            </div>
 
         <div class="menu-bar">
-            <span class="btn" onclick="saveData()">Save</span>
-            <span class="btn" onclick="loadData()">Load</span>
-            <span class="btn" onclick="logout()">Seal</span>
+            <div class="menu-item" onclick="saveArchive()">Seal Progress</div>
+            <div class="menu-item" onclick="loadArchive()">Restore State</div>
+            <div class="menu-item" onclick="banishArchive()" style="color: var(--gothic-red);">Banish</div>
         </div>
     </div>
 
     <script>
+        // --- SECURE CONFIGURATION ---
         const firebaseConfig = {
             apiKey: "AIzaSyB95B-M07ZWK0SW5JFCt3uawB3erjjhMCM",
             authDomain: "aidenvidz.firebaseapp.com",
@@ -104,58 +142,79 @@
             appId: "1:367375628588:web:757041a99f116520300650"
         };
 
+        // Initialize
         firebase.initializeApp(firebaseConfig);
         const auth = firebase.auth();
         const db = firebase.database();
         const provider = new firebase.auth.GoogleAuthProvider();
 
+        // The Master Key
         const MASTER_UID = "ca58db7b-32a7-4ebe-b918-754161bd1fe0";
 
-        function loginWithGoogle() {
+        // --- AUTHENTICATION ENGINE ---
+        function summonArchive() {
             auth.signInWithPopup(provider).catch(error => {
-                document.getElementById('auth-error').innerText = "Ritual Failed: " + error.message;
+                document.getElementById('error-msg').innerText = "The Ritual failed: " + error.message;
             });
         }
 
-        function logout() {
-            auth.signOut().then(() => location.reload());
+        function banishArchive() {
+            auth.signOut().then(() => {
+                window.location.reload();
+            });
         }
 
         auth.onAuthStateChanged((user) => {
-            if (user && user.uid === MASTER_UID) {
-                document.getElementById('auth-overlay').style.display = 'none';
-                document.getElementById('archive-ui').style.display = 'block';
-                console.log("Welcome, Master.");
-                // Insert your loadData() call here
-            } else if (user) {
-                document.getElementById('auth-error').innerText = "Access Denied: You are not the Master.";
-                auth.signOut();
+            const overlay = document.getElementById('auth-overlay');
+            const ui = document.getElementById('archive-ui');
+
+            if (user) {
+                if (user.uid === MASTER_UID) {
+                    overlay.style.display = 'none';
+                    ui.style.display = 'block';
+                    console.log("Identity Verified. Welcome back, Master.");
+                    loadArchive(); // Automatically pull latest data
+                } else {
+                    document.getElementById('error-msg').innerText = "You are not the Master of this Archive. Access denied.";
+                    auth.signOut();
+                }
             } else {
-                document.getElementById('auth-overlay').style.display = 'flex';
-                document.getElementById('archive-ui').style.display = 'none';
+                overlay.style.display = 'flex';
+                ui.style.display = 'none';
             }
         });
 
-        // --- Save/Load Stubs (Connect your existing archive logic here) ---
-        function saveData() {
+        // --- DATA PERSISTENCE ---
+        function saveArchive() {
             const user = auth.currentUser;
-            if (user) {
-                db.ref('users/' + user.uid + '/archive_state').set({
-                    savedAt: Date.now()
-                    // Add your grid objects/folder positions here
-                }).then(() => alert("Archive progression sealed."));
+            if (user && user.uid === MASTER_UID) {
+                // Here you would collect your archive state (positions, images, etc.)
+                const archiveData = {
+                    lastUpdated: Date.now(),
+                    // example: relics: currentRelicArray
+                };
+
+                db.ref('archive/' + user.uid).set(archiveData)
+                    .then(() => alert("The Archive has been sealed and saved."))
+                    .catch(err => alert("Error sealing archive: " + err.message));
             }
         }
 
-        function loadData() {
+        function loadArchive() {
             const user = auth.currentUser;
-            if (user) {
-                db.ref('users/' + user.uid + '/archive_state').once('value').then(snap => {
-                    const data = snap.val();
-                    if(data) console.log("State restored:", data);
+            if (user && user.uid === MASTER_UID) {
+                db.ref('archive/' + user.uid).once('value').then(snapshot => {
+                    const data = snapshot.val();
+                    if (data) {
+                        console.log("Restoring Archive State...", data);
+                        // Trigger your custom rendering functions here
+                    }
                 });
             }
         }
+
+        // --- ATTACH YOUR EXISTING ARCHIVE MECHANICS BELOW ---
+        // (Drag, Snap-to-grid, Folder logic, etc.)
     </script>
 </body>
 </html>
