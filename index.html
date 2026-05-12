@@ -26,7 +26,6 @@
             touch-action: none;
         }
 
-        /* --- AUTH OVERLAY --- */
         #auth-overlay {
             position: fixed; top: 0; left: 0;
             width: 100%; height: 100%;
@@ -54,54 +53,18 @@
             letter-spacing: 4px;
             font-size: 14px;
             transition: all 0.5s ease;
-            margin-top: 20px;
         }
 
-        .ritual-btn:hover {
-            background: var(--gothic-gold);
-            color: var(--gothic-black);
-            box-shadow: 0 0 15px var(--gothic-gold);
-        }
-
-        /* --- ARCHIVE UI --- */
-        #archive-ui {
-            display: none;
-            width: 100%; height: 100%;
-            position: relative;
-        }
+        #archive-ui { display: none; width: 100%; height: 100%; position: relative; }
 
         #canvas {
             width: 5000px; height: 5000px;
             position: absolute;
-            background-color: var(--gothic-black);
             background-image: radial-gradient(var(--gothic-grey) 1px, transparent 1px);
             background-size: 50px 50px;
         }
 
-        .menu-bar {
-            position: fixed; bottom: 30px; left: 50%;
-            transform: translateX(-50%);
-            display: flex; gap: 25px;
-            background: rgba(0, 0, 0, 0.85);
-            padding: 15px 30px;
-            border: 1px solid var(--gothic-gold);
-            backdrop-filter: blur(5px);
-            z-index: 1000;
-        }
-
-        .menu-item {
-            color: var(--gothic-gold);
-            text-transform: uppercase;
-            font-size: 11px;
-            letter-spacing: 2px;
-            cursor: pointer;
-        }
-
-        #error-msg {
-            color: var(--gothic-red);
-            margin-top: 20px;
-            font-size: 13px;
-        }
+        .status-text { margin-top: 20px; font-size: 12px; letter-spacing: 2px; height: 20px; }
     </style>
 </head>
 <body>
@@ -109,17 +72,16 @@
     <div id="auth-overlay">
         <div class="auth-container">
             <h1 style="letter-spacing: 8px; font-weight: 300; margin-bottom: 40px;">THE GOTHIC ARCHIVE</h1>
-            <button class="ritual-btn" onclick="summonArchive()">Summon Archive</button>
-            <div id="error-msg"></div>
+            <button id="summon-btn" class="ritual-btn" onclick="summonArchive()">Summon Archive</button>
+            <div id="status" class="status-text"></div>
         </div>
     </div>
 
     <div id="archive-ui">
         <div id="canvas"></div>
-        <div class="menu-bar">
-            <div class="menu-item" onclick="saveArchive()">Seal Progress</div>
-            <div class="menu-item" onclick="loadArchive()">Restore State</div>
-            <div class="menu-item" onclick="banishArchive()" style="color: var(--gothic-red);">Banish</div>
+        <div style="position:fixed; bottom:20px; left:50%; transform:translateX(-50%); display:flex; gap:20px;">
+            <button onclick="saveArchive()" style="background:none; border:1px solid var(--gothic-gold); color:var(--gothic-gold); padding:10px 20px; cursor:pointer;">SEAL</button>
+            <button onclick="banishArchive()" style="background:none; border:1px solid var(--gothic-red); color:var(--gothic-red); padding:10px 20px; cursor:pointer;">BANISH</button>
         </div>
     </div>
 
@@ -141,21 +103,20 @@
 
         const MASTER_UID = "ca58db7b-32a7-4ebe-b918-754161bd1fe0";
 
+        function setStatus(msg) { document.getElementById('status').innerText = msg; }
+
         function summonArchive() {
-            // Using Redirect instead of Popup for iPad Safari reliability
-            auth.signInWithRedirect(provider);
+            setStatus("Invoking Google...");
+            auth.signInWithPopup(provider).then((result) => {
+                setStatus("Verifying Identity...");
+            }).catch(error => {
+                setStatus("Ritual Interrupted: " + error.message);
+            });
         }
 
         function banishArchive() {
             auth.signOut().then(() => window.location.reload());
         }
-
-        // Handle the redirect result when the page reloads
-        auth.getRedirectResult().catch(error => {
-            if(error.code !== 'auth/no-auth-event') {
-                document.getElementById('error-msg').innerText = "The Ritual failed: " + error.message;
-            }
-        });
 
         auth.onAuthStateChanged((user) => {
             const overlay = document.getElementById('auth-overlay');
@@ -163,35 +124,27 @@
 
             if (user) {
                 if (user.uid === MASTER_UID) {
-                    overlay.style.display = 'none';
-                    ui.style.display = 'block';
-                    loadArchive();
+                    setStatus("Access Granted.");
+                    setTimeout(() => {
+                        overlay.style.display = 'none';
+                        ui.style.display = 'block';
+                    }, 1000);
                 } else {
-                    document.getElementById('error-msg').innerText = "You are not the Master. Access denied.";
-                    auth.signOut();
+                    setStatus("Access Denied: You are not the Master.");
+                    setTimeout(() => auth.signOut(), 2000);
                 }
             } else {
                 overlay.style.display = 'flex';
                 ui.style.display = 'none';
+                setStatus("");
             }
         });
 
         function saveArchive() {
             const user = auth.currentUser;
             if (user && user.uid === MASTER_UID) {
-                db.ref('archive/' + user.uid).set({
-                    lastUpdated: Date.now()
-                    // Your relic data here
-                }).then(() => alert("The Archive has been sealed."));
-            }
-        }
-
-        function loadArchive() {
-            const user = auth.currentUser;
-            if (user && user.uid === MASTER_UID) {
-                db.ref('archive/' + user.uid).once('value').then(snap => {
-                    if (snap.val()) console.log("State Restored");
-                });
+                db.ref('archive/' + user.uid).set({ lastUpdated: Date.now() })
+                .then(() => alert("Sealed."));
             }
         }
     </script>
