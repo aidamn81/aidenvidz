@@ -147,20 +147,29 @@
 
         async function summonArchive() {
             try {
-                setStatus("Invoking Google...");
-                // Force the browser to remember the session locally
+                setStatus("Redirecting to Google...");
+                // Essential for iPad to keep the session alive
                 await auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL);
-                await auth.signInWithPopup(provider);
-                setStatus("Verifying Identity...");
+                // Redirect bypasses Safari's popup blocker
+                await auth.signInWithRedirect(provider);
             } catch (error) {
                 setStatus("Ritual Interrupted: " + error.message);
             }
         }
 
+        // Check if we just returned from a redirect
+        auth.getRedirectResult().then((result) => {
+            if (result.user) {
+                console.log("Returned from Ritual successfully.");
+            }
+        }).catch(error => {
+            if (error.code !== 'auth/no-auth-event') {
+                setStatus("Return Failed: " + error.message);
+            }
+        });
+
         function banishArchive() {
-            auth.signOut().then(() => {
-                window.location.reload();
-            });
+            auth.signOut().then(() => window.location.reload());
         }
 
         // --- THE MASTER OBSERVER ---
@@ -171,7 +180,6 @@
             if (user) {
                 if (user.uid === MASTER_UID) {
                     setStatus("Master Verified.");
-                    // Brief delay to allow the "Master Verified" text to be seen
                     setTimeout(() => {
                         overlay.style.display = 'none';
                         ui.style.display = 'block';
