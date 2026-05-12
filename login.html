@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>The Gate</title>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
+    
+    <style>
+        body { margin: 0; background: #0a0a0a; color: #c5a059; font-family: serif; display: flex; justify-content: center; align-items: center; height: 100vh; overflow: hidden; }
+        .gate-container { border: 1px solid #c5a059; padding: 50px; text-align: center; }
+        button { background: none; border: 1px solid #c5a059; color: #c5a059; padding: 15px 30px; cursor: pointer; letter-spacing: 3px; }
+        #status { margin-top: 20px; font-size: 12px; opacity: 0.7; }
+    </style>
+</head>
+<body>
+
+    <div class="gate-container">
+        <h1 style="letter-spacing: 5px; font-weight: 300;">THE GATE</h1>
+        <button onclick="summon()">SUMMON ARCHIVE</button>
+        <div id="status"></div>
+    </div>
+
+    <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyB95B-M07ZWK0SW5JFCt3uawB3erjjhMCM",
+            authDomain: "aidenvidz.firebaseapp.com",
+            projectId: "aidenvidz",
+        };
+
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const provider = new firebase.auth.GoogleAuthProvider();
+        const MASTER_UID = "ca58db7b-32a7-4ebe-b918-754161bd1fe0";
+
+        async function summon() {
+            document.getElementById('status').innerText = "Invoking Google...";
+            await auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL);
+            await auth.signInWithRedirect(provider);
+        }
+
+        auth.getRedirectResult().catch(err => {
+            if(err.code !== 'auth/no-auth-event') document.getElementById('status').innerText = err.message;
+        });
+
+        auth.onAuthStateChanged((user) => {
+            if (user) {
+                if (user.uid === MASTER_UID) {
+                    document.getElementById('status').innerText = "Master Verified. Entering...";
+                    // PHYSICAL REDIRECT TO YOUR ARCHIVE
+                    setTimeout(() => { window.location.href = "index.html"; }, 1000);
+                } else {
+                    document.getElementById('status').innerText = "Access Denied.";
+                    auth.signOut();
+                }
+            }
+        });
+    </script>
+</body>
+</html>
