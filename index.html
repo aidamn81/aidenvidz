@@ -38,29 +38,22 @@
         }
 
         .player-wrapper {
-            width: 95%; max-width: 850px;
+            width: 85%; max-width: 800px;
             box-shadow: 0 0 40px rgba(74,4,4,0.5);
             border-radius: 8px; overflow: hidden; background: #000;
-            aspect-ratio: 16/9; position: relative;
         }
 
-        /* NEW: The Embed Frame Fix */
-        iframe {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            border: none; background: #000;
-        }
+        video { width: 100%; aspect-ratio: 16/9; display: block; background: #000; }
 
         .now-playing {
-            width: 95%; max-width: 850px; padding: 12px; 
-            background: #0a0a0a; border: 1px solid #1a1a1a;
-            border-top: none; font-size: 0.9rem; display: flex; 
-            justify-content: space-between; border-radius: 0 0 8px 8px;
+            padding: 12px; background: #0a0a0a; border-top: 1px solid #1a1a1a;
+            font-size: 0.9rem; display: flex; justify-content: space-between;
         }
 
-        /* --- UI COMPONENTS --- */
+        /* --- UI --- */
         .toolbar { width: 95%; padding: 20px 0 10px; display: flex; gap: 10px; justify-content: center; }
         .search-input { background: #111; border: 1px solid var(--gothic-red); color: white; padding: 12px 25px; border-radius: 30px; flex-grow: 1; outline: none; }
-        .btn { background: var(--gothic-red); color: white; border: none; padding: 10px 22px; cursor: pointer; text-transform: uppercase; border-radius: 4px; font-weight: bold; }
+        .btn { background: var(--gothic-red); color: white; border: none; padding: 10px 22px; cursor: pointer; border-radius: 4px; font-weight: bold; }
 
         #playlist-bar { width: 95%; display: flex; overflow-x: auto; padding: 10px 0 20px; gap: 12px; }
         .playlist-tab { border: 1px solid #222; background: #0d0d0d; color: #666; padding: 8px 18px; border-radius: 20px; font-size: 0.8rem; cursor: pointer; white-space: nowrap; }
@@ -68,9 +61,8 @@
 
         #video-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 15px; width: 95%; padding-bottom: 80px; }
         .video-card { background: #0d0d0d; border: 1px solid #1a1a1a; border-radius: 4px; overflow: hidden; }
-        .thumb-box { width: 100%; height: 115px; background: #000; cursor: pointer; position: relative; display: flex; align-items: center; justify-content: center; }
-        .thumb-box img { width: 100%; height: 100%; object-fit: cover; opacity: 0.5; }
-        .play-overlay { position: absolute; font-size: 2rem; opacity: 0.4; }
+        .thumb-box { width: 100%; height: 115px; background: #000; cursor: pointer; display: flex; align-items: center; justify-content: center; overflow: hidden; position: relative;}
+        .thumb-box img, .thumb-box video { width: 100%; height: 100%; object-fit: cover; opacity: 0.5; }
         
         .card-label { padding: 10px; font-size: 0.8rem; }
         .card-actions { display: flex; gap: 14px; justify-content: flex-end; margin-top: 8px; border-top: 1px solid #1a1a1a; padding-top: 8px; }
@@ -89,12 +81,14 @@
 
     <div id="theater-section">
         <div class="player-wrapper">
-            <iframe id="master-frame" src="about:blank" allowfullscreen allow="autoplay"></iframe>
+            <video id="master-player" controls playsinline webkit-playsinline preload="metadata">
+                <source id="master-source" src="" type="video/mp4">
+            </video>
+            <div class="now-playing">
+                <span id="playing-title" style="color:var(--gold)">Select a Vision</span>
+                <span id="playing-list" style="color:#555; font-size: 0.7rem;"></span>
+            </div>
         </div>
-    </div>
-    <div class="now-playing">
-        <span id="playing-title" style="color:var(--gold)">Select a Vision Below</span>
-        <span id="playing-list" style="color:#555; font-size: 0.7rem;"></span>
     </div>
 
     <div class="toolbar">
@@ -110,7 +104,7 @@
             <h2 id="modal-header" style="color:var(--gothic-red);">NEW VISION</h2>
             <input type="hidden" id="edit-id">
             <input type="text" id="in-title" placeholder="Title">
-            <input type="text" id="in-url" placeholder="pCloud Link">
+            <input type="text" id="in-url" placeholder="Direct Link (starts with pub...)">
             <select id="playlist-select" onchange="checkNewPlaylist(this.value)">
                 <option value="General">General Archive</option>
                 <option value="NEW_PLAYLIST">+ New Playlist</option>
@@ -144,19 +138,20 @@
         });
 
         function play(url, title, list) {
-            const frame = document.getElementById('master-frame');
+            const player = document.getElementById('master-player');
             const display = document.getElementById('playing-title');
             
-            // CONVERT TO EMBED LINK
-            // pCloud standard: publink/show?code=...
-            // pCloud embed: publink/show?code=...&mode=video
-            let embedUrl = url;
-            if (embedUrl.includes('show?code=')) {
-                embedUrl = embedUrl.replace('show?code=', 'show?code=') + "&mode=video";
-            }
+            // Clean URL and force hard load for Safari
+            player.pause();
+            player.src = url;
+            player.load();
             
-            frame.src = embedUrl;
-            display.innerText = title;
+            player.play().then(() => {
+                display.innerText = title;
+            }).catch(e => {
+                display.innerText = "Tap Video to Play";
+            });
+
             document.getElementById('playing-list').innerText = "ARCHIVE: " + list;
             window.scrollTo({ top: 0, behavior: 'smooth' });
         }
@@ -185,11 +180,10 @@
                 if ((currentPlaylist === 'All' || v.playlist === currentPlaylist) && v.title.toLowerCase().includes(term)) {
                     const card = document.createElement('div');
                     card.className = "video-card";
-                    const thumb = v.customThumb ? `<img src="${v.customThumb}">` : `<div style="color:#222; font-size:2rem;">👁️</div>`;
+                    const thumb = v.customThumb ? `<img src="${v.customThumb}">` : `<video muted playsinline><source src="${v.url}#t=1"></video>`;
                     card.innerHTML = `
                         <div class="thumb-box" onclick="play('${v.url}', '${v.title.replace(/'/g, "\\'")}', '${v.playlist}')">
                             ${thumb}
-                            <div class="play-overlay">▶</div>
                         </div>
                         <div class="card-label">
                             <div class="video-title">${v.title}</div>
