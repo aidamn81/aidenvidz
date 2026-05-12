@@ -4,11 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>The Gothic Archive</title>
-    
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
-
+    
     <style>
         :root {
             --gothic-black: #0a0a0a;
@@ -24,24 +23,20 @@
             color: var(--gothic-gold);
             font-family: 'Crimson Text', serif;
             overflow: hidden;
-            touch-action: none;
         }
 
-        #auth-overlay {
+        /* --- LOADING GATE --- */
+        #loading-gate {
             position: fixed; top: 0; left: 0;
             width: 100%; height: 100%;
-            background: radial-gradient(circle, #111 0%, #000 100%);
+            background: var(--gothic-black);
             display: flex; flex-direction: column;
             justify-content: center; align-items: center;
-            z-index: 9999;
+            z-index: 10000;
+            transition: opacity 0.5s ease;
         }
 
-        .auth-container {
-            border: 1px solid var(--gothic-gold);
-            padding: 60px 40px;
-            text-align: center;
-            background: rgba(10, 10, 10, 0.9);
-        }
+        #auth-ui { display: none; text-align: center; }
 
         .ritual-btn {
             background: none;
@@ -51,12 +46,12 @@
             cursor: pointer;
             text-transform: uppercase;
             letter-spacing: 4px;
+            margin-top: 20px;
         }
 
+        /* --- THE ARCHIVE --- */
         #archive-ui { display: none; width: 100%; height: 100%; position: relative; }
-
         #viewport { width: 100vw; height: 100vh; overflow: auto; position: relative; }
-
         #canvas {
             width: 5000px; height: 5000px;
             position: absolute;
@@ -64,27 +59,28 @@
             background-size: 50px 50px;
         }
 
-        .status-text { margin-top: 20px; font-size: 12px; letter-spacing: 2px; height: 20px; opacity: 0.8; }
+        .status-msg { margin-top: 20px; font-size: 12px; letter-spacing: 2px; opacity: 0.7; }
     </style>
 </head>
 <body>
 
-    <div id="auth-overlay">
-        <div class="auth-container">
-            <h1 style="letter-spacing: 8px; font-weight: 300; margin-bottom: 40px;">THE GOTHIC ARCHIVE</h1>
-            <button id="summon-btn" class="ritual-btn" onclick="summonArchive()">Summon Archive</button>
-            <div id="status" class="status-text"></div>
+    <div id="loading-gate">
+        <h1 style="letter-spacing: 8px; font-weight: 300;">THE GOTHIC ARCHIVE</h1>
+        
+        <div id="auth-ui">
+            <button class="ritual-btn" onclick="summon()">Summon Archive</button>
         </div>
+
+        <div id="status" class="status-msg">CONSULTING THE ORACLE...</div>
     </div>
 
     <div id="archive-ui">
         <div id="viewport">
-            <div id="canvas">
-                </div>
+            <div id="canvas"></div>
         </div>
-        <div style="position:fixed; bottom:30px; left:50%; transform:translateX(-50%); display:flex; gap:20px; z-index:1000;">
-            <button onclick="saveArchive()" style="background:rgba(0,0,0,0.8); border:1px solid var(--gothic-gold); color:var(--gothic-gold); padding:10px 20px; cursor:pointer;">SEAL</button>
-            <button onclick="banishArchive()" style="background:rgba(0,0,0,0.8); border:1px solid var(--gothic-red); color:var(--gothic-red); padding:10px 20px; cursor:pointer;">BANISH</button>
+        <div style="position:fixed; bottom:30px; left:50%; transform:translateX(-50%); display:flex; gap:20px; z-index:1001;">
+            <button onclick="saveArchive()" style="background:rgba(0,0,0,0.9); border:1px solid var(--gothic-gold); color:var(--gothic-gold); padding:10px 20px; cursor:pointer;">SEAL</button>
+            <button onclick="banish()" style="background:rgba(0,0,0,0.9); border:1px solid var(--gothic-red); color:var(--gothic-red); padding:10px 20px; cursor:pointer;">BANISH</button>
         </div>
     </div>
 
@@ -105,70 +101,61 @@
         const provider = new firebase.auth.GoogleAuthProvider();
         const MASTER_UID = "ca58db7b-32a7-4ebe-b918-754161bd1fe0";
 
-        function setStatus(msg) { document.getElementById('status').innerText = msg; }
+        const gate = document.getElementById('loading-gate');
+        const authUI = document.getElementById('auth-ui');
+        const status = document.getElementById('status');
+        const archive = document.getElementById('archive-ui');
 
-        async function summonArchive() {
-            try {
-                setStatus("Opening Gate...");
-                // Force local storage persistence
-                await auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL);
-                // Use Redirect to bypass iPad Popup Blockers
-                await auth.signInWithRedirect(provider);
-            } catch (error) {
-                setStatus("Error: " + error.message);
-            }
+        async function summon() {
+            status.innerText = "REDIRECTING TO GOOGLE...";
+            await auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL);
+            auth.signInWithRedirect(provider);
         }
 
-        // Handle the return from Redirect
+        function banish() {
+            auth.signOut().then(() => window.location.reload());
+        }
+
+        // --- THE LOGIC GATE ---
         auth.getRedirectResult().then((result) => {
-            if (result.user) {
-                localStorage.setItem('ritual_active', 'true');
-            }
-        }).catch(error => {
-            if (error.code !== 'auth/no-auth-event') setStatus(error.message);
+            // result handled by onAuthStateChanged
+        }).catch(err => {
+            status.innerText = "RITUAL FAILED: " + err.message;
+            authUI.style.display = 'block';
         });
 
         auth.onAuthStateChanged((user) => {
-            const overlay = document.getElementById('auth-overlay');
-            const ui = document.getElementById('archive-ui');
-
             if (user) {
                 if (user.uid === MASTER_UID) {
-                    setStatus("Master Verified.");
-                    localStorage.removeItem('ritual_active');
-                    overlay.style.display = 'none';
-                    ui.style.display = 'block';
-                    loadArchive();
+                    status.innerText = "MASTER VERIFIED.";
+                    setTimeout(() => {
+                        gate.style.opacity = '0';
+                        setTimeout(() => {
+                            gate.style.display = 'none';
+                            archive.style.display = 'block';
+                            loadArchive();
+                        }, 500);
+                    }, 800);
                 } else {
-                    setStatus("Access Denied.");
+                    status.innerText = "INTRUDER DETECTED.";
                     auth.signOut();
                 }
             } else {
-                // If we are waiting for a redirect, don't show the login button yet
-                if (localStorage.getItem('ritual_active')) {
-                    setStatus("Verifying Identity...");
-                } else {
-                    overlay.style.display = 'flex';
-                    ui.style.display = 'none';
-                }
+                // No user found, show the login button
+                status.innerText = "THE GATE IS LOCKED.";
+                authUI.style.display = 'block';
             }
         });
-
-        function banishArchive() {
-            localStorage.removeItem('ritual_active');
-            auth.signOut().then(() => window.location.reload());
-        }
 
         function saveArchive() {
             const user = auth.currentUser;
             if (user && user.uid === MASTER_UID) {
                 db.ref('archive/' + user.uid).set({ lastUpdated: Date.now() })
-                .then(() => alert("Sealed."));
+                .then(() => alert("ARCHIVE SEALED."));
             }
         }
 
         function loadArchive() {
-            // Recenter viewport
             const v = document.getElementById('viewport');
             v.scrollLeft = (5000 - window.innerWidth) / 2;
             v.scrollTop = (5000 - window.innerHeight) / 2;
