@@ -26,7 +26,14 @@
             display: flex;
             flex-direction: column;
             align-items: center;
-            overflow-x: hidden;
+        }
+
+        /* Status Indicator */
+        #connection-status {
+            font-size: 0.7rem;
+            padding: 5px;
+            color: #444;
+            letter-spacing: 1px;
         }
 
         /* --- THEATER PLAYER --- */
@@ -48,12 +55,7 @@
             background: #000;
         }
 
-        video {
-            width: 100%;
-            aspect-ratio: 16/9;
-            display: block;
-            background: #000;
-        }
+        video { width: 100%; aspect-ratio: 16/9; display: block; background: #000; }
 
         .now-playing {
             padding: 10px;
@@ -85,16 +87,15 @@
 
         #playlist-bar {
             width: 95%; display: flex; overflow-x: auto; padding: 10px 0 20px; gap: 10px;
-            scrollbar-width: none;
         }
 
         .playlist-tab {
             border: 1px solid #333; background: #0d0d0d; color: #777;
             padding: 6px 15px; border-radius: 20px; font-size: 0.8rem;
-            cursor: pointer; white-space: nowrap; transition: 0.3s;
+            cursor: pointer; white-space: nowrap;
         }
 
-        .playlist-tab.active { border-color: var(--gold); color: var(--gold); background: #151515; }
+        .playlist-tab.active { border-color: var(--gold); color: var(--gold); }
 
         /* --- GRID --- */
         #video-grid {
@@ -104,26 +105,19 @@
 
         .video-card {
             background: #0d0d0d; border: 1px solid #1a1a1a;
-            border-radius: 4px; overflow: hidden; position: relative; transition: 0.2s;
+            border-radius: 4px; overflow: hidden; position: relative;
         }
-        .video-card:hover { border-color: var(--gold); transform: translateY(-3px); }
 
-        .thumb-box { 
-            width: 100%; height: 110px; background: #000; position: relative; 
-            cursor: pointer; overflow: hidden; display: flex; align-items: center; justify-content: center;
-        }
-        .thumb-box video, .thumb-box img { width: 100%; height: 100%; object-fit: cover; opacity: 0.7; pointer-events: none; }
+        .thumb-box { width: 100%; height: 110px; background: #000; position: relative; cursor: pointer; }
+        .thumb-box video, .thumb-box img { width: 100%; height: 100%; object-fit: cover; opacity: 0.6; }
 
         .card-label { padding: 8px; font-size: 0.8rem; display: flex; flex-direction: column; gap: 5px; }
-        .label-top { display: flex; justify-content: space-between; align-items: center; }
-        .video-title { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 70%; font-weight: bold; }
-        .video-tags-display { font-size: 0.65rem; color: #666; font-style: italic; }
+        .video-title { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-weight: bold; }
         
         .card-actions { display: flex; gap: 12px; justify-content: flex-end; padding-top: 5px; }
-        .icon-btn { cursor: pointer; font-size: 1rem; opacity: 0.6; transition: 0.2s; }
-        .icon-btn:hover { opacity: 1; transform: scale(1.1); }
+        .icon-btn { cursor: pointer; font-size: 1rem; opacity: 0.7; }
 
-        /* --- MODALS --- */
+        /* --- MODAL --- */
         #summon-modal {
             display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(0,0,0,0.92); z-index: 1000; justify-content: center; align-items: center;
@@ -131,36 +125,35 @@
 
         .modal-box {
             background: #111; padding: 25px; border: 1px solid var(--gothic-red);
-            width: 90%; max-width: 420px; border-radius: 8px; max-height: 90vh; overflow-y: auto;
+            width: 90%; max-width: 420px; border-radius: 8px;
         }
 
-        select, input {
+        input, select {
             width: 100%; padding: 10px; margin-bottom: 12px;
-            background: #000; border: 1px solid #333; color: white; border-radius: 4px; outline: none;
+            background: #000; border: 1px solid #333; color: white; border-radius: 4px;
         }
 
         label { font-size: 0.7rem; color: var(--gold); display: block; margin-bottom: 4px; text-transform: uppercase; }
 
-        @media (max-width: 768px) { 
-            .player-wrapper { width: 95%; }
-            #video-grid { grid-template-columns: 1fr 1fr; } 
-        }
+        @media (max-width: 768px) { #video-grid { grid-template-columns: 1fr 1fr; } }
     </style>
 </head>
 <body>
+
+    <div id="connection-status">VAULT STATUS: DISCONNECTED</div>
 
     <div id="theater-section">
         <div class="player-wrapper">
             <video id="master-player" controls preload="metadata"><source id="master-source" src=""></video>
             <div class="now-playing">
                 <span id="playing-title" style="color:var(--gold)">Awaiting Vision...</span>
-                <span id="playing-list" style="color:#444; font-style: italic;"></span>
+                <span id="playing-list" style="color:#444;"></span>
             </div>
         </div>
     </div>
 
     <div class="toolbar">
-        <input type="text" id="search-bar" class="search-input" placeholder="Search title or tags..." oninput="refreshUI()">
+        <input type="text" id="search-bar" class="search-input" placeholder="Search archive..." oninput="refreshUI()">
         <button class="btn" onclick="openSummon()">Summon +</button>
     </div>
 
@@ -171,34 +164,25 @@
 
     <div id="summon-modal">
         <div class="modal-box">
-            <h2 id="modal-header" style="margin-top:0; color:var(--gothic-red); letter-spacing:2px;">NEW VISION</h2>
+            <h2 id="modal-header" style="margin-top:0; color:var(--gothic-red);">NEW VISION</h2>
             <input type="hidden" id="edit-id">
-            
-            <label>Title</label>
-            <input type="text" id="in-title">
-            
-            <label>Video URL</label>
-            <input type="text" id="in-url">
-            
-            <label>Tags</label>
-            <input type="text" id="in-tags" placeholder="comma, separated, tags">
-            
-            <label>Thumbnail (Optional)</label>
-            <input type="file" id="in-thumb" accept="image/*">
-            
+            <label>Title</label><input type="text" id="in-title">
+            <label>Video URL</label><input type="text" id="in-url">
+            <label>Tags</label><input type="text" id="in-tags" placeholder="e.g. ritual, dark">
+            <label>Thumbnail (Optional)</label><input type="file" id="in-thumb" accept="image/*">
             <label>Playlist</label>
             <select id="playlist-select" onchange="checkNewPlaylist(this.value)">
                 <option value="General">General Archive</option>
-                <option value="NEW_PLAYLIST">+ Create New Playlist</option>
+                <option value="NEW_PLAYLIST">+ Create New...</option>
             </select>
             <input type="text" id="in-new-playlist" placeholder="Playlist Name" style="display:none;">
-            
             <button class="btn" style="width:100%" onclick="saveVideo()">Commit to Vault</button>
             <button class="btn" style="width:100%; margin-top:10px; background:#222;" onclick="closeSummon()">Cancel</button>
         </div>
     </div>
 
     <script>
+        // UPDATED CONFIG: Forcing europe-west1 region to match your project logs
         const firebaseConfig = {
             apiKey: "AIzaSyB95B-M07ZWK0SW5JFCt3uawB3erjjhMCM",
             authDomain: "aidenvidz.firebaseapp.com",
@@ -214,6 +198,18 @@
         let archive = [];
         let currentPlaylist = 'All';
         let updatingId = null;
+
+        // Connection Monitor
+        const statusEl = document.getElementById('connection-status');
+        db.ref(".info/connected").on("value", (snap) => {
+            if (snap.val() === true) {
+                statusEl.innerText = "VAULT STATUS: ONLINE";
+                statusEl.style.color = "var(--gold)";
+            } else {
+                statusEl.innerText = "VAULT STATUS: OFFLINE";
+                statusEl.style.color = "var(--gothic-red)";
+            }
+        });
 
         function openSummon() {
             document.getElementById('modal-header').innerText = "NEW VISION";
@@ -255,22 +251,20 @@
             if (playlist === "NEW_PLAYLIST") playlist = document.getElementById('in-new-playlist').value || "General";
             if (!title || !url) return alert("Required fields missing.");
 
-            const commitData = (imgData) => {
+            const commit = (imgData) => {
                 const payload = { title, url, tags, playlist, timestamp: Date.now() };
                 if(imgData) payload.customThumb = imgData;
-
+                
                 if(id) {
-                    db.ref('vault/' + id).update(payload);
+                    db.ref('vault/' + id).update(payload).then(() => closeSummon()).catch(e => alert("Error updating: " + e.message));
                 } else {
-                    payload.customThumb = imgData || "";
-                    db.ref('vault').push(payload);
+                    db.ref('vault').push(payload).then(() => closeSummon()).catch(e => alert("Error saving: " + e.message));
                 }
-                closeSummon();
             };
 
             if (thumbFile) {
-                const r = new FileReader(); r.onload = (e) => commitData(e.target.result); r.readAsDataURL(thumbFile);
-            } else commitData(null);
+                const r = new FileReader(); r.onload = (e) => commit(e.target.result); r.readAsDataURL(thumbFile);
+            } else commit(null);
         }
 
         db.ref('vault').on('value', snap => {
@@ -280,6 +274,8 @@
             archive.sort((a,b) => b.timestamp - a.timestamp);
             renderPlaylists();
             refreshUI();
+        }, error => {
+            alert("Database Read Error: " + error.message);
         });
 
         function renderPlaylists() {
@@ -317,32 +313,19 @@
             const grid = document.getElementById('video-grid');
             const term = document.getElementById('search-bar').value.toLowerCase();
             grid.innerHTML = "";
-            
             archive.forEach(v => {
                 const matchesSearch = v.title.toLowerCase().includes(term) || (v.tags && v.tags.toLowerCase().includes(term));
                 if ((currentPlaylist === 'All' || v.playlist === currentPlaylist) && matchesSearch) {
                     const card = document.createElement('div');
                     card.className = "video-card";
-                    
-                    let thumbHtml;
-                    if (v.customThumb) {
-                        thumbHtml = `<img src="${v.customThumb}" loading="lazy">`;
-                    } else {
-                        // Added playsinline and muted to help mobile browsers render the preview
-                        thumbHtml = `<video preload="metadata" playsinline muted><source src="${v.url}#t=1" type="video/mp4"></video>`;
-                    }
-
+                    const thumb = v.customThumb ? `<img src="${v.customThumb}">` : `<video preload="metadata" playsinline muted><source src="${v.url}#t=1"></video>`;
                     card.innerHTML = `
-                        <div class="thumb-box" onclick="play('${v.url}', '${v.title.replace(/'/g, "\\'")}', '${v.playlist}')">
-                            ${thumbHtml}
-                            <div style="position:absolute; inset:0; background: linear-gradient(transparent, rgba(0,0,0,0.4));"></div>
-                        </div>
+                        <div class="thumb-box" onclick="play('${v.url}', '${v.title.replace(/'/g, "\\'")}', '${v.playlist}')">${thumb}</div>
                         <div class="card-label">
-                            <div class="label-top"><span class="video-title">${v.title}</span></div>
-                            <div class="video-tags-display">${v.tags || ''}</div>
+                            <div class="video-title">${v.title}</div>
                             <div class="card-actions">
-                                <span class="icon-btn" onclick="triggerEdit('${v.id}')" title="Edit">✏️</span>
-                                <span class="icon-btn" onclick="triggerUpdateThumb('${v.id}')" title="Change Image">🖼️</span>
+                                <span class="icon-btn" onclick="triggerEdit('${v.id}')">✏️</span>
+                                <span class="icon-btn" onclick="triggerUpdateThumb('${v.id}')">🖼️</span>
                                 <span class="icon-btn" onclick="deleteVideo('${v.id}', '${v.title.replace(/'/g, "\\'")}')" style="color:var(--gothic-red)">🗑</span>
                             </div>
                         </div>`;
@@ -354,16 +337,14 @@
         function play(url, title, list) {
             const p = document.getElementById('master-player');
             const s = document.getElementById('master-source');
-            let cleanUrl = url;
-            if (cleanUrl.startsWith('//')) cleanUrl = 'https:' + cleanUrl;
-            s.src = cleanUrl; p.load(); p.play().catch(()=>{});
+            s.src = url; p.load(); p.play().catch(()=>{});
             document.getElementById('playing-title').innerText = title;
             document.getElementById('playing-list').innerText = "In: " + list;
             window.scrollTo({ top: 0, behavior: 'smooth' });
         }
 
         function deleteVideo(id, title) {
-            if (confirm(`Banish "${title}" permanently?`)) db.ref('vault/' + id).remove();
+            if (confirm(`Banish "${title}"?`)) db.ref('vault/' + id).remove();
         }
     </script>
 </body>
