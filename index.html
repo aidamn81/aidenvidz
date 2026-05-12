@@ -26,80 +26,133 @@
             display: flex;
             flex-direction: column;
             align-items: center;
+            overflow-x: hidden;
         }
 
-        #connection-status { font-size: 0.7rem; padding: 5px; color: #444; letter-spacing: 1px; }
+        #connection-status {
+            font-size: 0.65rem;
+            padding: 8px;
+            color: #444;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+        }
 
         /* --- THEATER PLAYER --- */
         #theater-section {
-            width: 100%; background: #000; padding: 15px;
+            width: 100%;
+            background: #000;
+            padding: 15px;
             border-bottom: 2px solid var(--gothic-red);
-            display: flex; justify-content: center;
+            display: flex;
+            justify-content: center;
         }
 
         .player-wrapper {
-            width: 85%; max-width: 800px;
-            box-shadow: 0 0 30px rgba(74,4,4,0.4);
-            border-radius: 8px; overflow: hidden; background: #000;
+            width: 85%;
+            max-width: 800px;
+            box-shadow: 0 0 40px rgba(74,4,4,0.5);
+            border-radius: 8px;
+            overflow: hidden;
+            background: #000;
         }
 
-        video { width: 100%; aspect-ratio: 16/9; display: block; background: #000; }
+        video {
+            width: 100%;
+            aspect-ratio: 16/9;
+            display: block;
+            background: #000;
+        }
 
         .now-playing {
-            padding: 10px; background: #0a0a0a; border-top: 1px solid #222;
-            font-size: 0.9rem; display: flex; justify-content: space-between;
+            padding: 12px;
+            background: #0a0a0a;
+            border-top: 1px solid #1a1a1a;
+            font-size: 0.9rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
         }
 
         /* --- TOOLBAR --- */
         .toolbar {
-            width: 95%; padding: 20px 0 10px;
+            width: 95%;
+            padding: 20px 0 10px;
             display: flex; gap: 10px; flex-wrap: wrap; justify-content: center;
         }
 
         .search-input {
             background: #111; border: 1px solid #333; color: white;
-            padding: 10px 20px; border-radius: 25px; flex-grow: 1;
-            min-width: 250px; outline: none;
+            padding: 12px 25px; border-radius: 30px; flex-grow: 1;
+            min-width: 250px; outline: none; border: 1px solid var(--gothic-red);
         }
 
         .btn {
             background: var(--gothic-red); color: white; border: none;
-            padding: 10px 20px; cursor: pointer; text-transform: uppercase;
-            font-size: 0.75rem; border-radius: 4px; letter-spacing: 1px; font-weight: bold;
+            padding: 10px 22px; cursor: pointer; text-transform: uppercase;
+            font-size: 0.75rem; border-radius: 4px; letter-spacing: 1.5px; font-weight: bold;
         }
 
-        #playlist-bar { width: 95%; display: flex; overflow-x: auto; padding: 10px 0 20px; gap: 10px; }
-        .playlist-tab {
-            border: 1px solid #333; background: #0d0d0d; color: #777;
-            padding: 6px 15px; border-radius: 20px; font-size: 0.8rem;
-            cursor: pointer; white-space: nowrap;
+        #playlist-bar {
+            width: 95%; display: flex; overflow-x: auto; padding: 10px 0 20px; gap: 12px;
+            scrollbar-width: none;
         }
-        .playlist-tab.active { border-color: var(--gold); color: var(--gold); }
+
+        .playlist-tab {
+            border: 1px solid #222; background: #0d0d0d; color: #666;
+            padding: 8px 18px; border-radius: 20px; font-size: 0.8rem;
+            cursor: pointer; white-space: nowrap; transition: 0.3s;
+        }
+
+        .playlist-tab.active { border-color: var(--gold); color: var(--gold); background: #111; }
 
         /* --- GRID --- */
         #video-grid {
             display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-            gap: 15px; width: 95%; padding-bottom: 60px;
+            gap: 15px; width: 95%; padding-bottom: 80px;
         }
 
-        .video-card { background: #0d0d0d; border: 1px solid #1a1a1a; border-radius: 4px; overflow: hidden; }
-        .thumb-box { width: 100%; height: 110px; background: #000; position: relative; cursor: pointer; }
-        .thumb-box img, .thumb-box video { width: 100%; height: 100%; object-fit: cover; opacity: 0.6; }
+        .video-card {
+            background: #0d0d0d; border: 1px solid #1a1a1a;
+            border-radius: 4px; overflow: hidden; position: relative; transition: 0.2s;
+        }
+        .video-card:hover { border-color: var(--gold); transform: translateY(-3px); }
 
-        .card-label { padding: 8px; font-size: 0.8rem; display: flex; flex-direction: column; gap: 5px; }
-        .video-title { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-weight: bold; }
-        .card-actions { display: flex; gap: 12px; justify-content: flex-end; }
-        .icon-btn { cursor: pointer; font-size: 1rem; opacity: 0.7; }
+        .thumb-box { 
+            width: 100%; height: 115px; background: #000; position: relative; 
+            cursor: pointer; overflow: hidden; display: flex; align-items: center; justify-content: center;
+        }
+        .thumb-box video, .thumb-box img { width: 100%; height: 100%; object-fit: cover; opacity: 0.6; }
+
+        .card-label { padding: 10px; font-size: 0.8rem; display: flex; flex-direction: column; gap: 6px; }
+        .video-title { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-weight: bold; color: var(--soft-white); }
+        .video-tags { font-size: 0.65rem; color: #555; font-style: italic; }
+        
+        .card-actions { display: flex; gap: 14px; justify-content: flex-end; margin-top: 5px; border-top: 1px solid #1a1a1a; padding-top: 8px; }
+        .icon-btn { cursor: pointer; font-size: 1rem; opacity: 0.6; transition: 0.2s; }
+        .icon-btn:hover { opacity: 1; transform: scale(1.15); }
 
         /* --- MODAL --- */
         #summon-modal {
             display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.92); z-index: 1000; justify-content: center; align-items: center;
+            background: rgba(0,0,0,0.95); z-index: 1000; justify-content: center; align-items: center;
         }
-        .modal-box { background: #111; padding: 25px; border: 1px solid var(--gothic-red); width: 90%; max-width: 420px; border-radius: 8px; }
-        input, select { width: 100%; padding: 10px; margin-bottom: 12px; background: #000; border: 1px solid #333; color: white; }
 
-        @media (max-width: 768px) { #video-grid { grid-template-columns: 1fr 1fr; } }
+        .modal-box {
+            background: #0d0d0d; padding: 30px; border: 1px solid var(--gothic-red);
+            width: 90%; max-width: 450px; border-radius: 8px; max-height: 90vh; overflow-y: auto;
+        }
+
+        select, input {
+            width: 100%; padding: 12px; margin-bottom: 15px;
+            background: #000; border: 1px solid #333; color: white; border-radius: 4px; outline: none;
+        }
+
+        label { font-size: 0.7rem; color: var(--gold); display: block; margin-bottom: 5px; text-transform: uppercase; letter-spacing: 1px; }
+
+        @media (max-width: 768px) { 
+            .player-wrapper { width: 95%; }
+            #video-grid { grid-template-columns: 1fr 1fr; } 
+        }
     </style>
 </head>
 <body>
@@ -109,17 +162,17 @@
     <div id="theater-section">
         <div class="player-wrapper">
             <video id="master-player" controls playsinline preload="auto">
-                <source id="master-source" src="" type="video/mp4">
+                <source id="master-source" src="">
             </video>
             <div class="now-playing">
                 <span id="playing-title" style="color:var(--gold)">Awaiting Vision...</span>
-                <span id="playing-list" style="color:#444;"></span>
+                <span id="playing-list" style="color:#555; font-size: 0.7rem;"></span>
             </div>
         </div>
     </div>
 
     <div class="toolbar">
-        <input type="text" id="search-bar" class="search-input" placeholder="Search archive..." oninput="refreshUI()">
+        <input type="text" id="search-bar" class="search-input" placeholder="Search title or tags..." oninput="refreshUI()">
         <button class="btn" onclick="openSummon()">Summon +</button>
     </div>
 
@@ -130,19 +183,30 @@
 
     <div id="summon-modal">
         <div class="modal-box">
-            <h2 style="margin-top:0; color:var(--gothic-red);">NEW VISION</h2>
+            <h2 id="modal-header" style="margin-top:0; color:var(--gothic-red); letter-spacing:3px;">NEW VISION</h2>
             <input type="hidden" id="edit-id">
-            <label style="font-size:0.7rem; color:var(--gold)">Title</label><input type="text" id="in-title">
-            <label style="font-size:0.7rem; color:var(--gold)">Video URL</label><input type="text" id="in-url">
-            <label style="font-size:0.7rem; color:var(--gold)">Tags</label><input type="text" id="in-tags">
-            <label style="font-size:0.7rem; color:var(--gold)">Thumbnail</label><input type="file" id="in-thumb" accept="image/*">
+            
+            <label>Title</label>
+            <input type="text" id="in-title" placeholder="Name the relic...">
+            
+            <label>pCloud Video Link</label>
+            <input type="text" id="in-url" placeholder="https://u.pcloud.link/publink/show?code=...">
+            
+            <label>Tags</label>
+            <input type="text" id="in-tags" placeholder="ritual, performance, dark">
+            
+            <label>Thumbnail (Optional)</label>
+            <input type="file" id="in-thumb" accept="image/*">
+            
+            <label>Playlist</label>
             <select id="playlist-select" onchange="checkNewPlaylist(this.value)">
                 <option value="General">General Archive</option>
-                <option value="NEW_PLAYLIST">+ Create New...</option>
+                <option value="NEW_PLAYLIST" style="color:var(--gold);">+ Create New Playlist</option>
             </select>
-            <input type="text" id="in-new-playlist" placeholder="Playlist Name" style="display:none;">
-            <button class="btn" style="width:100%" onclick="saveVideo()">Commit</button>
-            <button class="btn" style="width:100%; margin-top:10px; background:#222;" onclick="closeSummon()">Cancel</button>
+            <input type="text" id="in-new-playlist" placeholder="New Playlist Name" style="display:none;">
+            
+            <button class="btn" style="width:100%" onclick="saveVideo()">Commit to Vault</button>
+            <button class="btn" style="width:100%; margin-top:12px; background:#1a1a1a; color:#666;" onclick="closeSummon()">Cancel</button>
         </div>
     </div>
 
@@ -163,19 +227,29 @@
         let currentPlaylist = 'All';
         let updatingId = null;
 
+        // Monitor Connection
         db.ref(".info/connected").on("value", (snap) => {
-            const statusEl = document.getElementById('connection-status');
-            statusEl.innerText = snap.val() ? "VAULT STATUS: ONLINE" : "VAULT STATUS: OFFLINE";
-            statusEl.style.color = snap.val() ? "var(--gold)" : "var(--gothic-red)";
+            const s = document.getElementById('connection-status');
+            s.innerText = snap.val() ? "VAULT STATUS: ONLINE" : "VAULT STATUS: OFFLINE";
+            s.style.color = snap.val() ? "var(--gold)" : "var(--gothic-red)";
         });
 
-        function openSummon() { document.getElementById('summon-modal').style.display = 'flex'; }
-        function closeSummon() { 
-            document.getElementById('summon-modal').style.display = 'none'; 
-            document.querySelectorAll('#summon-modal input').forEach(i => i.value = "");
+        function openSummon() {
+            document.getElementById('modal-header').innerText = "NEW VISION";
+            document.getElementById('edit-id').value = "";
+            document.getElementById('summon-modal').style.display = 'flex';
         }
 
-        function checkNewPlaylist(val) { document.getElementById('in-new-playlist').style.display = (val === "NEW_PLAYLIST") ? "block" : "none"; }
+        function closeSummon() {
+            document.getElementById('summon-modal').style.display = 'none';
+            document.querySelectorAll('#summon-modal input').forEach(i => i.value = "");
+            document.getElementById('in-new-playlist').style.display = "none";
+            document.getElementById('playlist-select').value = "General";
+        }
+
+        function checkNewPlaylist(val) {
+            document.getElementById('in-new-playlist').style.display = (val === "NEW_PLAYLIST") ? "block" : "none";
+        }
 
         function saveVideo() {
             const id = document.getElementById('edit-id').value;
@@ -184,29 +258,46 @@
             const tags = document.getElementById('in-tags').value;
             const thumbFile = document.getElementById('in-thumb').files[0];
             let playlist = document.getElementById('playlist-select').value;
-            if (playlist === "NEW_PLAYLIST") playlist = document.getElementById('in-new-playlist').value || "General";
             
-            const push = (img) => {
-                const data = { title, url, tags, playlist, timestamp: Date.now() };
-                if(img) data.customThumb = img;
-                if(id) db.ref('vault/'+id).update(data); else db.ref('vault').push(data);
-                closeSummon();
+            if (playlist === "NEW_PLAYLIST") playlist = document.getElementById('in-new-playlist').value || "General";
+            if (!title || !url) return alert("Required fields missing.");
+
+            const commit = (imgData) => {
+                const payload = { title, url, tags, playlist, timestamp: Date.now() };
+                if(imgData) payload.customThumb = imgData;
+
+                if(id) {
+                    db.ref('vault/' + id).update(payload).then(() => closeSummon());
+                } else {
+                    db.ref('vault').push(payload).then(() => closeSummon());
+                }
             };
-            if(thumbFile) { const r = new FileReader(); r.onload=e=>push(e.target.result); r.readAsDataURL(thumbFile); } else push(null);
+
+            if (thumbFile) {
+                const r = new FileReader(); r.onload = (e) => commit(e.target.result); r.readAsDataURL(thumbFile);
+            } else commit(null);
         }
 
         db.ref('vault').on('value', snap => {
-            const data = snap.val(); archive = [];
+            const data = snap.val();
+            archive = [];
             for(let id in data) archive.push({ id, ...data[id] });
             archive.sort((a,b) => b.timestamp - a.timestamp);
-            renderPlaylists(); refreshUI();
+            renderPlaylists();
+            refreshUI();
         });
 
         function renderPlaylists() {
             const bar = document.getElementById('playlist-bar');
+            const select = document.getElementById('playlist-select');
             const lists = [...new Set(archive.map(v => v.playlist))].filter(l => l && l !== "General");
-            bar.innerHTML = `<div class="playlist-tab ${currentPlaylist === 'All' ? 'active' : ''}" onclick="setPlaylist('All')">All</div>`;
-            lists.forEach(l => bar.innerHTML += `<div class="playlist-tab ${currentPlaylist === l ? 'active' : ''}" onclick="setPlaylist('${l}')">${l}</div>`);
+            bar.innerHTML = `<div class="playlist-tab ${currentPlaylist === 'All' ? 'active' : ''}" onclick="setPlaylist('All')">All Archives</div>`;
+            select.innerHTML = `<option value="General">General Archive</option>`;
+            lists.forEach(l => {
+                bar.innerHTML += `<div class="playlist-tab ${currentPlaylist === l ? 'active' : ''}" onclick="setPlaylist('${l}')">${l}</div>`;
+                select.innerHTML += `<option value="${l}">${l}</option>`;
+            });
+            select.innerHTML += `<option value="NEW_PLAYLIST" style="color:var(--gold);">+ Create New...</option>`;
         }
 
         function setPlaylist(name) { currentPlaylist = name; renderPlaylists(); refreshUI(); }
@@ -216,17 +307,22 @@
             const term = document.getElementById('search-bar').value.toLowerCase();
             grid.innerHTML = "";
             archive.forEach(v => {
-                if ((currentPlaylist === 'All' || v.playlist === currentPlaylist) && v.title.toLowerCase().includes(term)) {
+                const match = v.title.toLowerCase().includes(term) || (v.tags && v.tags.toLowerCase().includes(term));
+                if ((currentPlaylist === 'All' || v.playlist === currentPlaylist) && match) {
                     const card = document.createElement('div');
                     card.className = "video-card";
-                    const thumb = v.customThumb ? `<img src="${v.customThumb}">` : `<video muted playsinline><source src="${v.url}#t=1"></video>`;
+                    const thumb = v.customThumb ? `<img src="${v.customThumb}" loading="lazy">` : `<video muted playsinline><source src="${v.url.replace('show?code=', 'dl?code=')}#t=1"></video>`;
                     card.innerHTML = `
-                        <div class="thumb-box" onclick="play('${v.url}', '${v.title.replace(/'/g, "\\'")}', '${v.playlist}')">${thumb}</div>
+                        <div class="thumb-box" onclick="play('${v.url}', '${v.title.replace(/'/g, "\\'")}', '${v.playlist}')">
+                            ${thumb}
+                        </div>
                         <div class="card-label">
                             <div class="video-title">${v.title}</div>
+                            <div class="video-tags">${v.tags || ''}</div>
                             <div class="card-actions">
                                 <span class="icon-btn" onclick="triggerEdit('${v.id}')">✏️</span>
-                                <span class="icon-btn" onclick="deleteVideo('${v.id}', '${v.title}')">🗑</span>
+                                <span class="icon-btn" onclick="triggerUpdateThumb('${v.id}')">🖼️</span>
+                                <span class="icon-btn" onclick="deleteVideo('${v.id}', '${v.title.replace(/'/g, "\\'")}')" style="color:var(--gothic-red)">🗑</span>
                             </div>
                         </div>`;
                     grid.appendChild(card);
@@ -234,40 +330,61 @@
             });
         }
 
-        // CRITICAL FIX: The Force-Load Player Function
         function play(url, title, list) {
             const player = document.getElementById('master-player');
-            const source = document.getElementById('master-source');
+            const display = document.getElementById('playing-title');
             
-            // 1. Pause and reset
+            // Auto-convert pCloud links to Direct Download links
+            let finalUrl = url;
+            if (finalUrl.includes('pcloud.link/publink/show')) {
+                finalUrl = finalUrl.replace('show?code=', 'dl?code=');
+            }
+
             player.pause();
-            
-            // 2. Clear and set new source
-            source.src = url;
-            
-            // 3. Force re-load of the media element
+            display.innerText = "Summoning Vision...";
+            player.src = finalUrl;
             player.load();
             
-            // 4. Attempt play with a slight delay to allow iPad buffer
-            setTimeout(() => {
-                player.play().catch(e => console.log("Playback blocked:", e));
-            }, 100);
+            player.play().then(() => {
+                display.innerText = title;
+            }).catch(e => {
+                display.innerText = "Tap Video to Play";
+            });
 
-            document.getElementById('playing-title').innerText = title;
-            document.getElementById('playing-list').innerText = "In: " + list;
+            document.getElementById('playing-list').innerText = "ARCHIVE: " + list;
             window.scrollTo({ top: 0, behavior: 'smooth' });
         }
 
         function triggerEdit(id) {
             const v = archive.find(i => i.id === id);
+            document.getElementById('modal-header').innerText = "EDIT VISION";
             document.getElementById('edit-id').value = v.id;
             document.getElementById('in-title').value = v.title;
             document.getElementById('in-url').value = v.url;
             document.getElementById('in-tags').value = v.tags || "";
-            openSummon();
+            document.getElementById('playlist-select').value = v.playlist || "General";
+            document.getElementById('summon-modal').style.display = 'flex';
         }
 
-        function deleteVideo(id, title) { if(confirm(`Banish ${title}?`)) db.ref('vault/'+id).remove(); }
+        function triggerUpdateThumb(id) {
+            updatingId = id;
+            document.getElementById('update-thumb-input').click();
+        }
+
+        function processUpdateThumb(input) {
+            if (input.files && input.files[0] && updatingId) {
+                const r = new FileReader();
+                r.onload = (e) => {
+                    db.ref(`vault/${updatingId}`).update({ customThumb: e.target.result });
+                    updatingId = null;
+                };
+                r.readAsDataURL(input.files[0]);
+            }
+        }
+
+        function deleteVideo(id, title) {
+            if (confirm(`Banish "${title}" from the vault?`)) db.ref('vault/' + id).remove();
+        }
     </script>
 </body>
 </html>
