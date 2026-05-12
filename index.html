@@ -27,7 +27,7 @@
         #auth-overlay {
             position: fixed; top: 0; left: 0;
             width: 100%; height: 100%;
-            background: rgba(0, 0, 0, 0.95);
+            background: rgba(0, 0, 0, 0.98);
             display: flex; flex-direction: column;
             justify-content: center; align-items: center;
             z-index: 9999;
@@ -38,7 +38,7 @@
             padding: 50px;
             text-align: center;
             background: #111;
-            box-shadow: 0 0 30px rgba(197, 160, 89, 0.15);
+            box-shadow: 0 0 40px rgba(197, 160, 89, 0.1);
         }
 
         .btn-google {
@@ -49,8 +49,7 @@
             cursor: pointer;
             text-transform: uppercase;
             letter-spacing: 3px;
-            font-family: inherit;
-            transition: all 0.3s ease;
+            transition: 0.3s;
         }
 
         .btn-google:hover {
@@ -58,17 +57,8 @@
             color: black;
         }
 
-        /* --- Main Archive UI --- */
-        #archive-ui {
-            display: none; width: 100%; height: 100%;
-        }
-
-        #canvas {
-            width: 5000px; height: 5000px;
-            position: absolute;
-            background-image: radial-gradient(circle, #1a1a1a 1px, transparent 1px);
-            background-size: 50px 50px;
-        }
+        /* --- Main UI --- */
+        #archive-ui { display: none; width: 100%; height: 100%; }
 
         .menu-bar {
             position: fixed; bottom: 20px; left: 50%;
@@ -80,22 +70,21 @@
             z-index: 100;
         }
 
-        .btn { color: var(--gothic-gold); cursor: pointer; font-size: 14px; text-transform: uppercase; }
+        .btn { color: var(--gothic-gold); cursor: pointer; text-transform: uppercase; font-size: 12px; }
     </style>
 </head>
 <body>
 
     <div id="auth-overlay">
         <div class="auth-container">
-            <h1 style="margin-bottom: 30px; letter-spacing: 5px;">THE GOTHIC ARCHIVE</h1>
+            <h1 style="letter-spacing: 5px; margin-bottom: 30px;">THE GOTHIC ARCHIVE</h1>
             <button class="btn-google" onclick="loginWithGoogle()">Summon Archive</button>
-            <p id="auth-error" style="color: var(--gothic-red); margin-top: 20px;"></p>
+            <p id="auth-error" style="color: var(--gothic-red); margin-top: 20px; font-size: 14px;"></p>
         </div>
     </div>
 
     <div id="archive-ui">
-        <div id="canvas">
-            </div>
+        <div id="canvas" style="width:5000px; height:5000px; position:absolute;"></div>
 
         <div class="menu-bar">
             <span class="btn" onclick="saveData()">Save</span>
@@ -105,15 +94,14 @@
     </div>
 
     <script>
-        // REPLACE WITH YOUR ACTUAL FIREBASE CONFIG
         const firebaseConfig = {
-            apiKey: "YOUR_API_KEY",
-            authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
-            databaseURL: "https://YOUR_PROJECT_ID-default-rtdb.firebaseio.com",
-            projectId: "YOUR_PROJECT_ID",
-            storageBucket: "YOUR_PROJECT_ID.appspot.com",
-            messagingSenderId: "YOUR_SENDER_ID",
-            appId: "YOUR_APP_ID"
+            apiKey: "AIzaSyB95B-M07ZWK0SW5JFCt3uawB3erjjhMCM",
+            authDomain: "aidenvidz.firebaseapp.com",
+            databaseURL: "https://aidenvidz-default-rtdb.europe-west1.firebasedatabase.app",
+            projectId: "aidenvidz",
+            storageBucket: "aidenvidz.appspot.com",
+            messagingSenderId: "367375628588",
+            appId: "1:367375628588:web:757041a99f116520300650"
         };
 
         firebase.initializeApp(firebaseConfig);
@@ -125,7 +113,7 @@
 
         function loginWithGoogle() {
             auth.signInWithPopup(provider).catch(error => {
-                document.getElementById('auth-error').innerText = error.message;
+                document.getElementById('auth-error').innerText = "Ritual Failed: " + error.message;
             });
         }
 
@@ -133,18 +121,14 @@
             auth.signOut().then(() => location.reload());
         }
 
-        function showArchive() {
-            document.getElementById('auth-overlay').style.display = 'none';
-            document.getElementById('archive-ui').style.display = 'block';
-            // Trigger your specific load logic here
-        }
-
         auth.onAuthStateChanged((user) => {
             if (user && user.uid === MASTER_UID) {
-                showArchive();
+                document.getElementById('auth-overlay').style.display = 'none';
+                document.getElementById('archive-ui').style.display = 'block';
+                console.log("Welcome, Master.");
+                // Insert your loadData() call here
             } else if (user) {
-                // If a user logs in but isn't YOU
-                document.getElementById('auth-error').innerText = "You are not the Master of this Archive.";
+                document.getElementById('auth-error').innerText = "Access Denied: You are not the Master.";
                 auth.signOut();
             } else {
                 document.getElementById('auth-overlay').style.display = 'flex';
@@ -152,26 +136,26 @@
             }
         });
 
-        // --- DATABASE INTERACTION ---
+        // --- Save/Load Stubs (Connect your existing archive logic here) ---
         function saveData() {
-            if (auth.currentUser) {
-                db.ref('archive/' + auth.currentUser.uid).set({
-                    // Place your grid/folder/relic state data here
-                    timestamp: Date.now()
-                }).then(() => alert("Archive progression saved."));
+            const user = auth.currentUser;
+            if (user) {
+                db.ref('users/' + user.uid + '/archive_state').set({
+                    savedAt: Date.now()
+                    // Add your grid objects/folder positions here
+                }).then(() => alert("Archive progression sealed."));
             }
         }
 
         function loadData() {
-            if (auth.currentUser) {
-                db.ref('archive/' + auth.currentUser.uid).once('value').then(snap => {
+            const user = auth.currentUser;
+            if (user) {
+                db.ref('users/' + user.uid + '/archive_state').once('value').then(snap => {
                     const data = snap.val();
-                    if (data) console.log("State Restored", data);
+                    if(data) console.log("State restored:", data);
                 });
             }
         }
-
-        // REMINDER: Paste your existing Archive mechanics (drag, snap-to-grid, etc.) below this line.
     </script>
 </body>
 </html>
