@@ -108,16 +108,19 @@
         }
         .video-card:hover { border-color: var(--gold); transform: translateY(-3px); }
 
-        .thumb-box { width: 100%; height: 110px; background: #000; position: relative; cursor: pointer; overflow: hidden;}
-        .thumb-box video, .thumb-box img { width: 100%; height: 100%; object-fit: cover; opacity: 0.6; pointer-events: none; }
+        .thumb-box { 
+            width: 100%; height: 110px; background: #000; position: relative; 
+            cursor: pointer; overflow: hidden; display: flex; align-items: center; justify-content: center;
+        }
+        .thumb-box video, .thumb-box img { width: 100%; height: 100%; object-fit: cover; opacity: 0.7; pointer-events: none; }
 
         .card-label { padding: 8px; font-size: 0.8rem; display: flex; flex-direction: column; gap: 5px; }
         .label-top { display: flex; justify-content: space-between; align-items: center; }
         .video-title { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 70%; font-weight: bold; }
-        .video-tags-display { font-size: 0.65rem; color: #555; font-style: italic; }
+        .video-tags-display { font-size: 0.65rem; color: #666; font-style: italic; }
         
         .card-actions { display: flex; gap: 12px; justify-content: flex-end; padding-top: 5px; }
-        .icon-btn { cursor: pointer; font-size: 1rem; opacity: 0.7; transition: 0.2s; }
+        .icon-btn { cursor: pointer; font-size: 1rem; opacity: 0.6; transition: 0.2s; }
         .icon-btn:hover { opacity: 1; transform: scale(1.1); }
 
         /* --- MODALS --- */
@@ -157,7 +160,7 @@
     </div>
 
     <div class="toolbar">
-        <input type="text" id="search-bar" class="search-input" placeholder="Search by title or tags..." oninput="refreshUI()">
+        <input type="text" id="search-bar" class="search-input" placeholder="Search title or tags..." oninput="refreshUI()">
         <button class="btn" onclick="openSummon()">Summon +</button>
     </div>
 
@@ -172,13 +175,13 @@
             <input type="hidden" id="edit-id">
             
             <label>Title</label>
-            <input type="text" id="in-title" placeholder="Rename or name vision...">
+            <input type="text" id="in-title">
             
             <label>Video URL</label>
-            <input type="text" id="in-url" placeholder="Direct .mp4 Link">
+            <input type="text" id="in-url">
             
             <label>Tags</label>
-            <input type="text" id="in-tags" placeholder="e.g. ritual, dark, 2026">
+            <input type="text" id="in-tags" placeholder="comma, separated, tags">
             
             <label>Thumbnail (Optional)</label>
             <input type="file" id="in-thumb" accept="image/*">
@@ -186,9 +189,9 @@
             <label>Playlist</label>
             <select id="playlist-select" onchange="checkNewPlaylist(this.value)">
                 <option value="General">General Archive</option>
-                <option value="NEW_PLAYLIST" style="color:var(--gold);">+ Create New Playlist</option>
+                <option value="NEW_PLAYLIST">+ Create New Playlist</option>
             </select>
-            <input type="text" id="in-new-playlist" placeholder="New Playlist Name" style="display:none;">
+            <input type="text" id="in-new-playlist" placeholder="Playlist Name" style="display:none;">
             
             <button class="btn" style="width:100%" onclick="saveVideo()">Commit to Vault</button>
             <button class="btn" style="width:100%; margin-top:10px; background:#222;" onclick="closeSummon()">Cancel</button>
@@ -196,7 +199,6 @@
     </div>
 
     <script>
-        // Firebase Configuration - Connecting to your existing database
         const firebaseConfig = {
             apiKey: "AIzaSyB95B-M07ZWK0SW5JFCt3uawB3erjjhMCM",
             authDomain: "aidenvidz.firebaseapp.com",
@@ -271,7 +273,6 @@
             } else commitData(null);
         }
 
-        // Real-time synchronization with your content
         db.ref('vault').on('value', snap => {
             const data = snap.val();
             archive = [];
@@ -285,13 +286,13 @@
             const bar = document.getElementById('playlist-bar');
             const select = document.getElementById('playlist-select');
             const lists = [...new Set(archive.map(v => v.playlist))].filter(l => l && l !== "General");
-            bar.innerHTML = `<div class="playlist-tab ${currentPlaylist === 'All' ? 'active' : ''}" onclick="setPlaylist('All')">All Archives</div>`;
+            bar.innerHTML = `<div class="playlist-tab ${currentPlaylist === 'All' ? 'active' : ''}" onclick="setPlaylist('All')">All</div>`;
             select.innerHTML = `<option value="General">General Archive</option>`;
             lists.forEach(l => {
                 bar.innerHTML += `<div class="playlist-tab ${currentPlaylist === l ? 'active' : ''}" onclick="setPlaylist('${l}')">${l}</div>`;
                 select.innerHTML += `<option value="${l}">${l}</option>`;
             });
-            select.innerHTML += `<option value="NEW_PLAYLIST" style="color:var(--gold);">+ Create New...</option>`;
+            select.innerHTML += `<option value="NEW_PLAYLIST">+ Create New...</option>`;
         }
 
         function setPlaylist(name) { currentPlaylist = name; renderPlaylists(); refreshUI(); }
@@ -316,19 +317,31 @@
             const grid = document.getElementById('video-grid');
             const term = document.getElementById('search-bar').value.toLowerCase();
             grid.innerHTML = "";
+            
             archive.forEach(v => {
                 const matchesSearch = v.title.toLowerCase().includes(term) || (v.tags && v.tags.toLowerCase().includes(term));
                 if ((currentPlaylist === 'All' || v.playlist === currentPlaylist) && matchesSearch) {
                     const card = document.createElement('div');
                     card.className = "video-card";
-                    const thumb = v.customThumb ? `<img src="${v.customThumb}" alt="relic">` : `<video preload="metadata"><source src="${v.url}#t=1"></video>`;
+                    
+                    let thumbHtml;
+                    if (v.customThumb) {
+                        thumbHtml = `<img src="${v.customThumb}" loading="lazy">`;
+                    } else {
+                        // Added playsinline and muted to help mobile browsers render the preview
+                        thumbHtml = `<video preload="metadata" playsinline muted><source src="${v.url}#t=1" type="video/mp4"></video>`;
+                    }
+
                     card.innerHTML = `
-                        <div class="thumb-box" onclick="play('${v.url}', '${v.title.replace(/'/g, "\\'")}', '${v.playlist}')">${thumb}</div>
+                        <div class="thumb-box" onclick="play('${v.url}', '${v.title.replace(/'/g, "\\'")}', '${v.playlist}')">
+                            ${thumbHtml}
+                            <div style="position:absolute; inset:0; background: linear-gradient(transparent, rgba(0,0,0,0.4));"></div>
+                        </div>
                         <div class="card-label">
                             <div class="label-top"><span class="video-title">${v.title}</span></div>
                             <div class="video-tags-display">${v.tags || ''}</div>
                             <div class="card-actions">
-                                <span class="icon-btn" onclick="triggerEdit('${v.id}')" title="Edit/Rename">✏️</span>
+                                <span class="icon-btn" onclick="triggerEdit('${v.id}')" title="Edit">✏️</span>
                                 <span class="icon-btn" onclick="triggerUpdateThumb('${v.id}')" title="Change Image">🖼️</span>
                                 <span class="icon-btn" onclick="deleteVideo('${v.id}', '${v.title.replace(/'/g, "\\'")}')" style="color:var(--gothic-red)">🗑</span>
                             </div>
@@ -341,15 +354,16 @@
         function play(url, title, list) {
             const p = document.getElementById('master-player');
             const s = document.getElementById('master-source');
-            if (url.startsWith('//')) url = 'https:' + url;
-            s.src = url; p.load(); p.play().catch(()=>{});
+            let cleanUrl = url;
+            if (cleanUrl.startsWith('//')) cleanUrl = 'https:' + cleanUrl;
+            s.src = cleanUrl; p.load(); p.play().catch(()=>{});
             document.getElementById('playing-title').innerText = title;
             document.getElementById('playing-list').innerText = "In: " + list;
             window.scrollTo({ top: 0, behavior: 'smooth' });
         }
 
         function deleteVideo(id, title) {
-            if (confirm(`Are you certain you wish to banish "${title}"?`)) db.ref('vault/' + id).remove();
+            if (confirm(`Banish "${title}" permanently?`)) db.ref('vault/' + id).remove();
         }
     </script>
 </body>
