@@ -26,54 +26,134 @@
             display: flex;
             flex-direction: column;
             align-items: center;
+            overflow-x: hidden;
         }
 
-        #connection-status { font-size: 0.65rem; padding: 8px; color: #444; letter-spacing: 2px; }
+        #connection-status {
+            font-size: 0.65rem;
+            padding: 8px;
+            color: #444;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+        }
 
         /* --- THEATER PLAYER --- */
         #theater-section {
-            width: 100%; background: #000; padding: 15px;
+            width: 100%;
+            background: #000;
+            padding: 15px;
             border-bottom: 2px solid var(--gothic-red);
-            display: flex; justify-content: center;
+            display: flex;
+            justify-content: center;
         }
 
         .player-wrapper {
-            width: 85%; max-width: 800px;
+            width: 90%;
+            max-width: 850px;
             box-shadow: 0 0 40px rgba(74,4,4,0.5);
-            border-radius: 8px; overflow: hidden; background: #000;
+            border-radius: 8px;
+            overflow: hidden;
+            background: #000;
+            aspect-ratio: 16/9;
+            position: relative;
         }
 
-        video {
-            width: 100%; aspect-ratio: 16/9; display: block; background: #000;
+        /* Iframe for pCloud compatibility */
+        #master-frame {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            border: none;
+            background: #000;
         }
 
         .now-playing {
-            padding: 12px; background: #0a0a0a; border-top: 1px solid #1a1a1a;
-            font-size: 0.9rem; display: flex; justify-content: space-between; align-items: center;
+            width: 90%;
+            max-width: 850px;
+            padding: 12px;
+            background: #0a0a0a;
+            border: 1px solid #1a1a1a;
+            border-top: none;
+            font-size: 0.9rem;
+            display: flex;
+            justify-content: space-between;
+            border-radius: 0 0 8px 8px;
         }
 
-        /* --- UI --- */
-        .toolbar { width: 95%; padding: 20px 0 10px; display: flex; gap: 10px; justify-content: center; }
-        .search-input { background: #111; border: 1px solid var(--gothic-red); color: white; padding: 12px 25px; border-radius: 30px; flex-grow: 1; outline: none; }
-        .btn { background: var(--gothic-red); color: white; border: none; padding: 10px 22px; cursor: pointer; text-transform: uppercase; border-radius: 4px; font-weight: bold; }
+        /* --- TOOLBAR --- */
+        .toolbar {
+            width: 95%;
+            padding: 20px 0 10px;
+            display: flex; gap: 10px; flex-wrap: wrap; justify-content: center;
+        }
 
-        #playlist-bar { width: 95%; display: flex; overflow-x: auto; padding: 10px 0 20px; gap: 12px; }
-        .playlist-tab { border: 1px solid #222; background: #0d0d0d; color: #666; padding: 8px 18px; border-radius: 20px; font-size: 0.8rem; cursor: pointer; white-space: nowrap; }
-        .playlist-tab.active { border-color: var(--gold); color: var(--gold); }
+        .search-input {
+            background: #111; border: 1px solid var(--gothic-red); color: white;
+            padding: 12px 25px; border-radius: 30px; flex-grow: 1;
+            min-width: 250px; outline: none;
+        }
 
-        #video-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 15px; width: 95%; padding-bottom: 80px; }
-        .video-card { background: #0d0d0d; border: 1px solid #1a1a1a; border-radius: 4px; overflow: hidden; }
-        .thumb-box { width: 100%; height: 115px; background: #000; cursor: pointer; overflow: hidden; display: flex; align-items: center; justify-content: center; }
+        .btn {
+            background: var(--gothic-red); color: white; border: none;
+            padding: 10px 22px; cursor: pointer; text-transform: uppercase;
+            font-size: 0.75rem; border-radius: 4px; letter-spacing: 1.5px; font-weight: bold;
+        }
+
+        /* --- PLAYLISTS --- */
+        #playlist-bar {
+            width: 95%; display: flex; overflow-x: auto; padding: 10px 0 20px; gap: 12px;
+            scrollbar-width: none;
+        }
+
+        .playlist-tab {
+            border: 1px solid #222; background: #0d0d0d; color: #666;
+            padding: 8px 18px; border-radius: 20px; font-size: 0.8rem;
+            cursor: pointer; white-space: nowrap; transition: 0.3s;
+        }
+
+        .playlist-tab.active { border-color: var(--gold); color: var(--gold); background: #111; }
+
+        /* --- GRID --- */
+        #video-grid {
+            display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+            gap: 15px; width: 95%; padding-bottom: 80px;
+        }
+
+        .video-card {
+            background: #0d0d0d; border: 1px solid #1a1a1a;
+            border-radius: 4px; overflow: hidden; position: relative;
+        }
+
+        .thumb-box { 
+            width: 100%; height: 115px; background: #000; position: relative; 
+            cursor: pointer; overflow: hidden; display: flex; align-items: center; justify-content: center;
+        }
         .thumb-box img { width: 100%; height: 100%; object-fit: cover; opacity: 0.5; }
-        
-        .card-label { padding: 10px; font-size: 0.8rem; }
-        .card-actions { display: flex; gap: 14px; justify-content: flex-end; margin-top: 8px; border-top: 1px solid #1a1a1a; padding-top: 8px; }
-        .icon-btn { cursor: pointer; opacity: 0.6; transition: 0.2s; }
-        .icon-btn:hover { opacity: 1; transform: scale(1.1); }
+        .play-hint { position: absolute; font-size: 1.5rem; opacity: 0.3; color: white; }
 
-        #summon-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 1000; justify-content: center; align-items: center; }
-        .modal-box { background: #0d0d0d; padding: 30px; border: 1px solid var(--gothic-red); width: 90%; max-width: 450px; border-radius: 8px; }
-        input, select { width: 100%; padding: 12px; margin-bottom: 15px; background: #000; border: 1px solid #333; color: white; outline: none; }
+        .card-label { padding: 10px; font-size: 0.8rem; display: flex; flex-direction: column; gap: 6px; }
+        .video-title { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-weight: bold; color: var(--soft-white); }
+        
+        .card-actions { display: flex; gap: 14px; justify-content: flex-end; margin-top: 5px; border-top: 1px solid #1a1a1a; padding-top: 8px; }
+        .icon-btn { cursor: pointer; font-size: 1rem; opacity: 0.6; transition: 0.2s; }
+
+        /* --- MODAL --- */
+        #summon-modal {
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.95); z-index: 1000; justify-content: center; align-items: center;
+        }
+
+        .modal-box {
+            background: #0d0d0d; padding: 30px; border: 1px solid var(--gothic-red);
+            width: 90%; max-width: 450px; border-radius: 8px;
+        }
+
+        select, input {
+            width: 100%; padding: 12px; margin-bottom: 15px;
+            background: #000; border: 1px solid #333; color: white; border-radius: 4px; outline: none;
+        }
 
         @media (max-width: 768px) { #video-grid { grid-template-columns: 1fr 1fr; } }
     </style>
@@ -84,14 +164,12 @@
 
     <div id="theater-section">
         <div class="player-wrapper">
-            <video id="master-player" controls playsinline webkit-playsinline preload="metadata">
-                <source id="master-source" src="" type="video/mp4">
-            </video>
-            <div class="now-playing">
-                <span id="playing-title" style="color:var(--gold)">Awaiting Vision...</span>
-                <span id="playing-list" style="color:#444; font-size: 0.7rem;"></span>
-            </div>
+            <iframe id="master-frame" src="about:blank" allowfullscreen allow="autoplay"></iframe>
         </div>
+    </div>
+    <div class="now-playing">
+        <span id="playing-title" style="color:var(--gold)">Select a Vision Below</span>
+        <span id="playing-list" style="color:#555; font-size: 0.7rem;"></span>
     </div>
 
     <div class="toolbar">
@@ -106,17 +184,17 @@
 
     <div id="summon-modal">
         <div class="modal-box">
-            <h2 id="modal-header" style="color:var(--gothic-red);">NEW VISION</h2>
+            <h2 id="modal-header" style="margin-top:0; color:var(--gothic-red); letter-spacing: 2px;">NEW VISION</h2>
             <input type="hidden" id="edit-id">
-            <input type="text" id="in-title" placeholder="Title">
-            <input type="text" id="in-url" placeholder="Public Folder Direct Link">
+            <input type="text" id="in-title" placeholder="Name the relic...">
+            <input type="text" id="in-url" placeholder="pCloud Link...">
             <select id="playlist-select" onchange="checkNewPlaylist(this.value)">
                 <option value="General">General Archive</option>
-                <option value="NEW_PLAYLIST">+ New Playlist</option>
+                <option value="NEW_PLAYLIST">+ Create New...</option>
             </select>
             <input type="text" id="in-new-playlist" placeholder="New Playlist Name" style="display:none;">
             <button class="btn" style="width:100%" onclick="saveVideo()">Commit</button>
-            <button class="btn" style="width:100%; margin-top:10px; background:#222;" onclick="closeSummon()">Cancel</button>
+            <button class="btn" style="width:100%; margin-top:10px; background:#1a1a1a;" onclick="closeSummon()">Cancel</button>
         </div>
     </div>
 
@@ -144,37 +222,36 @@
         });
 
         function play(url, title, list) {
-            const player = document.getElementById('master-player');
+            const frame = document.getElementById('master-frame');
             const display = document.getElementById('playing-title');
             
-            // For Public Folder links, we use the URL exactly as provided
-            player.pause();
-            display.innerText = "Resurrecting...";
-            player.src = url;
-            player.load();
-
-            player.play().then(() => {
-                display.innerText = title;
-            }).catch(e => {
-                display.innerText = "Tap Video to Start";
-            });
-
+            let embedUrl = url;
+            if (embedUrl.includes('show?code=')) {
+                embedUrl = embedUrl.split('&mode=')[0] + "&mode=video";
+            }
+            
+            frame.src = embedUrl;
+            display.innerText = title;
             document.getElementById('playing-list').innerText = "ARCHIVE: " + list;
             window.scrollTo({ top: 0, behavior: 'smooth' });
         }
 
         db.ref('vault').on('value', snap => {
-            const data = snap.val(); archive = [];
+            const data = snap.val();
+            archive = [];
             for(let id in data) archive.push({ id, ...data[id] });
             archive.sort((a,b) => b.timestamp - a.timestamp);
-            renderPlaylists(); refreshUI();
+            renderPlaylists();
+            refreshUI();
         });
 
         function renderPlaylists() {
             const bar = document.getElementById('playlist-bar');
             const lists = [...new Set(archive.map(v => v.playlist))].filter(l => l && l !== "General");
             bar.innerHTML = `<div class="playlist-tab ${currentPlaylist === 'All' ? 'active' : ''}" onclick="setPlaylist('All')">All</div>`;
-            lists.forEach(l => bar.innerHTML += `<div class="playlist-tab ${currentPlaylist === l ? 'active' : ''}" onclick="setPlaylist('${l}')">${l}</div>`);
+            lists.forEach(l => {
+                bar.innerHTML += `<div class="playlist-tab ${currentPlaylist === l ? 'active' : ''}" onclick="setPlaylist('${l}')">${l}</div>`;
+            });
         }
 
         function setPlaylist(name) { currentPlaylist = name; renderPlaylists(); refreshUI(); }
@@ -189,13 +266,16 @@
                     card.className = "video-card";
                     const thumb = v.customThumb ? `<img src="${v.customThumb}">` : `<div style="font-size:2rem; opacity:0.1;">👁️</div>`;
                     card.innerHTML = `
-                        <div class="thumb-box" onclick="play('${v.url}', '${v.title.replace(/'/g, "\\'")}', '${v.playlist}')">${thumb}</div>
+                        <div class="thumb-box" onclick="play('${v.url}', '${v.title.replace(/'/g, "\\'")}', '${v.playlist}')">
+                            ${thumb}
+                            <div class="play-hint">▶</div>
+                        </div>
                         <div class="card-label">
                             <div class="video-title">${v.title}</div>
                             <div class="card-actions">
                                 <span class="icon-btn" onclick="triggerEdit('${v.id}')">✏️</span>
                                 <span class="icon-btn" onclick="triggerUpdateThumb('${v.id}')">🖼️</span>
-                                <span class="icon-btn" onclick="deleteVideo('${v.id}', '${v.title}')">🗑</span>
+                                <span class="icon-btn" onclick="deleteVideo('${v.id}', '${v.title.replace(/'/g, "\\'")}')" style="color:var(--gothic-red)">🗑</span>
                             </div>
                         </div>`;
                     grid.appendChild(card);
