@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>The Gothic Vault</title>
+    <title>The Gothic Archive: Summoned Edition</title>
     
     <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-database-compat.js"></script>
@@ -14,7 +14,10 @@
             --deep-black: #050505;
             --gold: #c5a059;
             --soft-white: #e0e0e0;
+            --dusty-gray: #2a2a2a;
         }
+
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 
         body {
             background-color: var(--deep-black);
@@ -24,119 +27,238 @@
             display: flex;
             flex-direction: column;
             align-items: center;
-            min-height: 100vh;
+            overflow-x: hidden;
+            background-image: radial-gradient(circle at center, #1a0202 0%, #050505 100%);
         }
 
-        /* --- THEATER SECTION (FIXED VISIBILITY) --- */
+        #connection-status {
+            font-size: 0.65rem;
+            padding: 10px;
+            color: #444;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+        }
+
+        /* --- THE MIRROR (Video Player) --- */
         #theater-section {
             width: 100%;
             background: #000;
-            padding: 20px 0;
-            border-bottom: 3px solid var(--gothic-red);
+            padding: 20px;
+            border-bottom: 1px solid var(--gothic-red);
             display: flex;
-            flex-direction: column;
-            align-items: center;
-            position: sticky; /* Keeps player visible while scrolling */
-            top: 0;
-            z-index: 100;
+            justify-content: center;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.8);
         }
 
-        .player-container {
+        .player-wrapper {
             width: 90%;
-            max-width: 800px;
-            height: 250px; /* HARD-CODED HEIGHT to prevent invisible player */
-            background: #111;
-            border: 1px solid #222;
-            box-shadow: 0 0 30px rgba(74,4,4,0.6);
+            max-width: 900px;
+            aspect-ratio: 16/9;
+            background: #000;
+            border: 1px solid #1a1a1a;
+            box-shadow: 0 0 50px rgba(74,4,4,0.3);
             position: relative;
+            border-radius: 4px;
         }
-
-        @media (min-width: 600px) { .player-container { height: 450px; } }
 
         iframe {
-            width: 100%;
-            height: 100%;
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
             border: none;
         }
 
         .now-playing-bar {
             width: 90%;
-            max-width: 800px;
-            padding: 10px;
-            background: #0a0a0a;
-            border: 1px solid #1a1a1a;
-            border-top: none;
+            max-width: 900px;
+            padding: 15px;
             display: flex;
             justify-content: space-between;
-            font-size: 0.8rem;
+            align-items: center;
+            border: 1px solid #1a1a1a;
+            border-top: none;
+            background: rgba(10,10,10,0.9);
+            border-radius: 0 0 8px 8px;
+            margin-bottom: 20px;
         }
 
-        /* --- GRID & UI --- */
+        /* --- THE GRID --- */
+        .archive-header {
+            width: 95%;
+            padding: 20px 0;
+            text-align: center;
+            border-bottom: 1px double var(--gothic-red);
+            margin-bottom: 20px;
+        }
+
         #video-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-            gap: 15px;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 20px;
             width: 95%;
-            padding: 20px 0 100px;
+            padding-bottom: 100px;
         }
 
-        .video-card {
-            background: #0d0d0d;
+        .relic-card {
+            background: #0a0a0a;
             border: 1px solid #1a1a1a;
-            border-radius: 4px;
-            overflow: hidden;
-            cursor: pointer;
+            border-radius: 2px;
+            transition: all 0.3s ease;
+            position: relative;
         }
 
-        .thumb-box {
+        .relic-card:hover {
+            border-color: var(--gold);
+            transform: scale(1.02);
+            box-shadow: 0 0 15px rgba(197, 160, 89, 0.2);
+        }
+
+        .thumb-container {
             width: 100%;
-            height: 100px;
+            height: 125px;
             background: #000;
+            cursor: pointer;
+            overflow: hidden;
             display: flex;
             align-items: center;
             justify-content: center;
-            border-bottom: 1px solid #1a1a1a;
+            position: relative;
         }
 
-        .thumb-box img { width: 100%; height: 100%; object-fit: cover; opacity: 0.5; }
+        .thumb-container img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            opacity: 0.6;
+            filter: grayscale(40%) sepia(20%);
+        }
 
-        .card-info { padding: 8px; }
-        .v-title { font-size: 0.85rem; font-weight: bold; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .play-icon {
+            position: absolute;
+            font-size: 2rem;
+            color: var(--gold);
+            opacity: 0;
+            transition: 0.3s;
+        }
 
-        /* TOOLBAR */
-        .toolbar { padding: 20px; width: 100%; display: flex; justify-content: center; gap: 10px; }
-        .search { background: #111; border: 1px solid var(--gothic-red); color: white; padding: 10px; border-radius: 20px; width: 60%; }
-        .btn { background: var(--gothic-red); color: white; border: none; padding: 10px 15px; border-radius: 4px; font-weight: bold; cursor: pointer; }
+        .relic-card:hover .play-icon { opacity: 0.8; }
 
-        #status-light { font-size: 0.6rem; color: #444; margin-bottom: 5px; }
+        .relic-info {
+            padding: 12px;
+            border-top: 1px solid #1a1a1a;
+        }
+
+        .relic-title {
+            font-weight: bold;
+            font-size: 0.9rem;
+            color: var(--soft-white);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .relic-meta {
+            font-size: 0.7rem;
+            color: #555;
+            margin-top: 5px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        /* --- CONTROLS --- */
+        .controls {
+            display: flex;
+            gap: 15px;
+            margin-top: 10px;
+            justify-content: flex-end;
+            opacity: 0.4;
+            transition: 0.3s;
+        }
+
+        .relic-card:hover .controls { opacity: 1; }
+
+        .icon-btn { cursor: pointer; transition: 0.2s; }
+        .icon-btn:hover { color: var(--gold); transform: scale(1.2); }
+
+        /* --- MODAL --- */
+        #summon-modal {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.95);
+            z-index: 999;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-content {
+            background: #0d0d0d;
+            border: 1px solid var(--gothic-red);
+            padding: 30px;
+            width: 90%;
+            max-width: 450px;
+            border-radius: 4px;
+        }
+
+        input, select {
+            width: 100%;
+            padding: 12px;
+            margin: 10px 0;
+            background: #000;
+            border: 1px solid #333;
+            color: #fff;
+            font-family: inherit;
+        }
+
+        .summon-btn {
+            background: var(--gothic-red);
+            color: white;
+            border: none;
+            padding: 12px;
+            width: 100%;
+            cursor: pointer;
+            font-weight: bold;
+            letter-spacing: 2px;
+            margin-top: 10px;
+        }
+
+        @media (max-width: 600px) {
+            #video-grid { grid-template-columns: 1fr 1fr; }
+        }
     </style>
 </head>
 <body>
 
+    <div id="connection-status">ARCHIVE OFFLINE</div>
+
     <div id="theater-section">
-        <div id="status-light">VAULT OFFLINE</div>
-        <div class="player-container">
-            <iframe id="main-vault-player" src="about:blank" allowfullscreen allow="autoplay"></iframe>
-        </div>
-        <div class="now-playing-bar">
-            <span id="v-name" style="color:var(--gold)">CHOOSE A VISION</span>
-            <span id="v-list" style="color:#555"></span>
+        <div class="player-wrapper">
+            <iframe id="master-mirror" src="about:blank" allowfullscreen allow="autoplay"></iframe>
         </div>
     </div>
 
-    <div class="toolbar">
-        <input type="text" class="search" placeholder="Search..." oninput="drawUI()">
-        <button class="btn" onclick="document.getElementById('m-add').style.display='flex'">+</button>
+    <div class="now-playing-bar">
+        <div id="active-title" style="color:var(--gold); font-size: 1.1rem;">Waiting for a selection...</div>
+        <button class="btn" style="background:transparent; border: 1px solid #333; color:#555; padding:5px 10px; cursor:pointer;" onclick="openSummon()">Summon +</button>
+    </div>
+
+    <div class="archive-header">
+        <h2 style="letter-spacing: 8px; font-weight: lighter; color: var(--gold);">THE GOTHIC ARCHIVE</h2>
     </div>
 
     <div id="video-grid"></div>
 
-    <div id="m-add" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.9); z-index:200; align-items:center; justify-content:center;">
-        <div style="background:#0d0d0d; padding:20px; border:1px solid var(--gothic-red); width:80%; max-width:400px;">
-            <input type="text" id="add-title" placeholder="Title">
-            <input type="text" id="add-url" placeholder="pCloud Link">
-            <button class="btn" style="width:100%" onclick="saveToVault()">COMMIT</button>
-            <button class="btn" style="width:100%; margin-top:10px; background:#222;" onclick="document.getElementById('m-add').style.display='none'">CANCEL</button>
+    <input type="file" id="thumb-update-input" style="display:none;" accept="image/*" onchange="applyNewThumb(this)">
+
+    <div id="summon-modal">
+        <div class="modal-content">
+            <h2 style="color:var(--gothic-red); margin-top:0;">SUMMON NEW RELIC</h2>
+            <input type="hidden" id="edit-id">
+            <input type="text" id="in-title" placeholder="Title of the vision">
+            <input type="text" id="in-url" placeholder="pCloud Link (show?code=...)">
+            <input type="text" id="in-tags" placeholder="Tags (comma separated)">
+            <button class="summon-btn" onclick="saveRelic()">COMMIT TO ARCHIVE</button>
+            <button onclick="closeSummon()" style="background:none; border:none; color:#444; width:100%; margin-top:10px; cursor:pointer;">Discard</button>
         </div>
     </div>
 
@@ -153,50 +275,111 @@
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
 
-        let vaultData = [];
+        let archiveData = [];
+        let activeEditId = null;
 
-        db.ref(".info/connected").on("value", s => {
-            const el = document.getElementById('status-light');
-            el.innerText = s.val() ? "VAULT ONLINE" : "VAULT OFFLINE";
-            el.style.color = s.val() ? "var(--gold)" : "var(--gothic-red)";
+        // Status Monitor
+        db.ref(".info/connected").on("value", snap => {
+            const el = document.getElementById('connection-status');
+            el.innerText = snap.val() ? "ARCHIVE ONLINE" : "ARCHIVE OFFLINE";
+            el.style.color = snap.val() ? "var(--gold)" : "var(--gothic-red)";
         });
 
+        // Summon Logic
+        function openSummon() { document.getElementById('summon-modal').style.display = 'flex'; }
+        function closeSummon() { 
+            document.getElementById('summon-modal').style.display = 'none';
+            document.querySelectorAll('input').forEach(i => i.value = "");
+        }
+
+        function saveRelic() {
+            const id = document.getElementById('edit-id').value;
+            const title = document.getElementById('in-title').value;
+            const url = document.getElementById('in-url').value;
+            const tags = document.getElementById('in-tags').value;
+
+            if(!title || !url) return;
+
+            const payload = { title, url, tags, timestamp: Date.now() };
+            if(id) db.ref('vault/'+id).update(payload); else db.ref('vault').push(payload);
+            closeSummon();
+        }
+
+        // Live Grid Loading
         db.ref('vault').on('value', snap => {
-            const raw = snap.val();
-            vaultData = [];
-            for(let id in raw) vaultData.push({id, ...raw[id]});
-            drawUI();
-        });
-
-        function drawUI() {
+            const data = snap.val();
+            archiveData = [];
             const grid = document.getElementById('video-grid');
             grid.innerHTML = "";
-            vaultData.forEach(item => {
-                const card = document.createElement('div');
-                card.className = "video-card";
-                card.onclick = () => launch(item.url, item.title);
-                const thumb = item.customThumb ? `<img src="${item.customThumb}">` : `<div style="color:#222">👁️</div>`;
-                card.innerHTML = `<div class="thumb-box">${thumb}</div><div class="card-info"><div class="v-title">${item.title}</div></div>`;
-                grid.appendChild(card);
-            });
-        }
 
-        function launch(url, title) {
+            for(let id in data) {
+                const item = { id, ...data[id] };
+                archiveData.push(item);
+
+                const card = document.createElement('div');
+                card.className = "relic-card";
+                
+                // Using your uploaded image context or a placeholder eye if no thumb
+                const thumbImg = item.customThumb ? `<img src="${item.customThumb}">` : `<div style="font-size:3rem; opacity:0.05;">👁️</div>`;
+                
+                card.innerHTML = `
+                    <div class="thumb-container" onclick="summonVideo('${item.url}', '${item.title.replace(/'/g, "\\'")}')">
+                        ${thumbImg}
+                        <div class="play-icon">▶</div>
+                    </div>
+                    <div class="relic-info">
+                        <div class="relic-title">${item.title}</div>
+                        <div class="relic-meta">${item.tags || 'Archive Item'}</div>
+                        <div class="controls">
+                            <span class="icon-btn" onclick="editRelic('${item.id}')">✏️</span>
+                            <span class="icon-btn" onclick="triggerThumb('${item.id}')">🖼️</span>
+                            <span class="icon-btn" onclick="deleteRelic('${item.id}', '${item.title}')">🗑</span>
+                        </div>
+                    </div>
+                `;
+                grid.appendChild(card);
+            }
+        });
+
+        function summonVideo(url, title) {
+            const mirror = document.getElementById('master-mirror');
+            const label = document.getElementById('active-title');
+            
+            // iPad Direct-to-Embed Conversion
             let cleanUrl = url;
-            if(cleanUrl.includes('show?code=')) {
+            if(cleanUrl.includes('pcloud.link/publink/show')) {
                 cleanUrl = cleanUrl.split('&mode=')[0] + "&mode=video";
             }
-            document.getElementById('main-vault-player').src = cleanUrl;
-            document.getElementById('v-name').innerText = title;
-            window.scrollTo({top: 0, behavior: 'smooth'});
+
+            mirror.src = cleanUrl;
+            label.innerText = title;
+            window.scrollTo({ top: 0, behavior: 'smooth' });
         }
 
-        function saveToVault() {
-            const title = document.getElementById('add-title').value;
-            const url = document.getElementById('add-url').value;
-            if(title && url) {
-                db.ref('vault').push({title, url, timestamp: Date.now()});
-                document.getElementById('m-add').style.display = 'none';
+        function deleteRelic(id, title) { if(confirm(`Banish ${title}?`)) db.ref('vault/'+id).remove(); }
+
+        function editRelic(id) {
+            const item = archiveData.find(i => i.id === id);
+            document.getElementById('edit-id').value = item.id;
+            document.getElementById('in-title').value = item.title;
+            document.getElementById('in-url').value = item.url;
+            document.getElementById('in-tags').value = item.tags || "";
+            openSummon();
+        }
+
+        function triggerThumb(id) {
+            activeEditId = id;
+            document.getElementById('thumb-update-input').click();
+        }
+
+        function applyNewThumb(input) {
+            if (input.files && input.files[0]) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    db.ref(`vault/${activeEditId}`).update({ customThumb: e.target.result });
+                    activeEditId = null;
+                };
+                reader.readAsDataURL(input.files[0]);
             }
         }
     </script>
