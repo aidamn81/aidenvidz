@@ -26,134 +26,57 @@
             display: flex;
             flex-direction: column;
             align-items: center;
-            overflow-x: hidden;
         }
 
-        #connection-status {
-            font-size: 0.65rem;
-            padding: 8px;
-            color: #444;
-            letter-spacing: 2px;
-            text-transform: uppercase;
-        }
+        #connection-status { font-size: 0.65rem; padding: 8px; color: #444; letter-spacing: 2px; }
 
         /* --- THEATER PLAYER --- */
         #theater-section {
-            width: 100%;
-            background: #000;
-            padding: 15px;
+            width: 100%; background: #000; padding: 15px;
             border-bottom: 2px solid var(--gothic-red);
-            display: flex;
-            justify-content: center;
+            display: flex; flex-direction: column; align-items: center;
         }
 
         .player-wrapper {
-            width: 90%;
-            max-width: 850px;
+            width: 90%; max-width: 850px;
             box-shadow: 0 0 40px rgba(74,4,4,0.5);
-            border-radius: 8px;
-            overflow: hidden;
-            background: #000;
-            aspect-ratio: 16/9;
-            position: relative;
+            border-radius: 8px; overflow: hidden; background: #000;
+            aspect-ratio: 16/9; position: relative;
         }
 
-        /* Iframe for pCloud compatibility */
-        #master-frame {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            border: none;
-            background: #000;
+        iframe {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            border: none; background: #000;
         }
 
         .now-playing {
-            width: 90%;
-            max-width: 850px;
-            padding: 12px;
-            background: #0a0a0a;
-            border: 1px solid #1a1a1a;
-            border-top: none;
-            font-size: 0.9rem;
-            display: flex;
-            justify-content: space-between;
+            width: 90%; max-width: 850px; padding: 12px; 
+            background: #0a0a0a; border: 1px solid #1a1a1a; border-top: none;
+            display: flex; justify-content: space-between; align-items: center;
             border-radius: 0 0 8px 8px;
         }
 
-        /* --- TOOLBAR --- */
-        .toolbar {
-            width: 95%;
-            padding: 20px 0 10px;
-            display: flex; gap: 10px; flex-wrap: wrap; justify-content: center;
-        }
+        /* --- UI --- */
+        .toolbar { width: 95%; padding: 20px 0 10px; display: flex; gap: 10px; justify-content: center; }
+        .search-input { background: #111; border: 1px solid var(--gothic-red); color: white; padding: 12px 25px; border-radius: 30px; flex-grow: 1; outline: none; }
+        .btn { background: var(--gothic-red); color: white; border: none; padding: 10px 22px; cursor: pointer; text-transform: uppercase; border-radius: 4px; font-weight: bold; font-size: 0.7rem; }
 
-        .search-input {
-            background: #111; border: 1px solid var(--gothic-red); color: white;
-            padding: 12px 25px; border-radius: 30px; flex-grow: 1;
-            min-width: 250px; outline: none;
-        }
+        #playlist-bar { width: 95%; display: flex; overflow-x: auto; padding: 10px 0 20px; gap: 12px; }
+        .playlist-tab { border: 1px solid #222; background: #0d0d0d; color: #666; padding: 8px 18px; border-radius: 20px; font-size: 0.8rem; cursor: pointer; white-space: nowrap; }
+        .playlist-tab.active { border-color: var(--gold); color: var(--gold); }
 
-        .btn {
-            background: var(--gothic-red); color: white; border: none;
-            padding: 10px 22px; cursor: pointer; text-transform: uppercase;
-            font-size: 0.75rem; border-radius: 4px; letter-spacing: 1.5px; font-weight: bold;
-        }
-
-        /* --- PLAYLISTS --- */
-        #playlist-bar {
-            width: 95%; display: flex; overflow-x: auto; padding: 10px 0 20px; gap: 12px;
-            scrollbar-width: none;
-        }
-
-        .playlist-tab {
-            border: 1px solid #222; background: #0d0d0d; color: #666;
-            padding: 8px 18px; border-radius: 20px; font-size: 0.8rem;
-            cursor: pointer; white-space: nowrap; transition: 0.3s;
-        }
-
-        .playlist-tab.active { border-color: var(--gold); color: var(--gold); background: #111; }
-
-        /* --- GRID --- */
-        #video-grid {
-            display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-            gap: 15px; width: 95%; padding-bottom: 80px;
-        }
-
-        .video-card {
-            background: #0d0d0d; border: 1px solid #1a1a1a;
-            border-radius: 4px; overflow: hidden; position: relative;
-        }
-
-        .thumb-box { 
-            width: 100%; height: 115px; background: #000; position: relative; 
-            cursor: pointer; overflow: hidden; display: flex; align-items: center; justify-content: center;
-        }
+        #video-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 15px; width: 95%; padding-bottom: 80px; }
+        .video-card { background: #0d0d0d; border: 1px solid #1a1a1a; border-radius: 4px; overflow: hidden; }
+        .thumb-box { width: 100%; height: 115px; background: #000; cursor: pointer; position: relative; display: flex; align-items: center; justify-content: center; }
         .thumb-box img { width: 100%; height: 100%; object-fit: cover; opacity: 0.5; }
-        .play-hint { position: absolute; font-size: 1.5rem; opacity: 0.3; color: white; }
-
-        .card-label { padding: 10px; font-size: 0.8rem; display: flex; flex-direction: column; gap: 6px; }
-        .video-title { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-weight: bold; color: var(--soft-white); }
         
-        .card-actions { display: flex; gap: 14px; justify-content: flex-end; margin-top: 5px; border-top: 1px solid #1a1a1a; padding-top: 8px; }
-        .icon-btn { cursor: pointer; font-size: 1rem; opacity: 0.6; transition: 0.2s; }
+        .card-label { padding: 10px; font-size: 0.8rem; }
+        .card-actions { display: flex; gap: 14px; justify-content: flex-end; margin-top: 8px; border-top: 1px solid #1a1a1a; padding-top: 8px; }
+        .icon-btn { cursor: pointer; opacity: 0.6; }
 
-        /* --- MODAL --- */
-        #summon-modal {
-            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.95); z-index: 1000; justify-content: center; align-items: center;
-        }
-
-        .modal-box {
-            background: #0d0d0d; padding: 30px; border: 1px solid var(--gothic-red);
-            width: 90%; max-width: 450px; border-radius: 8px;
-        }
-
-        select, input {
-            width: 100%; padding: 12px; margin-bottom: 15px;
-            background: #000; border: 1px solid #333; color: white; border-radius: 4px; outline: none;
-        }
+        #summon-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 1000; justify-content: center; align-items: center; }
+        .modal-box { background: #0d0d0d; padding: 30px; border: 1px solid var(--gothic-red); width: 90%; max-width: 450px; border-radius: 8px; }
+        input, select { width: 100%; padding: 12px; margin-bottom: 15px; background: #000; border: 1px solid #333; color: white; }
 
         @media (max-width: 768px) { #video-grid { grid-template-columns: 1fr 1fr; } }
     </style>
@@ -163,13 +86,13 @@
     <div id="connection-status">VAULT STATUS: DISCONNECTED</div>
 
     <div id="theater-section">
-        <div class="player-wrapper">
+        <div class="player-wrapper" id="player-container">
             <iframe id="master-frame" src="about:blank" allowfullscreen allow="autoplay"></iframe>
         </div>
     </div>
     <div class="now-playing">
-        <span id="playing-title" style="color:var(--gold)">Select a Vision Below</span>
-        <span id="playing-list" style="color:#555; font-size: 0.7rem;"></span>
+        <span id="playing-title" style="color:var(--gold)">Select a Vision</span>
+        <button id="external-link" class="btn" style="background:#222; display:none;" onclick="openExternal()">Open Original ↗</button>
     </div>
 
     <div class="toolbar">
@@ -180,21 +103,17 @@
     <div id="playlist-bar"></div>
     <div id="video-grid"></div>
 
-    <input type="file" id="update-thumb-input" style="display:none;" accept="image/*" onchange="processUpdateThumb(this)">
-
     <div id="summon-modal">
         <div class="modal-box">
-            <h2 id="modal-header" style="margin-top:0; color:var(--gothic-red); letter-spacing: 2px;">NEW VISION</h2>
+            <h2 style="color:var(--gothic-red); margin-top:0;">NEW VISION</h2>
             <input type="hidden" id="edit-id">
-            <input type="text" id="in-title" placeholder="Name the relic...">
-            <input type="text" id="in-url" placeholder="pCloud Link...">
-            <select id="playlist-select" onchange="checkNewPlaylist(this.value)">
+            <input type="text" id="in-title" placeholder="Title">
+            <input type="text" id="in-url" placeholder="pCloud Link">
+            <select id="playlist-select">
                 <option value="General">General Archive</option>
-                <option value="NEW_PLAYLIST">+ Create New...</option>
             </select>
-            <input type="text" id="in-new-playlist" placeholder="New Playlist Name" style="display:none;">
             <button class="btn" style="width:100%" onclick="saveVideo()">Commit</button>
-            <button class="btn" style="width:100%; margin-top:10px; background:#1a1a1a;" onclick="closeSummon()">Cancel</button>
+            <button class="btn" style="width:100%; margin-top:10px; background:#111;" onclick="closeSummon()">Cancel</button>
         </div>
     </div>
 
@@ -212,107 +131,74 @@
         const db = firebase.database();
 
         let archive = [];
-        let currentPlaylist = 'All';
-        let updatingId = null;
+        let currentUrl = "";
 
-        db.ref(".info/connected").on("value", (snap) => {
+        db.ref(".info/connected").on("value", snap => {
             const s = document.getElementById('connection-status');
             s.innerText = snap.val() ? "VAULT STATUS: ONLINE" : "VAULT STATUS: OFFLINE";
             s.style.color = snap.val() ? "var(--gold)" : "var(--gothic-red)";
         });
 
-        function play(url, title, list) {
-            const frame = document.getElementById('master-frame');
+        function play(url, title) {
+            currentUrl = url;
+            const container = document.getElementById('player-container');
             const display = document.getElementById('playing-title');
+            const extBtn = document.getElementById('external-link');
+
+            // 1. Force a "Hard Reset" of the iframe container to kill Safari's error state
+            container.innerHTML = `<iframe id="master-frame" src="about:blank" allowfullscreen allow="autoplay"></iframe>`;
             
-            let embedUrl = url;
-            if (embedUrl.includes('show?code=')) {
-                embedUrl = embedUrl.split('&mode=')[0] + "&mode=video";
-            }
-            
-            frame.src = embedUrl;
-            display.innerText = title;
-            document.getElementById('playing-list').innerText = "ARCHIVE: " + list;
+            // 2. Prepare the Link (Ensure it uses the Embed Mode)
+            let embedUrl = url.includes('show?code=') ? url.split('&mode=')[0] + "&mode=video" : url;
+
+            // 3. Re-inject the source
+            setTimeout(() => {
+                document.getElementById('master-frame').src = embedUrl;
+                display.innerText = title;
+                extBtn.style.display = "block";
+            }, 50);
+
             window.scrollTo({ top: 0, behavior: 'smooth' });
         }
 
+        function openExternal() { if(currentUrl) window.open(currentUrl, '_blank'); }
+
         db.ref('vault').on('value', snap => {
-            const data = snap.val();
-            archive = [];
+            const data = snap.val(); archive = [];
             for(let id in data) archive.push({ id, ...data[id] });
             archive.sort((a,b) => b.timestamp - a.timestamp);
-            renderPlaylists();
             refreshUI();
         });
 
-        function renderPlaylists() {
-            const bar = document.getElementById('playlist-bar');
-            const lists = [...new Set(archive.map(v => v.playlist))].filter(l => l && l !== "General");
-            bar.innerHTML = `<div class="playlist-tab ${currentPlaylist === 'All' ? 'active' : ''}" onclick="setPlaylist('All')">All</div>`;
-            lists.forEach(l => {
-                bar.innerHTML += `<div class="playlist-tab ${currentPlaylist === l ? 'active' : ''}" onclick="setPlaylist('${l}')">${l}</div>`;
-            });
-        }
-
-        function setPlaylist(name) { currentPlaylist = name; renderPlaylists(); refreshUI(); }
-
         function refreshUI() {
             const grid = document.getElementById('video-grid');
-            const term = document.getElementById('search-bar').value.toLowerCase();
             grid.innerHTML = "";
             archive.forEach(v => {
-                if ((currentPlaylist === 'All' || v.playlist === currentPlaylist) && v.title.toLowerCase().includes(term)) {
-                    const card = document.createElement('div');
-                    card.className = "video-card";
-                    const thumb = v.customThumb ? `<img src="${v.customThumb}">` : `<div style="font-size:2rem; opacity:0.1;">👁️</div>`;
-                    card.innerHTML = `
-                        <div class="thumb-box" onclick="play('${v.url}', '${v.title.replace(/'/g, "\\'")}', '${v.playlist}')">
-                            ${thumb}
-                            <div class="play-hint">▶</div>
+                const card = document.createElement('div');
+                card.className = "video-card";
+                card.innerHTML = `
+                    <div class="thumb-box" onclick="play('${v.url}', '${v.title.replace(/'/g, "\\'")}')">
+                        ${v.customThumb ? `<img src="${v.customThumb}">` : `👁️`}
+                    </div>
+                    <div class="card-label">
+                        <div class="video-title">${v.title}</div>
+                        <div class="card-actions">
+                            <span class="icon-btn" onclick="deleteVideo('${v.id}')">🗑</span>
                         </div>
-                        <div class="card-label">
-                            <div class="video-title">${v.title}</div>
-                            <div class="card-actions">
-                                <span class="icon-btn" onclick="triggerEdit('${v.id}')">✏️</span>
-                                <span class="icon-btn" onclick="triggerUpdateThumb('${v.id}')">🖼️</span>
-                                <span class="icon-btn" onclick="deleteVideo('${v.id}', '${v.title.replace(/'/g, "\\'")}')" style="color:var(--gothic-red)">🗑</span>
-                            </div>
-                        </div>`;
-                    grid.appendChild(card);
-                }
+                    </div>`;
+                grid.appendChild(card);
             });
-        }
-
-        function saveVideo() {
-            const id = document.getElementById('edit-id').value;
-            const title = document.getElementById('in-title').value;
-            const url = document.getElementById('in-url').value;
-            let playlist = document.getElementById('playlist-select').value;
-            if (playlist === "NEW_PLAYLIST") playlist = document.getElementById('in-new-playlist').value || "General";
-            const data = { title, url, playlist, timestamp: Date.now() };
-            if(id) db.ref('vault/'+id).update(data); else db.ref('vault').push(data);
-            closeSummon();
         }
 
         function openSummon() { document.getElementById('summon-modal').style.display = 'flex'; }
         function closeSummon() { document.getElementById('summon-modal').style.display = 'none'; }
-        function checkNewPlaylist(v) { document.getElementById('in-new-playlist').style.display = v === 'NEW_PLAYLIST' ? 'block' : 'none'; }
-        function triggerUpdateThumb(id) { updatingId = id; document.getElementById('update-thumb-input').click(); }
-        function processUpdateThumb(input) {
-            if (input.files && input.files[0] && updatingId) {
-                const r = new FileReader();
-                r.onload = (e) => { db.ref(`vault/${updatingId}`).update({ customThumb: e.target.result }); updatingId = null; };
-                r.readAsDataURL(input.files[0]);
-            }
+        function saveVideo() {
+            const title = document.getElementById('in-title').value;
+            const url = document.getElementById('in-url').value;
+            db.ref('vault').push({ title, url, timestamp: Date.now() });
+            closeSummon();
         }
-        function triggerEdit(id) {
-            const v = archive.find(i => i.id === id);
-            document.getElementById('edit-id').value = v.id;
-            document.getElementById('in-title').value = v.title;
-            document.getElementById('in-url').value = v.url;
-            openSummon();
-        }
-        function deleteVideo(id, title) { if(confirm(`Delete ${title}?`)) db.ref('vault/'+id).remove(); }
+        function deleteVideo(id) { if(confirm("Delete?")) db.ref('vault/'+id).remove(); }
     </script>
 </body>
 </html>
