@@ -2,385 +2,77 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>The Gothic Archive: Summoned Edition</title>
-    
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>Gothic Video Vault</title>
     <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-database-compat.js"></script>
-
     <style>
-        :root {
-            --gothic-red: #4a0404;
-            --deep-black: #050505;
-            --gold: #c5a059;
-            --soft-white: #e0e0e0;
-            --dusty-gray: #2a2a2a;
-        }
-
-        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-
-        body {
-            background-color: var(--deep-black);
-            color: var(--soft-white);
-            font-family: 'Garamond', serif;
-            margin: 0;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            overflow-x: hidden;
-            background-image: radial-gradient(circle at center, #1a0202 0%, #050505 100%);
-        }
-
-        #connection-status {
-            font-size: 0.65rem;
-            padding: 10px;
-            color: #444;
-            letter-spacing: 2px;
-            text-transform: uppercase;
-        }
-
-        /* --- THE MIRROR (Video Player) --- */
-        #theater-section {
-            width: 100%;
-            background: #000;
-            padding: 20px;
-            border-bottom: 1px solid var(--gothic-red);
-            display: flex;
-            justify-content: center;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.8);
-        }
-
-        .player-wrapper {
-            width: 90%;
-            max-width: 900px;
-            aspect-ratio: 16/9;
-            background: #000;
-            border: 1px solid #1a1a1a;
-            box-shadow: 0 0 50px rgba(74,4,4,0.3);
-            position: relative;
-            border-radius: 4px;
-        }
-
-        iframe {
-            position: absolute;
-            top: 0; left: 0;
-            width: 100%; height: 100%;
-            border: none;
-        }
-
-        .now-playing-bar {
-            width: 90%;
-            max-width: 900px;
-            padding: 15px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            border: 1px solid #1a1a1a;
-            border-top: none;
-            background: rgba(10,10,10,0.9);
-            border-radius: 0 0 8px 8px;
-            margin-bottom: 20px;
-        }
-
-        /* --- THE GRID --- */
-        .archive-header {
-            width: 95%;
-            padding: 20px 0;
-            text-align: center;
-            border-bottom: 1px double var(--gothic-red);
-            margin-bottom: 20px;
-        }
-
-        #video-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-            gap: 20px;
-            width: 95%;
-            padding-bottom: 100px;
-        }
-
-        .relic-card {
-            background: #0a0a0a;
-            border: 1px solid #1a1a1a;
-            border-radius: 2px;
-            transition: all 0.3s ease;
-            position: relative;
-        }
-
-        .relic-card:hover {
-            border-color: var(--gold);
-            transform: scale(1.02);
-            box-shadow: 0 0 15px rgba(197, 160, 89, 0.2);
-        }
-
-        .thumb-container {
-            width: 100%;
-            height: 125px;
-            background: #000;
-            cursor: pointer;
-            overflow: hidden;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            position: relative;
-        }
-
-        .thumb-container img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            opacity: 0.6;
-            filter: grayscale(40%) sepia(20%);
-        }
-
-        .play-icon {
-            position: absolute;
-            font-size: 2rem;
-            color: var(--gold);
-            opacity: 0;
-            transition: 0.3s;
-        }
-
-        .relic-card:hover .play-icon { opacity: 0.8; }
-
-        .relic-info {
-            padding: 12px;
-            border-top: 1px solid #1a1a1a;
-        }
-
-        .relic-title {
-            font-weight: bold;
-            font-size: 0.9rem;
-            color: var(--soft-white);
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-
-        .relic-meta {
-            font-size: 0.7rem;
-            color: #555;
-            margin-top: 5px;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-        }
-
-        /* --- CONTROLS --- */
-        .controls {
-            display: flex;
-            gap: 15px;
-            margin-top: 10px;
-            justify-content: flex-end;
-            opacity: 0.4;
-            transition: 0.3s;
-        }
-
-        .relic-card:hover .controls { opacity: 1; }
-
-        .icon-btn { cursor: pointer; transition: 0.2s; }
-        .icon-btn:hover { color: var(--gold); transform: scale(1.2); }
-
-        /* --- MODAL --- */
-        #summon-modal {
-            display: none;
-            position: fixed;
-            inset: 0;
-            background: rgba(0,0,0,0.95);
-            z-index: 999;
-            justify-content: center;
-            align-items: center;
-        }
-
-        .modal-content {
-            background: #0d0d0d;
-            border: 1px solid var(--gothic-red);
-            padding: 30px;
-            width: 90%;
-            max-width: 450px;
-            border-radius: 4px;
-        }
-
-        input, select {
-            width: 100%;
-            padding: 12px;
-            margin: 10px 0;
-            background: #000;
-            border: 1px solid #333;
-            color: #fff;
-            font-family: inherit;
-        }
-
-        .summon-btn {
-            background: var(--gothic-red);
-            color: white;
-            border: none;
-            padding: 12px;
-            width: 100%;
-            cursor: pointer;
-            font-weight: bold;
-            letter-spacing: 2px;
-            margin-top: 10px;
-        }
-
-        @media (max-width: 600px) {
-            #video-grid { grid-template-columns: 1fr 1fr; }
-        }
+        :root { --gothic-red: #4a0404; --deep-black: #050505; --gold: #c5a059; --soft-white: #e0e0e0; }
+        body { background-color: var(--deep-black); color: var(--soft-white); font-family: 'Garamond', serif; margin: 0; display: flex; flex-direction: column; align-items: center; }
+        #theater-section { width: 100%; background: #000; padding: 20px; border-bottom: 2px solid var(--gothic-red); display: flex; justify-content: center; }
+        .player-wrapper { width: 90%; max-width: 800px; box-shadow: 0 0 40px rgba(74,4,4,0.6); border-radius: 8px; overflow: hidden; aspect-ratio: 16/9; position: relative; }
+        iframe { position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: none; }
+        #video-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 20px; width: 95%; padding: 40px 0; }
+        .video-card { background: #0d0d0d; border: 1px solid #1a1a1a; border-radius: 4px; overflow: hidden; transition: 0.3s; cursor: pointer; }
+        .video-card:hover { border-color: var(--gold); transform: translateY(-5px); }
+        .thumb-box { width: 100%; height: 120px; background: #000; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+        .thumb-box img { width: 100%; height: 100%; object-fit: cover; opacity: 0.7; }
+        .card-label { padding: 12px; font-size: 0.9rem; text-align: center; border-top: 1px solid #1a1a1a; }
     </style>
 </head>
 <body>
 
-    <div id="connection-status">ARCHIVE OFFLINE</div>
-
     <div id="theater-section">
         <div class="player-wrapper">
-            <iframe id="master-mirror" src="about:blank" allowfullscreen allow="autoplay"></iframe>
+            <iframe id="master-frame" src="about:blank" allowfullscreen allow="autoplay"></iframe>
         </div>
     </div>
 
-    <div class="now-playing-bar">
-        <div id="active-title" style="color:var(--gold); font-size: 1.1rem;">Waiting for a selection...</div>
-        <button class="btn" style="background:transparent; border: 1px solid #333; color:#555; padding:5px 10px; cursor:pointer;" onclick="openSummon()">Summon +</button>
-    </div>
-
-    <div class="archive-header">
-        <h2 style="letter-spacing: 8px; font-weight: lighter; color: var(--gold);">THE GOTHIC ARCHIVE</h2>
-    </div>
-
-    <div id="video-grid"></div>
-
-    <input type="file" id="thumb-update-input" style="display:none;" accept="image/*" onchange="applyNewThumb(this)">
-
-    <div id="summon-modal">
-        <div class="modal-content">
-            <h2 style="color:var(--gothic-red); margin-top:0;">SUMMON NEW RELIC</h2>
-            <input type="hidden" id="edit-id">
-            <input type="text" id="in-title" placeholder="Title of the vision">
-            <input type="text" id="in-url" placeholder="pCloud Link (show?code=...)">
-            <input type="text" id="in-tags" placeholder="Tags (comma separated)">
-            <button class="summon-btn" onclick="saveRelic()">COMMIT TO ARCHIVE</button>
-            <button onclick="closeSummon()" style="background:none; border:none; color:#444; width:100%; margin-top:10px; cursor:pointer;">Discard</button>
+    <div id="video-grid">
         </div>
-    </div>
 
     <script>
         const firebaseConfig = {
             apiKey: "AIzaSyB95B-M07ZWK0SW5JFCt3uawB3erjjhMCM",
             authDomain: "aidenvidz.firebaseapp.com",
             databaseURL: "https://aidenvidz-default-rtdb.europe-west1.firebasedatabase.app",
-            projectId: "aidenvidz",
-            storageBucket: "aidenvidz.firebasestorage.app",
-            messagingSenderId: "881025264027",
-            appId: "1:881025264027:web:2497c49a00fcf29153593e"
+            projectId: "aidenvidz"
         };
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
+        const userPath = 'archive/ca58db7b-32a7-4ebe-b918-754161bd1fe0';
 
-        let archiveData = [];
-        let activeEditId = null;
-
-        // Status Monitor
-        db.ref(".info/connected").on("value", snap => {
-            const el = document.getElementById('connection-status');
-            el.innerText = snap.val() ? "ARCHIVE ONLINE" : "ARCHIVE OFFLINE";
-            el.style.color = snap.val() ? "var(--gold)" : "var(--gothic-red)";
-        });
-
-        // Summon Logic
-        function openSummon() { document.getElementById('summon-modal').style.display = 'flex'; }
-        function closeSummon() { 
-            document.getElementById('summon-modal').style.display = 'none';
-            document.querySelectorAll('input').forEach(i => i.value = "");
-        }
-
-        function saveRelic() {
-            const id = document.getElementById('edit-id').value;
-            const title = document.getElementById('in-title').value;
-            const url = document.getElementById('in-url').value;
-            const tags = document.getElementById('in-tags').value;
-
-            if(!title || !url) return;
-
-            const payload = { title, url, tags, timestamp: Date.now() };
-            if(id) db.ref('vault/'+id).update(payload); else db.ref('vault').push(payload);
-            closeSummon();
-        }
-
-        // Live Grid Loading
-        db.ref('vault').on('value', snap => {
+        // Connect to your existing data
+        db.ref(userPath).on('value', (snap) => {
             const data = snap.val();
-            archiveData = [];
             const grid = document.getElementById('video-grid');
             grid.innerHTML = "";
-
-            for(let id in data) {
-                const item = { id, ...data[id] };
-                archiveData.push(item);
-
-                const card = document.createElement('div');
-                card.className = "relic-card";
-                
-                // Using your uploaded image context or a placeholder eye if no thumb
-                const thumbImg = item.customThumb ? `<img src="${item.customThumb}">` : `<div style="font-size:3rem; opacity:0.05;">👁️</div>`;
-                
-                card.innerHTML = `
-                    <div class="thumb-container" onclick="summonVideo('${item.url}', '${item.title.replace(/'/g, "\\'")}')">
-                        ${thumbImg}
-                        <div class="play-icon">▶</div>
-                    </div>
-                    <div class="relic-info">
-                        <div class="relic-title">${item.title}</div>
-                        <div class="relic-meta">${item.tags || 'Archive Item'}</div>
-                        <div class="controls">
-                            <span class="icon-btn" onclick="editRelic('${item.id}')">✏️</span>
-                            <span class="icon-btn" onclick="triggerThumb('${item.id}')">🖼️</span>
-                            <span class="icon-btn" onclick="deleteRelic('${item.id}', '${item.title}')">🗑</span>
-                        </div>
-                    </div>
-                `;
-                grid.appendChild(card);
+            
+            if (data && data.relics) {
+                Object.entries(data.relics).forEach(([id, video]) => {
+                    const card = document.createElement('div');
+                    card.className = "video-card";
+                    card.onclick = () => playVideo(video.url, video.title);
+                    
+                    const thumb = video.customThumb || video.thumbnail || "https://via.placeholder.com/200x120/050505/c5a059?text=👁️";
+                    card.innerHTML = `
+                        <div class="thumb-box"><img src="${thumb}"></div>
+                        <div class="card-label">${video.title}</div>
+                    `;
+                    grid.appendChild(card);
+                });
             }
         });
 
-        function summonVideo(url, title) {
-            const mirror = document.getElementById('master-mirror');
-            const label = document.getElementById('active-title');
-            
-            // iPad Direct-to-Embed Conversion
-            let cleanUrl = url;
-            if(cleanUrl.includes('pcloud.link/publink/show')) {
-                cleanUrl = cleanUrl.split('&mode=')[0] + "&mode=video";
+        function playVideo(url, title) {
+            const frame = document.getElementById('master-frame');
+            // Auto-convert pCloud links to embed mode to bypass access errors
+            let embedUrl = url;
+            if (embedUrl.includes('pcloud.link/publink/show')) {
+                embedUrl = embedUrl.replace('show?code=', 'show?code=') + "&mode=video";
             }
-
-            mirror.src = cleanUrl;
-            label.innerText = title;
+            frame.src = embedUrl;
             window.scrollTo({ top: 0, behavior: 'smooth' });
-        }
-
-        function deleteRelic(id, title) { if(confirm(`Banish ${title}?`)) db.ref('vault/'+id).remove(); }
-
-        function editRelic(id) {
-            const item = archiveData.find(i => i.id === id);
-            document.getElementById('edit-id').value = item.id;
-            document.getElementById('in-title').value = item.title;
-            document.getElementById('in-url').value = item.url;
-            document.getElementById('in-tags').value = item.tags || "";
-            openSummon();
-        }
-
-        function triggerThumb(id) {
-            activeEditId = id;
-            document.getElementById('thumb-update-input').click();
-        }
-
-        function applyNewThumb(input) {
-            if (input.files && input.files[0]) {
-                const reader = new FileReader();
-                reader.onload = (e) => {
-                    db.ref(`vault/${activeEditId}`).update({ customThumb: e.target.result });
-                    activeEditId = null;
-                };
-                reader.readAsDataURL(input.files[0]);
-            }
         }
     </script>
 </body>
