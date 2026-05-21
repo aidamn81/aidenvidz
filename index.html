@@ -26,7 +26,7 @@
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         
-        // Force Firestore to completely bypass local cache and use clean live fetch
+        // Force Firestore to bypass local cache and connect clean
         const db = initializeFirestore(app, {
             localCache: {
                 kind: 'persistent',
@@ -36,6 +36,9 @@
 
         window.dbInstance = db;
         window.isDbAuthenticated = false;
+
+        // CHANGE THIS IF YOUR FIREBASE CONSOLE COLLECTION USES A CAPITAL LETTER (e.g., "Videos")
+        window.TARGET_COLLECTION = "videos"; 
 
         // Force UI activation when authentication resolves
         onAuthStateChanged(auth, (user) => {
@@ -272,14 +275,14 @@
         const modalWindow = document.getElementById('modalWindow');
 
         const checkFirebase = setInterval(() => {
-            if (window.dbInstance) {
+            if (window.dbInstance && window.TARGET_COLLECTION) {
                 clearInterval(checkFirebase);
                 initializeRealtimeListener();
             }
         }, 100);
 
         function initializeRealtimeListener() {
-            onSnapshot(collection(window.dbInstance, "videos"), (snapshot) => {
+            onSnapshot(collection(window.dbInstance, window.TARGET_COLLECTION), (snapshot) => {
                 currentCollection = [];
                 snapshot.forEach((doc) => {
                     currentCollection.push({ id: doc.id, ...doc.data() });
@@ -291,6 +294,8 @@
                 if(currentCollection.length > 0 && !mainPlayer.dataset.activeId) {
                     loadVideoIntoStage(currentCollection[0].id);
                 }
+            }, (error) => {
+                console.error("Snapshot connection lost:", error);
             });
         }
 
@@ -362,8 +367,6 @@
                 const img = new Image();
                 img.onload = function() {
                     const canvas = document.createElement('canvas');
-                    
-                    // Severe compression to force absolute micro-sizing
                     const TARGET_WIDTH = 240;
                     const scaleFactor = TARGET_WIDTH / img.width;
                     const targetHeight = img.height * scaleFactor;
@@ -421,7 +424,6 @@
 
             const tagsArray = tagsRaw ? tagsRaw.split(',').map(t => t.trim()).filter(t => t.length > 0) : [];
 
-            // Flat, plain string sanitation to avoid object type injection rejections
             const payload = {
                 url: String(url),
                 title: String(title),
@@ -431,12 +433,13 @@
             };
 
             try {
-                await addDoc(collection(window.dbInstance, "videos"), payload);
+                await addDoc(collection(window.dbInstance, window.TARGET_COLLECTION), payload);
                 closeModal();
                 showToast("Resource document committed.");
             } catch (err) {
-                console.error("Database Write Error Details:", err);
-                alert("Database insertion rejected. Cache flushed. Please try submitting again.");
+                console.error("Raw Firebase Error:", err);
+                // Exposes the exact internal code error descriptive string to the screen layout
+                alert("Firebase Server Error: " + err.message + "\n\nVerify if your collection matching configuration name is correct.");
             }
         };
 
@@ -464,7 +467,7 @@
 
         window.commitDelete = async function() {
             try {
-                await deleteDoc(doc(window.dbInstance, "videos", activeTargetId));
+                await deleteDoc(doc(window.dbInstance, window.TARGET_COLLECTION, activeTargetId));
                 let wasActive = mainPlayer.dataset.activeId === activeTargetId;
                 closeModal();
                 showToast("Record completely purged.");
