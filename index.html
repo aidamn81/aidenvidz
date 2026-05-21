@@ -28,7 +28,9 @@
         const db = getFirestore(app);
 
         // Silent authorization pipeline to clear Firestore permission rules
-        signInAnonymously(auth).catch(err => console.error("Database auth roadblock:", err));
+        signInAnonymously(auth).then(() => {
+            console.log("Authenticated securely.");
+        }).catch(err => console.error("Database auth roadblock:", err));
 
         window.dbInstance = db; 
     </script>
@@ -210,7 +212,6 @@
             <button class="btn btn-primary" onclick="openAddModal()">+ Deposit Video</button>
         </header>
 
-        <!-- Primary Video Stage Screen Layer -->
         <section class="player-stage">
             <video id="mainPlayer" controls autoplay preload="auto" playsinline></video>
             <div class="now-playing-banner">
@@ -218,21 +219,17 @@
             </div>
         </section>
 
-        <!-- Dynamic Asset Grid Display -->
         <main class="relic-grid" id="relicGrid"></main>
     </div>
 
-    <!-- Context Pop-up Anchor Menu -->
     <div id="contextMenu" class="options-menu">
         <button class="menu-item danger" onclick="triggerDelete()">Delete Entry</button>
     </div>
 
-    <!-- Overlay Engine Portal Components -->
     <div id="modalOverlay" class="modal-overlay" onclick="if(event.target===this) closeModal()">
         <div class="modal-window" id="modalWindow"></div>
     </div>
 
-    <!-- Notification Toast Element -->
     <div id="toast" class="toast">Action Logged</div>
 
     <script>
@@ -246,7 +243,6 @@
         const modalOverlay = document.getElementById('modalOverlay');
         const modalWindow = document.getElementById('modalWindow');
 
-        // Verification cycle loop checking for active connection to Firebase module instance
         const checkFirebase = setInterval(() => {
             if (window.dbInstance) {
                 clearInterval(checkFirebase);
@@ -255,26 +251,21 @@
         }, 100);
 
         function initializeRealtimeListener() {
-            // Live data subscription sync pipe straight from Firestore collection document lists
             onSnapshot(collection(window.dbInstance, "videos"), (snapshot) => {
                 currentCollection = [];
                 snapshot.forEach((doc) => {
                     currentCollection.push({ id: doc.id, ...doc.data() });
                 });
                 
-                // Keep order stable via timestamp tracking fields
                 currentCollection.sort((a,b) => (a.timestamp || 0) - (b.timestamp || 0));
-                
                 renderGrid();
                 
-                // Mount tracking item if current active media register remains null
                 if(currentCollection.length > 0 && !mainPlayer.dataset.activeId) {
                     loadVideoIntoStage(currentCollection[0].id);
                 }
             });
         }
 
-        // Automatic formatting parser translation layer supporting standard pCloud direct paths
         function formatVideoUrl(urlStr) {
             let target = urlStr.trim();
             try {
@@ -334,7 +325,6 @@
             });
         }
 
-        // Image optimization algorithm engine converting direct binary resources into efficient inline base64 code arrays
         window.processImageUpload = function(event) {
             const file = event.target.files[0];
             if (!file) return;
@@ -401,7 +391,7 @@
             const tagsArray = tagsRaw ? tagsRaw.split(',').map(t => t.trim()).filter(t => t.length > 0) : [];
 
             try {
-                // Add asset straight to Cloud Firestore architecture targets
+                // Sent directly to your Firebase collection with standard data values
                 await addDoc(collection(window.dbInstance, "videos"), {
                     url: url,
                     title: title,
@@ -413,7 +403,7 @@
                 showToast("Resource document committed.");
             } catch (err) {
                 console.error("Database Write Error:", err);
-                alert("Database insertion rejected under permission scope rules.");
+                alert("Database insertion rejected. Please double-check your published rules configuration.");
             }
         };
 
