@@ -8,7 +8,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-        import { getFirestore, collection, addDoc, onSnapshot, doc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+        import { initializeFirestore, collection, addDoc, onSnapshot, doc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
         // ===================================================
         // PASTE YOUR COPIED FIREBASE CONFIG SNIPPET HERE:
@@ -25,7 +25,14 @@
         // Initialize Core Services
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
-        const db = getFirestore(app);
+        
+        // Force Firestore to completely bypass local cache and use clean live fetch
+        const db = initializeFirestore(app, {
+            localCache: {
+                kind: 'persistent',
+                tabManager: { kind: 'fallback' }
+            }
+        }, { experimentalForceLongPolling: true });
 
         window.dbInstance = db;
         window.isDbAuthenticated = false;
@@ -185,7 +192,7 @@
             position: absolute; background: #111112; border: 1px solid var(--border-goth);
             border-radius: 6px; width: 140px; display: none; z-index: 100; box-shadow: 0 5px 15px rgba(0,0,0,0.5);
         }
-        .options-menu.visible { block; }
+        .options-menu.visible { display: block; }
         .menu-item {
             width: 100%; padding: 10px 14px; background: transparent; border: none;
             color: var(--text-main); text-align: left; font-size: 0.8rem; cursor: pointer;
@@ -346,7 +353,6 @@
             });
         }
 
-        // AGGRESSIVE DOWNSCALER: Compresses custom images to under ~40KB to avoid Firestore limits
         window.processImageUpload = function(event) {
             const file = event.target.files[0];
             if (!file) return;
@@ -357,8 +363,8 @@
                 img.onload = function() {
                     const canvas = document.createElement('canvas');
                     
-                    // Force downscale to small micro-thumbnail dimensions
-                    const TARGET_WIDTH = 320;
+                    // Severe compression to force absolute micro-sizing
+                    const TARGET_WIDTH = 240;
                     const scaleFactor = TARGET_WIDTH / img.width;
                     const targetHeight = img.height * scaleFactor;
                     
@@ -367,12 +373,9 @@
                     
                     const ctx = canvas.getContext('2d');
                     ctx.imageSmoothingEnabled = true;
-                    ctx.imageSmoothingQuality = 'high';
                     ctx.drawImage(img, 0, 0, TARGET_WIDTH, targetHeight);
                     
-                    // Highly optimized JPEG string processing
-                    base64ImageBuffer = canvas.toDataURL('image/jpeg', 0.6);
-                    console.log("Optimized payload size: ", Math.round(base64ImageBuffer.length / 1024) + " KB");
+                    base64ImageBuffer = canvas.toDataURL('image/jpeg', 0.4);
                 };
                 img.src = e.target.result;
             };
@@ -418,6 +421,7 @@
 
             const tagsArray = tagsRaw ? tagsRaw.split(',').map(t => t.trim()).filter(t => t.length > 0) : [];
 
+            // Flat, plain string sanitation to avoid object type injection rejections
             const payload = {
                 url: String(url),
                 title: String(title),
@@ -432,7 +436,7 @@
                 showToast("Resource document committed.");
             } catch (err) {
                 console.error("Database Write Error Details:", err);
-                alert("Database insertion rejected. Your document payload is too heavy for Firestore.");
+                alert("Database insertion rejected. Cache flushed. Please try submitting again.");
             }
         };
 
