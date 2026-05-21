@@ -8,7 +8,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-        import { initializeFirestore, collection, addDoc, onSnapshot, doc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+        import { initializeFirestore, collection, addDoc, onSnapshot, doc, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
         // ===================================================
         // PASTE YOUR COPIED FIREBASE CONFIG SNIPPET HERE:
@@ -38,12 +38,24 @@
         window.dbInstance = db;
         window.collectionPointer = collection;
         window.addDocRecord = addDoc;
+        window.updateDocRecord = updateDoc;
         window.docPointer = doc;
         window.deleteDocRecord = deleteDoc;
         window.isDbAuthenticated = false;
 
         // CHANGE THIS IF YOUR FIREBASE CONSOLE COLLECTION USES A CAPITAL LETTER (e.g., "Videos")
         window.TARGET_COLLECTION = "videos"; 
+
+        // Unified Real-Time Database Connection Listener
+        onSnapshot(collection(db, window.TARGET_COLLECTION), (snapshot) => {
+            let freshCollection = [];
+            snapshot.forEach((doc) => {
+                freshCollection.push({ id: doc.id, ...doc.data() });
+            });
+            window.updateCollectionData(freshCollection);
+        }, (error) => {
+            console.error("Master Database Sync Lost:", error);
+        });
 
         // Force UI activation when authentication resolves
         onAuthStateChanged(auth, (user) => {
@@ -198,7 +210,7 @@
 
         .options-menu {
             position: absolute; background: #111112; border: 1px solid var(--border-goth);
-            border-radius: 6px; width: 140px; display: none; z-index: 100; box-shadow: 0 5px 15px rgba(0,0,0,0.5);
+            border-radius: 6px; width: 150px; display: none; z-index: 100; box-shadow: 0 5px 15px rgba(0,0,0,0.5);
         }
         .options-menu.visible { display: block; }
         .menu-item {
@@ -259,6 +271,8 @@
     </div>
 
     <div id="contextMenu" class="options-menu">
+        <button class="menu-item" onclick="triggerRename()">Rename Entry</button>
+        <button class="menu-item" onclick="triggerChangeImage()">Change Image</button>
         <button class="menu-item danger" onclick="triggerDelete()">Delete Entry</button>
     </div>
 
@@ -279,50 +293,19 @@
         const modalOverlay = document.getElementById('modalOverlay');
         const modalWindow = document.getElementById('modalWindow');
 
-        const checkFirebase = setInterval(() => {
-            if (window.dbInstance && window.TARGET_COLLECTION) {
-                clearInterval(checkFirebase);
-                initializeRealtimeListener();
-            }
-        }, 100);
-
-        function initializeRealtimeListener() {
-            // Keep the standard listening logic tied to your modular instances smoothly
-            const checkListening = setInterval(() => {
-                if (typeof window.dbInstance !== 'undefined' && typeof window.collectionPointer !== 'undefined') {
-                    clearInterval(checkListening);
-                    
-                    // Fallback configuration if snapshot listener is loaded through standard window pipes
-                    try {
-                        const scriptBlock = document.createElement('script');
-                        scriptBlock.type = 'module';
-                        scriptBlock.textContent = `
-                            import { onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
-                            onSnapshot(window.collectionPointer(window.dbInstance, window.TARGET_COLLECTION), (snapshot) => {
-                                window.updateCollectionData(snapshot);
-                            }, (error) => {
-                                console.error("Snapshot fallback connection lost:", error);
-                            });
-                        `;
-                        document.head.appendChild(scriptBlock);
-                    } catch(e) {
-                        console.error("Pipeline attachment issue:", e);
-                    }
-                }
-            }, 50);
-        }
-
-        window.updateCollectionData = function(snapshot) {
-            currentCollection = [];
-            snapshot.forEach((doc) => {
-                currentCollection.push({ id: doc.id, ...doc.data() });
-            });
-            
+        window.updateCollectionData = function(data) {
+            currentCollection = data;
             currentCollection.sort((a,b) => (Number(a.timestamp) || 0) - (Number(b.timestamp) || 0));
             renderGrid();
             
             if(currentCollection.length > 0 && !mainPlayer.dataset.activeId) {
                 loadVideoIntoStage(currentCollection[0].id);
+            } else if (mainPlayer.dataset.activeId) {
+                // Keep playing current title sync updated in case it changed via rename
+                const currentItem = currentCollection.find(r => r.id === mainPlayer.dataset.activeId);
+                if (currentItem) {
+                    document.getElementById('nowPlayingTitle').textContent = currentItem.title || "Untitled Relic";
+                }
             }
         };
 
@@ -460,13 +443,12 @@
             };
 
             try {
-                // Calls global safely linked reference bound to module scope initialization
                 await window.addDocRecord(window.collectionPointer(window.dbInstance, window.TARGET_COLLECTION), payload);
                 closeModal();
                 showToast("Resource document committed.");
             } catch (err) {
                 console.error("Raw Firebase Error:", err);
-                alert("Firebase Server Error: " + err.message + "\n\nVerify if your collection matching configuration name is correct.");
+                alert("Firebase Server Error: " + err.message);
             }
         };
 
@@ -477,6 +459,73 @@
             contextMenu.style.top = `${rect.bottom + window.scrollY + 6}px`;
             contextMenu.style.left = `${rect.left + window.scrollX - 110}px`;
             contextMenu.classList.add('visible');
+        };
+
+        window.triggerRename = function() {
+            contextMenu.classList.remove('visible');
+            const item = currentCollection.find(r => r.id === activeTargetId);
+            if (!item) return;
+
+            modalWindow.innerHTML = `
+                <h3 class="modal-title">Rename Relic</h3>
+                <div class="form-group">
+                    <label>New Resource Title</label>
+                    <input type="text" id="renameTitleField" class="form-input" value="${escapeHtml(item.title)}">
+                </div>
+                <div class="modal-actions">
+                    <button class="btn" onclick="closeModal()">Cancel</button>
+                    <button class="btn btn-primary" onclick="commitRename()">Apply Name</button>
+                </div>
+            `;
+            modalOverlay.classList.add('active');
+            document.getElementById('renameTitleField').focus();
+        };
+
+        window.commitRename = async function() {
+            const newTitle = document.getElementById('renameTitleField').value.trim();
+            if (!newTitle) { alert("Title string cannot be entirely empty."); return; }
+
+            try {
+                await window.updateDocRecord(window.docPointer(window.dbInstance, window.TARGET_COLLECTION, activeTargetId), {
+                    title: String(newTitle)
+                });
+                closeModal();
+                showToast("Resource updated.");
+            } catch (err) {
+                alert("Rename transaction rejected.");
+            }
+        };
+
+        window.triggerChangeImage = function() {
+            contextMenu.classList.remove('visible');
+            base64ImageBuffer = "";
+
+            modalWindow.innerHTML = `
+                <h3 class="modal-title">Update Cover Artwork</h3>
+                <div class="form-group">
+                    <label>Select New Thumbnail Photo</label>
+                    <input type="file" id="editImageFile" accept="image/*" class="form-input" onchange="processImageUpload(event)">
+                </div>
+                <div class="modal-actions">
+                    <button class="btn" onclick="closeModal()">Cancel</button>
+                    <button class="btn btn-primary" onclick="commitChangeImage()">Update Image</button>
+                </div>
+            `;
+            modalOverlay.classList.add('active');
+        };
+
+        window.commitChangeImage = async function() {
+            if (!base64ImageBuffer) { alert("Please select a new photo asset file first."); return; }
+
+            try {
+                await window.updateDocRecord(window.docPointer(window.dbInstance, window.TARGET_COLLECTION, activeTargetId), {
+                    thumbnail: String(base64ImageBuffer)
+                });
+                closeModal();
+                showToast("Cover graphics altered.");
+            } catch (err) {
+                alert("Image push transaction rejected.");
+            }
         };
 
         window.triggerDelete = function() {
