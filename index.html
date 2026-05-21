@@ -7,7 +7,7 @@
     <!-- Firebase Modular SDKs (v10) -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
         import { getFirestore, collection, addDoc, onSnapshot, doc, deleteDoc, query } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
         // ===================================================
@@ -27,12 +27,29 @@
         const auth = getAuth(app);
         const db = getFirestore(app);
 
-        // Silent authorization pipeline to clear Firestore permission rules
-        signInAnonymously(auth).then(() => {
-            console.log("Authenticated securely.");
-        }).catch(err => console.error("Database auth roadblock:", err));
+        window.dbInstance = db;
+        window.isDbAuthenticated = false;
 
-        window.dbInstance = db; 
+        // Monitor Auth state to prevent premature database writes
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                console.log("Authenticated securely with UID:", user.uid);
+                window.isDbAuthenticated = true;
+                const depositBtn = document.getElementById('depositBtn');
+                if (depositBtn) {
+                    depositBtn.disabled = false;
+                    depositBtn.style.opacity = "1";
+                }
+            } else {
+                window.isDbAuthenticated = false;
+            }
+        });
+
+        // Trigger silent authorization pipeline
+        signInAnonymously(auth).catch(err => {
+            console.error("Database auth roadblock:", err);
+            window.isDbAuthenticated = false;
+        });
     </script>
 
     <style>
@@ -83,11 +100,12 @@
             letter-spacing: 0.5px;
             transition: all 0.2s ease;
         }
-        .btn:hover { border-color: var(--accent-glow); color: #ffffff; }
+        .btn:hover:not(:disabled) { border-color: var(--accent-glow); color: #ffffff; }
         .btn-primary { background: var(--accent-glow); border-color: var(--accent-glow); color: #ffffff; }
-        .btn-primary:hover { background: var(--accent-hover); border-color: var(--accent-hover); }
+        .btn-primary:hover:not(:disabled) { background: var(--accent-hover); border-color: var(--accent-hover); }
         .btn-danger { background: rgba(230, 90, 115, 0.05); border-color: rgba(230, 90, 115, 0.2); color: var(--danger); }
-        .btn-danger:hover { background: var(--danger); color: #ffffff; }
+        .btn-danger:hover:not(:disabled) { background: var(--danger); color: #ffffff; }
+        .btn:disabled { opacity: 0.5; cursor: not-allowed; }
 
         .player-stage {
             background: #040405;
@@ -209,7 +227,7 @@
     <div class="archive-container">
         <header>
             <h1>Gothic Archive</h1>
-            <button class="btn btn-primary" onclick="openAddModal()">+ Deposit Video</button>
+            <button id="depositBtn" class="btn btn-primary" onclick="openAddModal()" disabled style="opacity: 0.5;">+ Deposit Video</button>
         </header>
 
         <section class="player-stage">
@@ -352,6 +370,10 @@
         };
 
         function openAddModal() {
+            if (!window.isDbAuthenticated) {
+                alert("Security connection token initializing. Please wait a brief moment and try again.");
+                return;
+            }
             base64ImageBuffer = ""; 
             modalWindow.innerHTML = `
                 <h3 class="modal-title">Deposit Asset Records</h3>
@@ -391,7 +413,7 @@
             const tagsArray = tagsRaw ? tagsRaw.split(',').map(t => t.trim()).filter(t => t.length > 0) : [];
 
             try {
-                // Sent directly to your Firebase collection with standard data values
+                // Documents match database field validation
                 await addDoc(collection(window.dbInstance, "videos"), {
                     url: url,
                     title: title,
@@ -403,7 +425,7 @@
                 showToast("Resource document committed.");
             } catch (err) {
                 console.error("Database Write Error:", err);
-                alert("Database insertion rejected. Please double-check your published rules configuration.");
+                alert("Database insertion rejected. Check your raw Firebase rules setup tab.");
             }
         };
 
