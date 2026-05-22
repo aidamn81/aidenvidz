@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>The Gothic Archive</title>
+    <title>The Gothic Archive & Media Player</title>
     
     <!-- CORE FIREBASE V8 ENGINE SCRIPTS -->
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
@@ -12,7 +12,7 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 
     <style>
-        /* --- SIGNATURE GOTHIC ARCHIVE DESIGN THEME --- */
+        /* --- SIGNATURE VAMPIRE THEME THEME --- */
         :root {
             --bg-dark: #070709;
             --panel-dark: #111115;
@@ -40,18 +40,47 @@
             font-family: 'Courier New', Courier, monospace;
             margin: 0;
             padding: 0;
-            overflow: hidden; /* Bound context window inside viewport */
+            overflow: hidden; 
             width: 100vw;
             height: 100vh;
+            display: flex;
+            flex-direction: column;
         }
 
-        /* Fixed Dashboard Control Deck */
+        /* --- STICKY PERSISTENT MEDIA SCREEN ENGINE (TOP) --- */
+        #media-theater-deck {
+            width: 100%;
+            height: 360px;
+            background: #000000;
+            border-bottom: 3px solid var(--accent-blood);
+            position: relative;
+            z-index: 2000;
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.9);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        #main-video-stream {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            background: #000;
+        }
+
+        .media-placeholder-text {
+            color: var(--text-dim);
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            text-align: center;
+            padding: 20px;
+        }
+
+        /* --- CONTROL DASHBOARD COMPONENT --- */
         .controls-bar {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 70px;
+            width: 100%;
+            height: 75px;
             background: var(--panel-dark);
             border-bottom: 2px solid var(--accent-blood);
             padding: 0 20px;
@@ -60,6 +89,7 @@
             align-items: center;
             z-index: 1000;
             box-shadow: 0 4px 20px rgba(0, 0, 0, 0.8);
+            flex-shrink: 0;
         }
 
         input[type="text"] {
@@ -98,25 +128,23 @@
             box-shadow: 0 0 8px rgba(128, 0, 32, 0.6);
         }
 
-        /* Main Workspace Canvas viewport container */
+        /* --- CANVAS WORKSPACE CONTAINER --- */
         #archive-viewport {
-            position: absolute;
-            top: 70px;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            overflow: auto; /* Infinite scroll engine container */
+            flex: 1;
+            width: 100%;
+            overflow: auto; 
             background: #09090c;
+            position: relative;
         }
 
         #archive-container {
             position: relative;
-            width: 3000px;  /* Huge boundary maps for extensive canvas scroll */
+            width: 3000px;  
             height: 3000px;
             transform-origin: 0 0;
         }
 
-        /* Subtle Guide Grid (Only displays when Edit Mode is active) */
+        /* Guide Grid (Only active inside Edit Mode parameters) */
         .edit-mode #archive-container::before {
             content: "";
             position: absolute;
@@ -129,7 +157,7 @@
             z-index: 1;
         }
 
-        /* Relic Display Grid Items */
+        /* --- RELIC DISPLAY CARDS --- */
         .relic-item {
             position: absolute;
             background: #121217;
@@ -183,7 +211,7 @@
             padding: 0 4px;
         }
 
-        /* Scrollable Context Menu Structure */
+        /* --- SCROLLABLE POPUP CONTEXT MENU --- */
         .goth-context-menu {
             position: fixed;
             background: #14141a;
@@ -215,7 +243,7 @@
             color: #ffffff;
         }
 
-        /* Interactive UI indicators */
+        /* Edit State Overlay Visual Changes */
         .edit-mode .relic-item {
             border-style: dashed;
             border-color: var(--accent-crimson);
@@ -224,23 +252,30 @@
 </head>
 <body>
 
-    <!-- CONTROLS DECK PLATFORM -->
+    <!-- VIDEO THEATER MONITOR SCREEN (TOP) -->
+    <div id="media-theater-deck">
+        <div id="video-canvas-target" style="width: 100%; height: 100%; display: flex; justify-content: center; align-items: center;">
+            <div class="media-placeholder-text">No Resource Loaded Engine Idle<br><span style="font-size:10px; color:var(--accent-blood);">Double-click a relic card below to play resource stream direct</span></div>
+        </div>
+    </div>
+
+    <!-- CONTROL CONFIGURATION LAYERS -->
     <div class="controls-bar">
-        <input type="text" id="relic-url" placeholder="Paste Video / Document Resource URL">
-        <input type="text" id="relic-name" placeholder="Label Designation">
+        <input type="text" id="relic-url" placeholder="Paste Direct Video Stream / Resource URL Target">
+        <input type="text" id="relic-name" placeholder="Descriptive Asset Tag">
         <button id="btn-deposit">Deposit Link</button>
         <button id="btn-toggle-edit">Toggle Edit Mode</button>
         <button id="btn-recenter">Formation Recentering</button>
     </div>
 
-    <!-- VIEWPORT & CANVAS STRUCTURE BOUNDARIES -->
+    <!-- MAIN VIEWPORT AND CANVAS STORAGE AREA -->
     <div id="archive-viewport">
         <div id="archive-container"></div>
     </div>
 
     <script>
         // ==========================================
-        // CONFIGURATION AND FIREBASE INIT
+        // STABILITY CONFIG & ENVELOPE CONFIG
         // ==========================================
         const firebaseConfig = {
             apiKey: "AIzaSyB95B-M07ZWK0SW5JFCt3uawB3erjjhMCM",
@@ -260,6 +295,7 @@
         const db = firebase.firestore();
         let editModeActive = false;
         const container = document.getElementById('archive-container');
+        const videoTarget = document.getElementById('video-canvas-target');
 
         // ==========================================
         // REALTIME DATABASE INTEGRATION LOOP
@@ -273,18 +309,35 @@
             
             if (editModeActive) makeRelicsInteractive();
         }, (error) => {
-            console.error("Critical Firestore sync runtime alert: ", error);
+            console.error("Critical Firestore storage synchronization engine disruption: ", error);
         });
 
         // ==========================================
-        // DEPOSIT LOGIC
+        // DIRECT STREAM CONTROLLER (PLAY DIRECT LINKS)
+        // ==========================================
+        function loadDirectMediaStream(url) {
+            if (!url) return;
+            
+            // Rebuild raw video elements dynamically to wipe cache buffers completely
+            videoTarget.innerHTML = `
+                <video id="main-video-stream" controls autoplay playsinline loop>
+                    <source src="${url}" type="video/mp4">
+                    <source src="${url}" type="video/webm">
+                    <source src="${url}" type="video/ogg">
+                    Your terminal platform environment does not support direct hardware playback layout configuration.
+                </video>
+            `;
+        }
+
+        // ==========================================
+        // FILE DATA MUTATION UPLOAD (DEPOSIT LINK)
         // ==========================================
         document.getElementById('btn-deposit').addEventListener('click', () => {
             const url = document.getElementById('relic-url').value.trim();
             const name = document.getElementById('relic-name').value.trim() || "Untitled Relic";
 
             if (!url) {
-                alert("Please drop a valid resource link target first.");
+                alert("Provide validation link asset endpoint parameter map.");
                 return;
             }
 
@@ -308,11 +361,11 @@
                     document.getElementById('relic-url').value = "";
                     document.getElementById('relic-name').value = "";
                 })
-                .catch((err) => console.error("Write dropped by system profile security rules: ", err));
+                .catch((err) => console.error("Database structural access dropped: ", err));
         });
 
         // ==========================================
-        // COMPONENT ELEMENT DOM BUILDER
+        // COMPONENT DOM ELEMENT REBUILDER
         // ==========================================
         function createRelicElement(id, data) {
             const relic = document.createElement('div');
@@ -325,17 +378,17 @@
 
             relic.innerHTML = `
                 <div class="relic-thumb-wrapper">
-                    <img src="${data.imageUrl}" class="relic-thumb" alt="Archive Object">
+                    <img src="${data.imageUrl}" class="relic-thumb" alt="Archive Media Reference">
                 </div>
                 <div class="relic-title">${data.title}</div>
             `;
 
-            // Double Click Event to Open Link
+            // Double Click Event to Trigger Direct Streaming Engine Inside Top Deck
             relic.addEventListener('dblclick', () => {
-                window.open(data.linkUrl, '_blank');
+                loadDirectMediaStream(data.linkUrl);
             });
 
-            // Long Press & Right Click Menu Triggers
+            // Long Press and Content Menu Activation Triggers
             let touchTimer;
             relic.addEventListener('touchstart', (e) => {
                 touchTimer = setTimeout(() => spawnContextMenu(e.touches[0], id, data), 600);
@@ -353,7 +406,7 @@
         }
 
         // ==========================================
-        // CONTEXT MENU (SCROLLABLE & PRESERVED)
+        // SCROLLABLE POPUP CONTEXT OPERATIONS
         // ==========================================
         function spawnContextMenu(e, id, data) {
             const oldMenu = document.querySelector('.goth-context-menu');
@@ -365,9 +418,10 @@
             menu.style.top = `${e.clientY}px`;
 
             menu.innerHTML = `
+                <div onclick="loadDirectMediaStream('${data.linkUrl}')">Stream in Video Player</div>
                 <div onclick="window.open('${data.linkUrl}', '_blank')">Open in New Tab</div>
                 <div onclick="renameRelic('${id}')">Rename</div>
-                <div onclick="changeRelicImage('${id}')">Change Image</div>
+                <div onclick="changeRelicImage('${id}')">Change Display Image</div>
                 <div onclick="snapToOriginalShape('${id}')">Resize to Original</div>
                 <div onclick="deleteRelicConfirmation('${id}')" style="color: #ff4d4d; font-weight: bold;">Delete Relic</div>
             `;
@@ -383,18 +437,18 @@
         }
 
         // ==========================================
-        // MUTATION DATABASE OPERATIONS
+        // DATABASE DIRECT CHANGE MODES
         // ==========================================
         window.renameRelic = function(id) {
             const currentTitle = document.getElementById(id).querySelector('.relic-title').innerText;
-            const newName = prompt("Modify designation label metadata:", currentTitle);
+            const newName = prompt("Modify designation label metadata configuration:", currentTitle);
             if (newName) {
                 db.collection("notes").doc(id).update({ title: newName });
             }
         };
 
         window.changeRelicImage = function(id) {
-            const newImg = prompt("Provide fresh image URL address location path:");
+            const newImg = prompt("Provide fresh image URL address path target location:");
             if (newImg) {
                 db.collection("notes").doc(id).update({ imageUrl: newImg });
             }
@@ -408,13 +462,13 @@
         };
 
         window.deleteRelicConfirmation = function(id) {
-            if (confirm("Confirm complete elimination of target element from primary storage archives?")) {
+            if (confirm("Confirm complete elimination of this resource block from primary storage storage systems?")) {
                 db.collection("notes").doc(id).delete();
             }
         };
 
         // ==========================================
-        // INTERACTIVE CANVAS LOGIC (DRAG & SNAP)
+        // CANVAS INTERACTION LOGIC (DRAG & SNAP)
         // ==========================================
         function makeRelicsInteractive() {
             const items = document.querySelectorAll('.relic-item');
@@ -422,10 +476,8 @@
                 let isDragging = false;
                 let startX, startY;
 
-                // Mouse Drag Events
                 item.addEventListener('mousedown', startDrag);
                 
-                // Touch Drag Support (Finger Adjustments)
                 item.addEventListener('touchstart', (e) => {
                     if(editModeActive) startDrag(e.touches[0]);
                 }, { passive: true });
@@ -453,13 +505,13 @@
                     let newX = e.clientX - startX;
                     let newY = e.clientY - startY;
 
-                    // Absolute Boundaries Containment Check
+                    // Absolute Boundary Limits check
                     if (newX < 0) newX = 0;
                     if (newY < 0) newY = 0;
                     if (newX > 3000 - item.offsetWidth) newX = 3000 - item.offsetWidth;
                     if (newY > 3000 - item.offsetHeight) newY = 3000 - item.offsetHeight;
 
-                    // Soft Grid Snap (40px Alignment blocks)
+                    // Soft Snap to Grid Engine Layout Blocks (40px spacing mechanics)
                     newX = Math.round(newX / 40) * 40;
                     newY = Math.round(newY / 40) * 40;
 
@@ -485,7 +537,7 @@
             });
         }
 
-        // Mode Switching Systems
+        // System Mode Engine Toggles
         document.getElementById('btn-toggle-edit').addEventListener('click', () => {
             editModeActive = !editModeActive;
             document.body.classList.toggle('edit-mode', editModeActive);
@@ -497,7 +549,7 @@
             }
         });
 
-        // Formation Style Recentering System Engine
+        // Formation Style Recentering Processing Deck
         document.getElementById('btn-recenter').addEventListener('click', () => {
             const items = document.querySelectorAll('.relic-item');
             items.forEach((item, index) => {
