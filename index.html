@@ -150,13 +150,14 @@
         // 4. DATABASE INITIALIZATION
         // ==========================================
         const firebaseConfig = {
-            apiKey: "YOUR_API_KEY",
-            authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
-            databaseURL: "https://YOUR_PROJECT_ID-default-rtdb.firebaseio.com",
-            projectId: "YOUR_PROJECT_ID",
-            storageBucket: "YOUR_PROJECT_ID.appspot.com",
-            messagingSenderId: "YOUR_SENDER_ID",
-            appId: "YOUR_APP_ID"
+            apiKey: "AIzaSyB95B-M07ZWK0SW5JFCt3uawB3erjjhMCM",
+            authDomain: "aidenvidz.firebaseapp.com",
+            databaseURL: "https://aidenvidz-default-rtdb.europe-west1.firebasedatabase.app",
+            projectId: "aidenvidz",
+            storageBucket: "aidenvidz.firebasestorage.app",
+            messagingSenderId: "881025264027",
+            appId: "1:881025264027:web:8b19123c72551f0753593e",
+            measurementId: "G-V4XS69QD1Y"
         };
 
         // Secure Initialization check
@@ -214,7 +215,7 @@
                 timestamp: firebase.firestore.FieldValue.serverTimestamp()
             };
 
-            // CRITICAL: We write to the server directly! The snapshot listener above handles drawing it.
+            // We write to the server directly! The snapshot listener above handles drawing it.
             db.collection("notes").add(newRelic)
                 .then(() => {
                     document.getElementById('relic-url').value = "";
@@ -369,7 +370,6 @@
             if (editModeActive) {
                 makeRelicsInteractive();
             } else {
-                // Remove interactive styling bindings instantly
                 location.reload(); 
             }
         });
