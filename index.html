@@ -50,7 +50,7 @@
         /* --- STICKY DYNAMICALLY RESIZABLE MEDIA SCREEN ENGINE (TOP) --- */
         #media-theater-deck {
             width: 100%;
-            height: 360px; /* Initialized footprint size */
+            height: 360px;
             min-height: 180px;
             max-height: 70vh;
             background: #000000;
@@ -253,14 +253,16 @@
             border-radius: 6px;
             box-shadow: 0 8px 30px rgba(0, 0, 0, 0.95);
             z-index: 10000;
-            max-height: 260px;
+            max-height: 240px;
             overflow-y: auto;
-            width: 220px;
+            -webkit-overflow-scrolling: touch; /* Slick iOS inertia scrolling velocity injection */
+            width: 240px;
             padding: 4px 0;
+            touch-action: pan-y !important; /* Force layout layer to handle custom scroll axes directly */
         }
 
         .goth-context-menu div {
-            padding: 11px 16px;
+            padding: 14px 18px; /* Slightly larger targets for accurate touch activation profile */
             cursor: pointer;
             font-size: 13px;
             color: var(--text-goth);
@@ -272,7 +274,7 @@
             border-bottom: none;
         }
 
-        .goth-context-menu div:hover {
+        .goth-context-menu div:hover, .goth-context-menu div:active {
             background: var(--accent-blood);
             color: #ffffff;
         }
@@ -466,9 +468,17 @@
                 loadDirectMediaStream(data.linkUrl);
             });
 
+            // Re-engineered Long Press Loop targeting mobile coordinate configurations safely
             let touchTimer;
             relic.addEventListener('touchstart', (e) => {
-                touchTimer = setTimeout(() => spawnContextMenu(e.touches[0], id, data), 600);
+                const touchObj = e.touches[0];
+                // Capture current coordinates before setting timer payload
+                const coordX = touchObj.clientX;
+                const coordY = touchObj.clientY;
+                
+                touchTimer = setTimeout(() => {
+                    spawnContextMenu({ clientX: coordX, clientY: coordY }, id, data);
+                }, 600);
             }, { passive: true });
 
             relic.addEventListener('touchend', () => clearTimeout(touchTimer));
@@ -491,8 +501,20 @@
 
             const menu = document.createElement('div');
             menu.className = 'goth-context-menu';
-            menu.style.left = `${e.clientX}px`;
-            menu.style.top = `${e.clientY}px`;
+            
+            // Boundary adjustment logic to prevent dropping menu off-screen edges
+            let spawnX = e.clientX;
+            let spawnY = e.clientY;
+            
+            if (spawnX + 240 > window.innerWidth) {
+                spawnX = window.innerWidth - 250;
+            }
+            if (spawnY + 240 > window.innerHeight) {
+                spawnY = window.innerHeight - 250;
+            }
+
+            menu.style.left = `${spawnX}px`;
+            menu.style.top = `${spawnY}px`;
 
             menu.innerHTML = `
                 <div onclick="loadDirectMediaStream('${data.linkUrl}')">Stream in Video Player</div>
@@ -502,6 +524,14 @@
                 <div onclick="snapToOriginalShape('${id}')">Resize to Original</div>
                 <div onclick="deleteRelicConfirmation('${id}')" style="color: #ff4d4d; font-weight: bold;">Delete Relic</div>
             `;
+
+            // Explicitly prevent bubble up events from locking mobile touch interactions
+            menu.addEventListener('touchstart', (event) => {
+                event.stopPropagation();
+            }, { passive: true });
+            menu.addEventListener('touchmove', (event) => {
+                event.stopPropagation();
+            }, { passive: true });
 
             document.body.appendChild(menu);
 
@@ -613,11 +643,10 @@
         }
 
         // ==========================================
-        // SYSTEM MODE SECURE AUTH TOTTLES
+        // SYSTEM MODE SECURE AUTH TOGGLES
         // ==========================================
         document.getElementById('btn-toggle-edit').addEventListener('click', () => {
             if (!editModeActive) {
-                // Request encryption credential clearance
                 const gatekeeperAccessKey = prompt("Enter Administration Verification Key:");
                 if (gatekeeperAccessKey === "1981") {
                     editModeActive = true;
