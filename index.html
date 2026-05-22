@@ -47,10 +47,12 @@
             flex-direction: column;
         }
 
-        /* --- STICKY PERSISTENT MEDIA SCREEN ENGINE (TOP) --- */
+        /* --- STICKY DYNAMICALLY RESIZABLE MEDIA SCREEN ENGINE (TOP) --- */
         #media-theater-deck {
             width: 100%;
-            height: 360px;
+            height: 360px; /* Initialized footprint size */
+            min-height: 180px;
+            max-height: 70vh;
             background: #000000;
             border-bottom: 3px solid var(--accent-blood);
             position: relative;
@@ -59,6 +61,7 @@
             display: flex;
             justify-content: center;
             align-items: center;
+            flex-shrink: 0;
         }
 
         #main-video-stream {
@@ -75,6 +78,37 @@
             letter-spacing: 2px;
             text-align: center;
             padding: 20px;
+        }
+
+        /* --- RESIZE HANDLE DECK --- */
+        #player-resize-handle {
+            position: absolute;
+            bottom: -5px;
+            left: 0;
+            width: 100%;
+            height: 10px;
+            cursor: ns-resize;
+            z-index: 2100;
+            background: transparent;
+        }
+
+        #player-resize-handle::after {
+            content: "";
+            position: absolute;
+            left: 50%;
+            top: 3px;
+            transform: translateX(-50%);
+            width: 40px;
+            height: 4px;
+            border-radius: 2px;
+            background: var(--accent-blood);
+            opacity: 0.6;
+            transition: opacity 0.2s;
+        }
+
+        #player-resize-handle:hover::after {
+            opacity: 1;
+            background: var(--accent-crimson);
         }
 
         /* --- CONTROL DASHBOARD COMPONENT --- */
@@ -257,6 +291,8 @@
         <div id="video-canvas-target" style="width: 100%; height: 100%; display: flex; justify-content: center; align-items: center;">
             <div class="media-placeholder-text">No Resource Loaded Engine Idle<br><span style="font-size:10px; color:var(--accent-blood);">Double-click a relic card below to play resource stream direct</span></div>
         </div>
+        <!-- Vertical Frame Adjustment Axis -->
+        <div id="player-resize-handle"></div>
     </div>
 
     <!-- CONTROL CONFIGURATION LAYERS -->
@@ -296,6 +332,50 @@
         let editModeActive = false;
         const container = document.getElementById('archive-container');
         const videoTarget = document.getElementById('video-canvas-target');
+        const theaterDeck = document.getElementById('media-theater-deck');
+        const resizeHandle = document.getElementById('player-resize-handle');
+
+        // ==========================================
+        // THEATER DECK VERTICAL HEIGHT ADJUSTMENT
+        // ==========================================
+        let isResizingPlayer = false;
+
+        resizeHandle.addEventListener('mousedown', initPlayerResize);
+        resizeHandle.addEventListener('touchstart', (e) => {
+            initPlayerResize(e.touches[0]);
+        }, { passive: true });
+
+        function initPlayerResize(e) {
+            isResizingPlayer = true;
+            document.addEventListener('mousemove', executePlayerResize);
+            document.addEventListener('touchmove', executeTouchPlayerResize, { passive: false });
+            document.addEventListener('mouseup', terminatePlayerResize);
+            document.addEventListener('touchend', terminatePlayerResize);
+        }
+
+        function executeTouchPlayerResize(e) {
+            if (isResizingPlayer) e.preventDefault();
+            executePlayerResize(e.touches[0]);
+        }
+
+        function executePlayerResize(e) {
+            if (!isResizingPlayer) return;
+            const calculatedHeight = e.clientY;
+            const minHeight = 180;
+            const maxHeight = window.innerHeight * 0.7;
+
+            if (calculatedHeight >= minHeight && calculatedHeight <= maxHeight) {
+                theaterDeck.style.height = `${calculatedHeight}px`;
+            }
+        }
+
+        function terminatePlayerResize() {
+            isResizingPlayer = false;
+            document.removeEventListener('mousemove', executePlayerResize);
+            document.removeEventListener('touchmove', executeTouchPlayerResize);
+            document.removeEventListener('mouseup', terminatePlayerResize);
+            document.removeEventListener('touchend', terminatePlayerResize);
+        }
 
         // ==========================================
         // REALTIME DATABASE INTEGRATION LOOP
@@ -318,7 +398,6 @@
         function loadDirectMediaStream(url) {
             if (!url) return;
             
-            // Rebuild raw video elements dynamically to wipe cache buffers completely
             videoTarget.innerHTML = `
                 <video id="main-video-stream" controls autoplay playsinline loop>
                     <source src="${url}" type="video/mp4">
@@ -383,12 +462,10 @@
                 <div class="relic-title">${data.title}</div>
             `;
 
-            // Double Click Event to Trigger Direct Streaming Engine Inside Top Deck
             relic.addEventListener('dblclick', () => {
                 loadDirectMediaStream(data.linkUrl);
             });
 
-            // Long Press and Content Menu Activation Triggers
             let touchTimer;
             relic.addEventListener('touchstart', (e) => {
                 touchTimer = setTimeout(() => spawnContextMenu(e.touches[0], id, data), 600);
@@ -505,13 +582,11 @@
                     let newX = e.clientX - startX;
                     let newY = e.clientY - startY;
 
-                    // Absolute Boundary Limits check
                     if (newX < 0) newX = 0;
                     if (newY < 0) newY = 0;
                     if (newX > 3000 - item.offsetWidth) newX = 3000 - item.offsetWidth;
                     if (newY > 3000 - item.offsetHeight) newY = 3000 - item.offsetHeight;
 
-                    // Soft Snap to Grid Engine Layout Blocks (40px spacing mechanics)
                     newX = Math.round(newX / 40) * 40;
                     newY = Math.round(newY / 40) * 40;
 
@@ -537,14 +612,25 @@
             });
         }
 
-        // System Mode Engine Toggles
+        // ==========================================
+        // SYSTEM MODE SECURE AUTH TOTTLES
+        // ==========================================
         document.getElementById('btn-toggle-edit').addEventListener('click', () => {
-            editModeActive = !editModeActive;
-            document.body.classList.toggle('edit-mode', editModeActive);
-            document.getElementById('btn-toggle-edit').innerText = editModeActive ? "Exit Edit Mode" : "Toggle Edit Mode";
-            if (editModeActive) {
-                makeRelicsInteractive();
+            if (!editModeActive) {
+                // Request encryption credential clearance
+                const gatekeeperAccessKey = prompt("Enter Administration Verification Key:");
+                if (gatekeeperAccessKey === "1981") {
+                    editModeActive = true;
+                    document.body.classList.add('edit-mode');
+                    document.getElementById('btn-toggle-edit').innerText = "Exit Edit Mode";
+                    makeRelicsInteractive();
+                } else {
+                    alert("Verification failure. Operational parameters locked.");
+                }
             } else {
+                editModeActive = false;
+                document.body.classList.remove('edit-mode');
+                document.getElementById('btn-toggle-edit').innerText = "Toggle Edit Mode";
                 location.reload(); 
             }
         });
