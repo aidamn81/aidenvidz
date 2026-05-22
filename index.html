@@ -2,23 +2,36 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>The Gothic Archive</title>
     
-    <!-- 1. CORE FIREBASE V8 ENGINE SCRIPTS -->
+    <!-- CORE FIREBASE V8 ENGINE SCRIPTS -->
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 
     <style>
-        /* --- CORE ARCHIVE INTERFACE STYLE --- */
+        /* --- SIGNATURE GOTHIC ARCHIVE DESIGN THEME --- */
         :root {
-            --bg-dark: #0a0a0c;
+            --bg-dark: #070709;
+            --panel-dark: #111115;
             --accent-blood: #800020;
-            --panel-dark: #121216;
+            --accent-crimson: #9a1a32;
             --text-goth: #d4d4dc;
-            --grid-line: rgba(128, 0, 32, 0.15);
+            --text-dim: #8a8a95;
+            --grid-line: rgba(128, 0, 32, 0.12);
+        }
+
+        * {
+            box-sizing: border-box;
+            -webkit-user-select: none;
+            user-select: none;
+        }
+
+        input, textarea {
+            -webkit-user-select: text;
+            user-select: text;
         }
 
         body {
@@ -26,18 +39,84 @@
             color: var(--text-goth);
             font-family: 'Courier New', Courier, monospace;
             margin: 0;
-            padding: 20px;
-            overflow-x: hidden;
+            padding: 0;
+            overflow: hidden; /* Bound context window inside viewport */
+            width: 100vw;
+            height: 100vh;
+        }
+
+        /* Fixed Dashboard Control Deck */
+        .controls-bar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 70px;
+            background: var(--panel-dark);
+            border-bottom: 2px solid var(--accent-blood);
+            padding: 0 20px;
+            display: flex;
+            gap: 12px;
+            align-items: center;
+            z-index: 1000;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.8);
+        }
+
+        input[type="text"] {
+            background: #181822;
+            border: 1px solid #2d2d3a;
+            color: var(--text-goth);
+            padding: 10px 14px;
+            font-family: inherit;
+            font-size: 13px;
+            border-radius: 4px;
+            flex: 1;
+            transition: border-color 0.2s;
+        }
+
+        input[type="text"]:focus {
+            outline: none;
+            border-color: var(--accent-crimson);
+        }
+
+        button {
+            background: #1c1c24;
+            border: 1px solid var(--accent-blood);
+            color: var(--text-goth);
+            padding: 10px 18px;
+            font-family: inherit;
+            font-size: 13px;
+            cursor: pointer;
+            border-radius: 4px;
+            font-weight: bold;
+            transition: all 0.2s ease-in-out;
+        }
+
+        button:hover {
+            background: var(--accent-blood);
+            border-color: var(--accent-crimson);
+            box-shadow: 0 0 8px rgba(128, 0, 32, 0.6);
+        }
+
+        /* Main Workspace Canvas viewport container */
+        #archive-viewport {
+            position: absolute;
+            top: 70px;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            overflow: auto; /* Infinite scroll engine container */
+            background: #09090c;
         }
 
         #archive-container {
             position: relative;
-            width: 100%;
-            min-height: 100vh;
-            padding-bottom: 100px;
+            width: 3000px;  /* Huge boundary maps for extensive canvas scroll */
+            height: 3000px;
+            transform-origin: 0 0;
         }
 
-        /* Guide Grid (Only active during editing) */
+        /* Subtle Guide Grid (Only displays when Edit Mode is active) */
         .edit-mode #archive-container::before {
             content: "";
             position: absolute;
@@ -50,104 +129,118 @@
             z-index: 1;
         }
 
-        .controls-bar {
-            background: var(--panel-dark);
-            border: 1px solid var(--accent-blood);
-            padding: 15px;
-            margin-bottom: 25px;
-            display: flex;
-            gap: 15px;
-            flex-wrap: wrap;
-            align-items: center;
-        }
-
-        button, input, select {
-            background: #1c1c22;
-            border: 1px solid var(--accent-blood);
-            color: var(--text-goth);
-            padding: 8px 15px;
-            cursor: pointer;
-        }
-
-        button:hover {
-            background: var(--accent-blood);
-            color: #fff;
-        }
-
-        /* Relic Grid Item Structure */
+        /* Relic Display Grid Items */
         .relic-item {
             position: absolute;
-            background: var(--panel-dark);
-            border: 1px solid #2a2a35;
-            padding: 10px;
-            box-sizing: border-box;
-            cursor: move;
+            background: #121217;
+            border: 1px solid #23232f;
+            border-radius: 6px;
+            padding: 8px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+            cursor: grab;
             z-index: 2;
-            transition: border-color 0.2s;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+
+        .relic-item:active {
+            cursor: grabbing;
         }
 
         .relic-item:hover {
             border-color: var(--accent-blood);
+            box-shadow: 0 10px 30px rgba(128, 0, 32, 0.25);
+        }
+
+        .relic-thumb-wrapper {
+            width: 100%;
+            flex: 1;
+            border-radius: 4px;
+            overflow: hidden;
+            background: #030305;
+            position: relative;
         }
 
         .relic-thumb {
             width: 100%;
-            height: calc(100% - 30px);
+            height: 100%;
             object-fit: cover;
-            background: #000;
+            pointer-events: none;
         }
 
         .relic-title {
-            height: 25px;
-            line-height: 25px;
+            height: 32px;
+            line-height: 32px;
             text-align: center;
             overflow: hidden;
             text-overflow: ellipsis;
             white-space: nowrap;
             font-size: 12px;
+            font-weight: bold;
+            color: #b5b5bd;
+            padding: 0 4px;
         }
 
-        /* Context Menu Styling (Scrollable) */
+        /* Scrollable Context Menu Structure */
         .goth-context-menu {
             position: fixed;
-            background: var(--panel-dark);
+            background: #14141a;
             border: 1px solid var(--accent-blood);
-            box-shadow: 0 4px 15px rgba(0,0,0,0.8);
+            border-radius: 6px;
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.95);
             z-index: 10000;
-            max-height: 300px;
+            max-height: 260px;
             overflow-y: auto;
-            width: 200px;
+            width: 220px;
+            padding: 4px 0;
         }
 
         .goth-context-menu div {
-            padding: 10px 15px;
+            padding: 11px 16px;
             cursor: pointer;
-            border-bottom: 1px solid #1c1c22;
+            font-size: 13px;
+            color: var(--text-goth);
+            border-bottom: 1px solid #1e1e26;
+            transition: background 0.15s, color 0.15s;
+        }
+
+        .goth-context-menu div:last-child {
+            border-bottom: none;
         }
 
         .goth-context-menu div:hover {
             background: var(--accent-blood);
-            color: #fff;
+            color: #ffffff;
+        }
+
+        /* Interactive UI indicators */
+        .edit-mode .relic-item {
+            border-style: dashed;
+            border-color: var(--accent-crimson);
         }
     </style>
 </head>
 <body>
 
-    <!-- 2. CONTROLS INTERFACE -->
+    <!-- CONTROLS DECK PLATFORM -->
     <div class="controls-bar">
-        <input type="text" id="relic-url" placeholder="Paste Video/Note Link Here">
-        <input type="text" id="relic-name" placeholder="Item Name">
+        <input type="text" id="relic-url" placeholder="Paste Video / Document Resource URL">
+        <input type="text" id="relic-name" placeholder="Label Designation">
         <button id="btn-deposit">Deposit Link</button>
         <button id="btn-toggle-edit">Toggle Edit Mode</button>
         <button id="btn-recenter">Formation Recentering</button>
     </div>
 
-    <!-- 3. PERSISTENT GRID WORKSPACE -->
-    <div id="archive-container"></div>
+    <!-- VIEWPORT & CANVAS STRUCTURE BOUNDARIES -->
+    <div id="archive-viewport">
+        <div id="archive-container"></div>
+    </div>
 
     <script>
         // ==========================================
-        // 4. DATABASE INITIALIZATION
+        // CONFIGURATION AND FIREBASE INIT
         // ==========================================
         const firebaseConfig = {
             apiKey: "AIzaSyB95B-M07ZWK0SW5JFCt3uawB3erjjhMCM",
@@ -160,7 +253,6 @@
             measurementId: "G-V4XS69QD1Y"
         };
 
-        // Secure Initialization check
         if (!firebase.apps.length) {
             firebase.initializeApp(firebaseConfig);
         }
@@ -170,44 +262,40 @@
         const container = document.getElementById('archive-container');
 
         // ==========================================
-        // 5. THE REAL-TIME REFRESH LINK
+        // REALTIME DATABASE INTEGRATION LOOP
         // ==========================================
-        // This watches the database live. When you reload, this immediately draws your entries.
         db.collection("notes").orderBy("timestamp", "asc").onSnapshot((snapshot) => {
-            container.innerHTML = ""; // Clear out workspace to rebuild fresh state
+            container.innerHTML = ""; 
             
             snapshot.forEach((doc) => {
-                const data = doc.data();
-                createRelicElement(doc.id, data);
+                createRelicElement(doc.id, doc.data());
             });
             
-            // Reapply item drag settings if edit mode was active
             if (editModeActive) makeRelicsInteractive();
         }, (error) => {
-            console.error("Firestore loading error on sync loop: ", error);
+            console.error("Critical Firestore sync runtime alert: ", error);
         });
 
         // ==========================================
-        // 6. DEPOSIT FUNCTION (DATA PERSISTENCE TARGET)
+        // DEPOSIT LOGIC
         // ==========================================
         document.getElementById('btn-deposit').addEventListener('click', () => {
             const url = document.getElementById('relic-url').value.trim();
             const name = document.getElementById('relic-name').value.trim() || "Untitled Relic";
 
             if (!url) {
-                alert("Please drop a valid link before attempting deposit.");
+                alert("Please drop a valid resource link target first.");
                 return;
             }
 
-            // Calculate staggered layout grid points safely
             const currentItemCount = container.children.length;
-            const calculatedLeft = (currentItemCount * 50) % (window.innerWidth - 200) + 20;
-            const calculatedTop = Math.floor((currentItemCount * 50) / (window.innerWidth - 200)) * 200 + 100;
+            const calculatedLeft = (currentItemCount * 60) % (window.innerWidth - 260) + 60;
+            const calculatedTop = Math.floor((currentItemCount * 60) / (window.innerWidth - 260)) * 200 + 80;
 
             const newRelic = {
                 title: name,
                 linkUrl: url,
-                imageUrl: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=400", // Default gothic placeholder
+                imageUrl: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=400", 
                 x: calculatedLeft,
                 y: calculatedTop,
                 width: 220,
@@ -215,19 +303,16 @@
                 timestamp: firebase.firestore.FieldValue.serverTimestamp()
             };
 
-            // We write to the server directly! The snapshot listener above handles drawing it.
             db.collection("notes").add(newRelic)
                 .then(() => {
                     document.getElementById('relic-url').value = "";
                     document.getElementById('relic-name').value = "";
                 })
-                .catch((err) => {
-                    console.error("Write execution dropped by application script: ", err);
-                });
+                .catch((err) => console.error("Write dropped by system profile security rules: ", err));
         });
 
         // ==========================================
-        // 7. INTERFACE BUILDER & EDIT MECHANICS
+        // COMPONENT ELEMENT DOM BUILDER
         // ==========================================
         function createRelicElement(id, data) {
             const relic = document.createElement('div');
@@ -239,16 +324,26 @@
             relic.style.height = `${data.height}px`;
 
             relic.innerHTML = `
-                <img src="${data.imageUrl}" class="relic-thumb" alt="Archive Resource">
+                <div class="relic-thumb-wrapper">
+                    <img src="${data.imageUrl}" class="relic-thumb" alt="Archive Object">
+                </div>
                 <div class="relic-title">${data.title}</div>
             `;
 
-            // Handle standard viewing interaction (Double click opens resource link)
+            // Double Click Event to Open Link
             relic.addEventListener('dblclick', () => {
                 window.open(data.linkUrl, '_blank');
             });
 
-            // Handle performance context menus (Long Press or Right Click)
+            // Long Press & Right Click Menu Triggers
+            let touchTimer;
+            relic.addEventListener('touchstart', (e) => {
+                touchTimer = setTimeout(() => spawnContextMenu(e.touches[0], id, data), 600);
+            }, { passive: true });
+
+            relic.addEventListener('touchend', () => clearTimeout(touchTimer));
+            relic.addEventListener('touchmove', () => clearTimeout(touchTimer));
+
             relic.addEventListener('contextmenu', (e) => {
                 e.preventDefault();
                 spawnContextMenu(e, id, data);
@@ -257,9 +352,10 @@
             container.appendChild(relic);
         }
 
-        // Context Menu Implementation with mandatory layout requirements preserved
+        // ==========================================
+        // CONTEXT MENU (SCROLLABLE & PRESERVED)
+        // ==========================================
         function spawnContextMenu(e, id, data) {
-            // Remove preexisting menus instantly
             const oldMenu = document.querySelector('.goth-context-menu');
             if (oldMenu) oldMenu.remove();
 
@@ -272,13 +368,12 @@
                 <div onclick="window.open('${data.linkUrl}', '_blank')">Open in New Tab</div>
                 <div onclick="renameRelic('${id}')">Rename</div>
                 <div onclick="changeRelicImage('${id}')">Change Image</div>
-                <div onclick="snapToOriginalShape('${id}')">Snap to Original Shape</div>
-                <div onclick="deleteRelicConfirmation('${id}')" style="color: #ff4d4d;">Delete Relic</div>
+                <div onclick="snapToOriginalShape('${id}')">Resize to Original</div>
+                <div onclick="deleteRelicConfirmation('${id}')" style="color: #ff4d4d; font-weight: bold;">Delete Relic</div>
             `;
 
             document.body.appendChild(menu);
 
-            // Close context menu on external click safely
             setTimeout(() => {
                 document.addEventListener('click', function closeMenu() {
                     menu.remove();
@@ -288,18 +383,18 @@
         }
 
         // ==========================================
-        // 8. MANDATORY DATABASE MUTATION MANAGEMENT
+        // MUTATION DATABASE OPERATIONS
         // ==========================================
         window.renameRelic = function(id) {
             const currentTitle = document.getElementById(id).querySelector('.relic-title').innerText;
-            const newName = prompt("Enter replacement asset marker designation:", currentTitle);
+            const newName = prompt("Modify designation label metadata:", currentTitle);
             if (newName) {
                 db.collection("notes").doc(id).update({ title: newName });
             }
         };
 
         window.changeRelicImage = function(id) {
-            const newImg = prompt("Paste structural URL target for asset thumb visualization:");
+            const newImg = prompt("Provide fresh image URL address location path:");
             if (newImg) {
                 db.collection("notes").doc(id).update({ imageUrl: newImg });
             }
@@ -313,56 +408,84 @@
         };
 
         window.deleteRelicConfirmation = function(id) {
-            if (confirm("Are you absolutely sure you want to purge this record from the archive structure permanently?")) {
+            if (confirm("Confirm complete elimination of target element from primary storage archives?")) {
                 db.collection("notes").doc(id).delete();
             }
         };
 
-        // Grid Dragging with soft snap functionality integrated
+        // ==========================================
+        // INTERACTIVE CANVAS LOGIC (DRAG & SNAP)
+        // ==========================================
         function makeRelicsInteractive() {
             const items = document.querySelectorAll('.relic-item');
             items.forEach(item => {
                 let isDragging = false;
                 let startX, startY;
 
-                item.addEventListener('mousedown', (e) => {
-                    if (!editModeActive || e.button !== 0) return;
+                // Mouse Drag Events
+                item.addEventListener('mousedown', startDrag);
+                
+                // Touch Drag Support (Finger Adjustments)
+                item.addEventListener('touchstart', (e) => {
+                    if(editModeActive) startDrag(e.touches[0]);
+                }, { passive: true });
+
+                function startDrag(e) {
+                    if (!editModeActive || (e.button !== undefined && e.button !== 0)) return;
                     isDragging = true;
                     startX = e.clientX - item.offsetLeft;
                     startY = e.clientY - item.offsetTop;
                     item.style.zIndex = 1000;
-                });
 
-                document.addEventListener('mousemove', (e) => {
+                    document.addEventListener('mousemove', moveDrag);
+                    document.addEventListener('touchmove', moveTouchDrag, { passive: false });
+                    document.addEventListener('mouseup', endDrag);
+                    document.addEventListener('touchend', endDrag);
+                }
+
+                function moveTouchDrag(e) {
+                    if (isDragging) e.preventDefault();
+                    moveDrag(e.touches[0]);
+                }
+
+                function moveDrag(e) {
                     if (!isDragging) return;
                     let newX = e.clientX - startX;
                     let newY = e.clientY - startY;
 
-                    // Soft grid alignment snapping (40px increments)
-                    if (editModeActive) {
-                        newX = Math.round(newX / 40) * 40;
-                        newY = Math.round(newY / 40) * 40;
-                    }
+                    // Absolute Boundaries Containment Check
+                    if (newX < 0) newX = 0;
+                    if (newY < 0) newY = 0;
+                    if (newX > 3000 - item.offsetWidth) newX = 3000 - item.offsetWidth;
+                    if (newY > 3000 - item.offsetHeight) newY = 3000 - item.offsetHeight;
+
+                    // Soft Grid Snap (40px Alignment blocks)
+                    newX = Math.round(newX / 40) * 40;
+                    newY = Math.round(newY / 40) * 40;
 
                     item.style.left = `${newX}px`;
                     item.style.top = `${newY}px`;
-                });
+                }
 
-                document.addEventListener('mouseup', () => {
+                function endDrag() {
                     if (!isDragging) return;
                     isDragging = false;
                     item.style.zIndex = 2;
 
-                    // Write updated positions back into cloud documents permanently
+                    document.removeEventListener('mousemove', moveDrag);
+                    document.removeEventListener('touchmove', moveTouchDrag);
+                    document.removeEventListener('mouseup', endDrag);
+                    document.removeEventListener('touchend', endDrag);
+
                     db.collection("notes").doc(item.id).update({
                         x: parseInt(item.style.left),
                         y: parseInt(item.style.top)
                     });
-                });
+                }
             });
         }
 
-        // Mode Switching UI Controller
+        // Mode Switching Systems
         document.getElementById('btn-toggle-edit').addEventListener('click', () => {
             editModeActive = !editModeActive;
             document.body.classList.toggle('edit-mode', editModeActive);
@@ -374,12 +497,12 @@
             }
         });
 
-        // Formation Style Recentering Mechanics
+        // Formation Style Recentering System Engine
         document.getElementById('btn-recenter').addEventListener('click', () => {
             const items = document.querySelectorAll('.relic-item');
             items.forEach((item, index) => {
-                const targetX = (index * 60) % (window.innerWidth - 260) + 40;
-                const targetY = Math.floor((index * 60) / (window.innerWidth - 260)) * 180 + 120;
+                const targetX = (index * 60) % (window.innerWidth - 260) + 60;
+                const targetY = Math.floor((index * 60) / (window.innerWidth - 260)) * 180 + 100;
                 
                 db.collection("notes").doc(item.id).update({
                     x: targetX,
