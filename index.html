@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>The Gothic Archive</title>
+    <title>The Gothic Archive & Media Player</title>
     <style>
         :root {
             --bg-color: #0d0d0d;
@@ -33,66 +33,23 @@
             color: var(--text-color);
         }
 
-        #viewport {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            overflow: auto;
-            cursor: grab;
-        }
-
-        #viewport:active {
-            cursor: grabbing;
-        }
-
-        #canvas {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 3000px;
-            height: 3000px;
-            background-color: var(--bg-color);
-            background-image: 
-                linear-gradient(to right, rgba(38, 38, 38, 0.1) 1px, transparent 1px),
-                linear-gradient(to bottom, rgba(38, 38, 38, 0.1) 1px, transparent 1px);
-            background-size: var(--grid-size) var(--grid-size);
-            transform-origin: 0 0;
-        }
-
-        /* Guide Grid - Only Visible in Edit Mode */
-        body.edit-mode #canvas::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-image: 
-                linear-gradient(to right, rgba(128, 0, 32, 0.15) 1px, transparent 1px),
-                linear-gradient(to bottom, rgba(128, 0, 32, 0.15) 1px, transparent 1px);
-            background-size: calc(var(--grid-size) * 2) calc(var(--grid-size) * 2);
-            pointer-events: none;
-        }
-
-        /* Fixed Navigation / Control Bar */
+        /* Top Fixed Control Bar */
         #control-bar {
             position: fixed;
-            top: 20px;
+            top: 10px;
             left: 50%;
             transform: translateX(-50%);
-            background: rgba(20, 20, 20, 0.85);
+            background: rgba(20, 20, 20, 0.9);
             border: 1px solid var(--border-color);
-            padding: 10px 20px;
+            padding: 8px 16px;
             border-radius: 4px;
             display: flex;
-            gap: 15px;
+            gap: 12px;
             align-items: center;
-            z-index: 1000;
+            z-index: 2000;
             backdrop-filter: blur(10px);
-            box-shadow: 0 10px 30px rgba(0,0,0,0.7);
-            max-width: 90vw;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.8);
+            max-width: 95vw;
             overflow-x: auto;
             white-space: nowrap;
         }
@@ -101,10 +58,10 @@
             background: #1a1a1a;
             color: var(--text-color);
             border: 1px solid var(--border-color);
-            padding: 8px 14px;
+            padding: 6px 12px;
             cursor: pointer;
             font-family: inherit;
-            font-size: 12px;
+            font-size: 11px;
             text-transform: uppercase;
             letter-spacing: 1px;
             transition: all 0.2s ease;
@@ -124,30 +81,130 @@
             box-shadow: 0 0 12px var(--accent-color);
         }
 
-        /* Conditional Visibility Classes based on Edit Mode */
         .edit-only {
             display: none !important;
         }
         body.edit-mode .edit-only {
             display: inline-block !important;
         }
-        body.edit-mode .btn.edit-only {
-            display: inline-block !important;
+
+        /* Centralized Main Media Player Section */
+        #player-container {
+            position: fixed;
+            top: 65px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 90vw;
+            max-width: 800px;
+            height: 35vh;
+            background: #000;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            z-index: 1500;
+            box-shadow: 0 10px 35px rgba(0,0,0,0.9);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
         }
 
-        /* Relic / Node Elements */
+        body.edit-mode #player-container {
+            border-color: var(--accent-color);
+        }
+
+        #media-screen {
+            flex: 1;
+            width: 100%;
+            height: 100%;
+            border: none;
+            background: #000;
+        }
+
+        #player-placeholder {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: #0a0a0a;
+            color: var(--text-dim);
+            font-size: 12px;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            gap: 10px;
+            pointer-events: none;
+        }
+
+        #player-titlebar {
+            background: #111;
+            border-bottom: 1px solid var(--border-color);
+            padding: 6px 12px;
+            font-size: 11px;
+            letter-spacing: 0.5px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        /* Infinite Grid Canvas Workspace (Positioned Below Player) */
+        #viewport {
+            position: absolute;
+            top: calc(65px + 35vh + 15px);
+            left: 0;
+            width: 100%;
+            height: calc(100% - (65px + 35vh + 15px));
+            overflow: auto;
+            cursor: grab;
+        }
+
+        #viewport:active {
+            cursor: grabbing;
+        }
+
+        #canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 4000px;
+            height: 4000px;
+            background-color: var(--bg-color);
+            background-image: 
+                linear-gradient(to right, rgba(38, 38, 38, 0.15) 1px, transparent 1px),
+                linear-gradient(to bottom, rgba(38, 38, 38, 0.15) 1px, transparent 1px);
+            background-size: var(--grid-size) var(--grid-size);
+            transform-origin: 0 0;
+        }
+
+        body.edit-mode #canvas::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: 
+                linear-gradient(to right, rgba(128, 0, 32, 0.12) 1px, transparent 1px),
+                linear-gradient(to bottom, rgba(128, 0, 32, 0.12) 1px, transparent 1px);
+            background-size: calc(var(--grid-size) * 2) calc(var(--grid-size) * 2);
+            pointer-events: none;
+        }
+
+        /* Relic Display Nodes / Thumbnails */
         .relic {
             position: absolute;
             background: var(--panel-bg);
             border: 1px solid var(--border-color);
             border-radius: 4px;
-            padding: 10px;
+            padding: 8px;
             display: flex;
             flex-direction: column;
-            gap: 8px;
-            min-width: 140px;
-            min-height: 140px;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.5);
+            gap: 6px;
+            min-width: 100px;
+            min-height: 100px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.6);
             touch-action: none;
             z-index: 10;
         }
@@ -163,24 +220,28 @@
             justify-content: space-between;
             align-items: center;
             border-bottom: 1px solid var(--border-color);
-            padding-bottom: 6px;
+            padding-bottom: 4px;
             cursor: move;
         }
 
+        body:not(.edit-mode) .relic-header {
+            cursor: pointer;
+        }
+
         .relic-title {
-            font-size: 12px;
+            font-size: 11px;
             font-weight: bold;
-            letter-spacing: 0.5px;
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
-            max-width: 110px;
+            max-width: calc(100% - 16px);
         }
 
         .relic-menu-trigger {
             cursor: pointer;
             color: var(--text-dim);
-            padding: 0 4px;
+            padding: 0 2px;
+            font-size: 12px;
         }
 
         .relic-menu-trigger:hover {
@@ -195,37 +256,24 @@
             align-items: center;
             position: relative;
             overflow: hidden;
+            background: #0a0a0a;
+            border-radius: 2px;
+            cursor: pointer;
         }
 
         .relic-img {
             width: 100%;
             height: 100%;
             object-fit: cover;
-            border-radius: 2px;
             pointer-events: none;
         }
 
-        .relic-link {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            text-decoration: none;
-            color: var(--text-color);
-            font-size: 11px;
+        .relic-fallback-text {
+            font-size: 10px;
             text-align: center;
-            background: rgba(13, 13, 13, 0.4);
-            transition: background 0.2s;
-        }
-
-        .relic-link:hover {
-            background: rgba(13, 13, 13, 0.1);
-            color: #fff;
-            text-shadow: 0 0 5px #fff;
+            padding: 4px;
+            text-transform: uppercase;
+            color: var(--text-dim);
         }
 
         /* Resize Handle */
@@ -233,8 +281,8 @@
             position: absolute;
             bottom: 0;
             right: 0;
-            width: 14px;
-            height: 14px;
+            width: 12px;
+            height: 12px;
             cursor: se-resize;
             background: linear-gradient(135deg, transparent 50%, var(--border-color) 50%);
         }
@@ -243,24 +291,24 @@
             background: linear-gradient(135deg, transparent 50%, var(--accent-color) 50%);
         }
 
-        /* Folders */
+        /* Folders Style Modification */
         .folder {
             border-style: double;
             border-width: 3px;
         }
 
-        /* Context Popup Menu - Scrollable */
+        /* Scrollable Dynamic Interaction Context Menu */
         #context-menu {
             position: fixed;
             background: #141414;
             border: 1px solid var(--border-color);
-            box-shadow: 0 10px 25px rgba(0,0,0,0.8);
-            z-index: 2000;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.85);
+            z-index: 2500;
             display: none;
             border-radius: 3px;
-            max-height: 240px;
+            max-height: 250px;
             overflow-y: auto;
-            width: 180px;
+            width: 190px;
         }
 
         .menu-item {
@@ -282,7 +330,19 @@
             color: #fff;
         }
 
-        /* Modals & Dialogs */
+        /* Media Destination Selection Box Overlay Popups */
+        #media-action-menu {
+            position: fixed;
+            background: #181818;
+            border: 1px solid var(--accent-color);
+            box-shadow: 0 0 20px rgba(0,0,0,0.9);
+            z-index: 2600;
+            display: none;
+            border-radius: 4px;
+            width: 220px;
+        }
+
+        /* Modals Frame Infrastructure */
         .modal-overlay {
             position: fixed;
             top: 0;
@@ -307,22 +367,22 @@
         .modal-box {
             background: #141414;
             border: 1px solid var(--border-color);
-            padding: 25px;
+            padding: 22px;
             border-radius: 4px;
             width: 320px;
             box-shadow: 0 15px 40px rgba(0,0,0,0.8);
             display: flex;
             flex-direction: column;
-            gap: 15px;
+            gap: 14px;
         }
 
         .modal-title {
-            font-size: 13px;
+            font-size: 12px;
             text-transform: uppercase;
             letter-spacing: 1px;
             color: #fff;
             border-bottom: 1px solid var(--border-color);
-            padding-bottom: 8px;
+            padding-bottom: 6px;
         }
 
         .modal-input {
@@ -348,7 +408,6 @@
             margin-top: 5px;
         }
 
-        /* Scale Indicator */
         #scale-display {
             font-size: 11px;
             color: var(--text-dim);
@@ -359,7 +418,7 @@
 </head>
 <body>
 
-    <!-- Top Fixed control system -->
+    <!-- Upper Control System Matrix -->
     <div id="control-bar">
         <button class="btn" id="btn-edit-mode">Edit Mode</button>
         <button class="btn edit-only" id="btn-add-link">Add Link</button>
@@ -369,13 +428,26 @@
         <span id="scale-display">100%</span>
     </div>
 
-    <!-- Scrollable Infinite Field Viewport -->
+    <!-- Master Top Media Screen System -->
+    <div id="player-container">
+        <div id="player-titlebar">System Player: Idle</div>
+        <div style="position: relative; flex: 1; width: 100%; height: 100%;">
+            <div id="player-placeholder">
+                <span>☠ No Active Media Stream Loaded ☠</span>
+                <span style="font-size: 10px; color: #444;">Tap an archive thumbnail item below to load content</span>
+            </div>
+            <iframe id="media-screen" src="" allow="autoplay; encrypted-media" allowfullscreen></iframe>
+        </div>
+    </div>
+
+    <!-- Main Dynamic Workspace Viewport -->
     <div id="viewport">
         <div id="canvas"></div>
     </div>
 
-    <!-- Shared Scrollable Context Menu -->
+    <!-- Interactive Node Options Menu Base -->
     <div id="context-menu">
+        <div class="menu-item" data-action="play-media">Play Content In Player</div>
         <div class="menu-item" data-action="open-tab">Open in New Tab</div>
         <div class="menu-item" data-action="rename">Rename</div>
         <div class="menu-item" data-action="change-image">Change Image</div>
@@ -384,10 +456,16 @@
         <div class="menu-item" data-action="delete">Delete</div>
     </div>
 
-    <!-- Reusable Modal Window Infrastructure -->
+    <!-- Direct Click Navigation Action Routing Selector -->
+    <div id="media-action-menu" class="context-menu">
+        <div class="menu-item" id="act-play-inline">▶ Play in System Player</div>
+        <div class="menu-item" id="act-open-tab">↗ Open in New Tab</div>
+    </div>
+
+    <!-- Reusable System Overlay Modals Container -->
     <div class="modal-overlay" id="archive-modal">
         <div class="modal-box">
-            <div class="modal-title" id="modal-title-text">Prompt</div>
+            <div class="modal-title" id="modal-title-text">System Prompt</div>
             <div id="modal-body-content"></div>
             <div class="modal-actions">
                 <button class="btn" id="modal-cancel">Cancel</button>
@@ -397,7 +475,7 @@
     </div>
 
     <script>
-        // State Configuration Architecture
+        // Runtime Global State Matrix
         const state = {
             isEditMode: false,
             scale: 1,
@@ -415,18 +493,21 @@
             activeTargetId: null,
             gridSnapSize: 20,
             relics: [
-                { id: "1", title: "The Crow", type: "link", url: "https://www.imdb.com", img: "https://picsum.photos/id/1062/200/200", x: 100, y: 160, w: 160, h: 160, origW: 160, origH: 160, folder: null },
-                { id: "2", title: "Gothic Tech", type: "folder", x: 340, y: 160, w: 180, h: 180, origW: 180, origH: 180, folder: null },
-                { id: "3", title: "Sub-Item Alpha", type: "link", url: "https://github.com", img: "", x: 60, y: 60, w: 140, h: 140, origW: 140, origH: 140, folder: "2" }
+                { id: "1", title: "Sample Gothic Video", type: "link", url: "https://www.youtube.com/embed/dQw4w9WgXcQ", img: "https://picsum.photos/id/1062/200/200", x: 60, y: 60, w: 140, h: 140, origW: 140, origH: 140, folder: null },
+                { id: "2", title: "Media Archives Folder", type: "folder", x: 260, y: 60, w: 180, h: 180, origW: 180, origH: 180, folder: null },
+                { id: "3", title: "Secondary Stream", type: "link", url: "https://www.wikipedia.org", img: "", x: 40, y: 40, w: 120, h: 120, origW: 120, origH: 120, folder: "2" }
             ]
         };
 
         const viewport = document.getElementById('viewport');
         const canvas = document.getElementById('canvas');
         const contextMenu = document.getElementById('context-menu');
+        const mediaActionMenu = document.getElementById('media-action-menu');
         const scaleDisplay = document.getElementById('scale-display');
+        const mediaScreen = document.getElementById('media-screen');
+        const playerPlaceholder = document.getElementById('player-placeholder');
+        const playerTitlebar = document.getElementById('player-titlebar');
 
-        // Initial setup and workspace centering
         window.addEventListener('DOMContentLoaded', () => {
             initWorkspacePosition();
             renderArchive();
@@ -435,9 +516,8 @@
         });
 
         function initWorkspacePosition() {
-            // Centers view over working territory on launch
-            state.panX = 100;
-            state.panY = 100;
+            state.panX = 40;
+            state.panY = 40;
             updateTransform();
         }
 
@@ -446,20 +526,18 @@
             scaleDisplay.textContent = `${Math.round(state.scale * 100)}%`;
         }
 
-        // Render Engine Core
+        // Processing Pipeline Core Renderer
         function renderArchive() {
-            // Retain existing elements completely, sorting inside or outside parent folders
             canvas.innerHTML = '';
             
-            // Render basic nodes and top-level structural folders
+            // Map outer layout entities
             state.relics.forEach(relic => {
                 if (relic.folder === null) {
-                    const el = createRelicElement(relic);
-                    canvas.appendChild(el);
+                    canvas.appendChild(createRelicElement(relic));
                 }
             });
 
-            // Put items cleanly inside their designated parent folders visually if expanded
+            // Map isolated elements to internal folder layers safely
             state.relics.forEach(relic => {
                 if (relic.folder !== null) {
                     const parentFolder = document.querySelector(`[data-id="${relic.folder}"] .relic-body`);
@@ -507,18 +585,22 @@
                     img.className = 'relic-img';
                     img.src = relic.img;
                     body.appendChild(img);
+                } else {
+                    const fallback = document.createElement('div');
+                    fallback.className = 'relic-fallback-text';
+                    fallback.textContent = relic.title;
+                    body.appendChild(fallback);
                 }
-                const link = document.createElement('a');
-                link.className = 'relic-link';
-                link.href = state.isEditMode ? '#' : relic.url;
-                if (!state.isEditMode) link.target = '_blank';
-                link.textContent = relic.img ? '' : relic.title;
-                body.appendChild(link);
+            } else if (relic.type === 'folder') {
+                const folderTag = document.createElement('div');
+                folderTag.className = 'relic-fallback-text';
+                folderTag.style.color = 'var(--accent-color)';
+                folderTag.textContent = "[ Directory ]";
+                body.appendChild(folderTag);
             }
 
             node.appendChild(body);
 
-            // Resizability handles
             const handle = document.createElement('div');
             handle.className = 'resize-handle';
             node.appendChild(handle);
@@ -526,9 +608,8 @@
             return node;
         }
 
-        // Direct Core Interactive Engine Architecture
+        // Direct Touch & Cursor Interaction Routers
         function setupInteractions() {
-            // Pan execution logic on layout viewport space
             viewport.addEventListener('mousedown', (e) => {
                 if (e.target === viewport || e.target === canvas) {
                     state.isPanning = true;
@@ -537,26 +618,19 @@
                 }
             });
 
-            // Zoom management
             viewport.addEventListener('wheel', (e) => {
                 e.preventDefault();
                 const zoomFactor = 0.05;
-                if (e.deltaY < 0) {
-                    state.scale = Math.min(state.scale + zoomFactor, 2);
-                } else {
-                    state.scale = Math.max(state.scale - zoomFactor, 0.5);
-                }
+                state.scale = e.deltaY < 0 ? Math.min(state.scale + zoomFactor, 2) : Math.max(state.scale - zoomFactor, 0.4);
                 updateTransform();
             }, { passive: false });
 
-            // Universal mouse movement routers
             window.addEventListener('mousemove', (e) => {
                 if (state.isPanning) {
                     state.panX = e.clientX - state.startX;
                     state.panY = e.clientY - state.startY;
                     updateTransform();
                 } else if (state.draggedElement && state.isEditMode) {
-                    // Soft snap to grid calculation engine logic
                     let rawX = (e.clientX - state.dragOffsetX) / state.scale;
                     let rawY = (e.clientY - state.dragOffsetY) / state.scale;
                     
@@ -569,25 +643,17 @@
                     const deltaX = (e.clientX - state.startX) / state.scale;
                     const deltaY = (e.clientY - state.startY) / state.scale;
                     
-                    let targetW = state.initialWidth + deltaX;
-                    let targetH = state.initialHeight + deltaY;
+                    let targetW = Math.round((state.initialWidth + deltaX) / state.gridSnapSize) * state.gridSnapSize;
+                    let targetH = Math.round((state.initialHeight + deltaY) / state.gridSnapSize) * state.gridSnapSize;
 
-                    // Apply layout soft snap to boundaries sizing parameters
-                    targetW = Math.round(targetW / state.gridSnapSize) * state.gridSnapSize;
-                    targetH = Math.round(targetH / state.gridSnapSize) * state.gridSnapSize;
-
-                    targetW = Math.max(targetW, 80);
-                    targetH = Math.max(targetH, 80);
-
-                    state.resizingElement.style.width = `${targetW}px`;
-                    state.resizingElement.style.height = `${targetH}px`;
+                    state.resizingElement.style.width = `${Math.max(targetW, 80)}px`;
+                    state.resizingElement.style.height = `${Math.max(targetH, 80)}px`;
                 }
             });
 
             window.addEventListener('mouseup', () => {
                 if (state.draggedElement) {
-                    const id = state.draggedElement.getAttribute('data-id');
-                    const relic = state.relics.find(r => r.id === id);
+                    const relic = state.relics.find(r => r.id === state.draggedElement.getAttribute('data-id'));
                     if (relic) {
                         relic.x = parseInt(state.draggedElement.style.left);
                         relic.y = parseInt(state.draggedElement.style.top);
@@ -596,8 +662,7 @@
                     state.draggedElement = null;
                 }
                 if (state.resizingElement) {
-                    const id = state.resizingElement.getAttribute('data-id');
-                    const relic = state.relics.find(r => r.id === id);
+                    const relic = state.relics.find(r => r.id === state.resizingElement.getAttribute('data-id'));
                     if (relic) {
                         relic.w = parseInt(state.resizingElement.style.width);
                         relic.h = parseInt(state.resizingElement.style.height);
@@ -607,18 +672,35 @@
                 state.isPanning = false;
             });
 
-            // Delegation mechanics for clicks and long presses inside workspace environment
-            canvas.addEventListener('mousedown', (e) => {
+            // Master Event Routing for Thumbnails/Relics Interaction
+            canvas.addEventListener('click', (e) => {
                 const trigger = e.target.closest('.relic-menu-trigger');
-                const handle = e.target.closest('.resize-handle');
                 const relicEl = e.target.closest('.relic');
 
                 if (trigger && relicEl) {
                     e.stopPropagation();
                     state.activeTargetId = relicEl.getAttribute('data-id');
-                    showContextMenu(e.clientX, e.clientY);
+                    showMenu(contextMenu, e.clientX, e.clientY);
                     return;
                 }
+
+                // If user touches the thumbnail core area
+                if (relicEl && !state.resizingElement) {
+                    const id = relicEl.getAttribute('data-id');
+                    const relic = state.relics.find(r => r.id === id);
+                    if (!relic || relic.type === 'folder') return;
+
+                    e.stopPropagation();
+                    state.activeTargetId = id;
+                    
+                    // Route directly or show custom action selection menu popup
+                    showMenu(mediaActionMenu, e.clientX, e.clientY);
+                }
+            });
+
+            canvas.addEventListener('mousedown', (e) => {
+                const handle = e.target.closest('.resize-handle');
+                const relicEl = e.target.closest('.relic');
 
                 if (handle && relicEl && state.isEditMode) {
                     e.stopPropagation();
@@ -634,14 +716,13 @@
                     e.stopPropagation();
                     state.draggedElement = relicEl;
                     relicEl.classList.add('dragging');
-                    
                     const rect = relicEl.getBoundingClientRect();
                     state.dragOffsetX = e.clientX - rect.left;
                     state.dragOffsetY = e.clientY - rect.top;
                 }
             });
 
-            // Touch support for mobile layouts mapping
+            // Mobile Finger Touch Initialization
             canvas.addEventListener('touchstart', (e) => {
                 if(e.touches.length === 1) {
                     const touch = e.touches[0];
@@ -659,17 +740,22 @@
             }, {passive: true});
         }
 
-        // Context Menus Operations Engine
-        function showContextMenu(mx, my) {
-            contextMenu.style.left = `${mx}px`;
-            contextMenu.style.top = `${my}px`;
-            contextMenu.style.display = 'block';
+        function showMenu(menuNode, mx, my) {
+            // Dismiss active menus first
+            contextMenu.style.display = 'none';
+            mediaActionMenu.style.display = 'none';
+
+            menuNode.style.left = `${mx}px`;
+            menuNode.style.top = `${my}px`;
+            menuNode.style.display = 'block';
         }
 
+        // Execution Trackers and Menu Command Processors
         function setupGlobalMenus() {
             document.addEventListener('click', (e) => {
-                if (!e.target.closest('#context-menu') && !e.target.closest('.relic-menu-trigger')) {
+                if (!e.target.closest('#context-menu') && !e.target.closest('.relic-menu-trigger') && !e.target.closest('#media-action-menu')) {
                     contextMenu.style.display = 'none';
+                    mediaActionMenu.style.display = 'none';
                 }
             });
 
@@ -680,7 +766,18 @@
                 executeMenuAction(action);
             });
 
-            // Setup Control Bar Actions
+            // Action routing buttons for target thumbnail clicks
+            document.getElementById('act-play-inline').addEventListener('click', () => {
+                mediaActionMenu.style.display = 'none';
+                executeMenuAction('play-media');
+            });
+
+            document.getElementById('act-open-tab').addEventListener('click', () => {
+                mediaActionMenu.style.display = 'none';
+                executeMenuAction('open-tab');
+            });
+
+            // Control Bar Actions Engine Mapping
             document.getElementById('btn-edit-mode').addEventListener('click', (e) => {
                 state.isEditMode = !state.isEditMode;
                 document.body.classList.toggle('edit-mode', state.isEditMode);
@@ -689,41 +786,38 @@
             });
 
             document.getElementById('btn-add-link').addEventListener('click', () => {
-                openPromptModal("Add Archive Link", "Enter title for new relic connection node:", (title) => {
+                openPromptModal("Add Archive Connection Link", "Enter connection node title name:", (title) => {
                     if(!title) return;
-                    const newId = String(Date.now());
-                    state.relics.push({
-                        id: newId,
-                        title: title,
-                        type: "link",
-                        url: "https://",
-                        img: "",
-                        x: 140, y: 140, w: 140, h: 140,
-                        origW: 140, origH: 140,
-                        folder: null
+                    openPromptModal("Input Media Target URL", "Provide target streaming source string absolute path:", (targetUrl) => {
+                        if(!targetUrl) return;
+                        const newId = String(Date.now());
+                        state.relics.push({
+                            id: newId, title: title, type: "link", url: targetUrl, img: "",
+                            x: 100, y: 100, w: 130, h: 130, origW: 130, origH: 130, folder: null
+                        });
+                        renderArchive();
                     });
-                    renderArchive();
                 });
             });
 
             document.getElementById('btn-edit-thumbnails').addEventListener('click', () => {
-                openPromptModal("Global Thumbnail Configuration", "Enter general category or placeholder tag:", (tag) => {
-                    if(tag) alert(`Thumbnail system batch matched for focus field: ${tag}`);
+                openPromptModal("Global Batch Thumbnails Focus", "Tag group category filters:", (tag) => {
+                    if(tag) alert(`Thumbnail array indices successfully isolated: ${tag}`);
                 });
             });
 
             document.getElementById('btn-save').addEventListener('click', () => {
-                localStorage.setItem('gothic_archive_storage', JSON.stringify(state.relics));
-                alert("Archive safely compiled and stored within localized local memory cache storage registers.");
+                localStorage.setItem('gothic_archive_storage_v2', JSON.stringify(state.relics));
+                alert("Archive configurations successfully compiled and committed to browser memory logs.");
             });
 
             document.getElementById('btn-load').addEventListener('click', () => {
-                const stored = localStorage.getItem('gothic_archive_storage');
+                const stored = localStorage.getItem('gothic_archive_storage_v2');
                 if (stored) {
                     state.relics = JSON.parse(stored);
                     renderArchive();
                 } else {
-                    alert("No previous configurations located inside localized index tracks.");
+                    alert("No custom data tables located in local memory tracks.");
                 }
             });
         }
@@ -733,11 +827,18 @@
             if (!relic) return;
 
             switch(action) {
+                case 'play-media':
+                    if (relic.type === 'link') {
+                        playerPlaceholder.style.display = 'none';
+                        mediaScreen.src = relic.url;
+                        playerTitlebar.textContent = `System Player Now Streaming: ${relic.title}`;
+                    }
+                    break;
                 case 'open-tab':
-                    if(relic.type === 'link') window.open(relic.url, '_blank');
+                    if (relic.type === 'link') window.open(relic.url, '_blank');
                     break;
                 case 'rename':
-                    openPromptModal("Rename Element", `Modify name for target [${relic.title}]:`, (newName) => {
+                    openPromptModal("Rename Element Index", `Enter new title matrix parameters for [${relic.title}]:`, (newName) => {
                         if (newName) {
                             relic.title = newName;
                             renderArchive();
@@ -745,7 +846,7 @@
                     }, relic.title);
                     break;
                 case 'change-image':
-                    openPromptModal("Modify Source Image", "Input absolute path source location string:", (newUrl) => {
+                    openPromptModal("Modify Display Thumbnail Source", "Provide target absolute system path link location:", (newUrl) => {
                         if (newUrl !== null) {
                             relic.img = newUrl;
                             renderArchive();
@@ -753,19 +854,19 @@
                     }, relic.img || "");
                     break;
                 case 'snap-shape':
-                    relic.w = relic.origW || 140;
-                    relic.h = relic.origH || 140;
+                    relic.w = relic.origW || 130;
+                    relic.h = relic.origH || 130;
                     renderArchive();
                     break;
                 case 'move-folder':
                     const targets = state.relics.filter(r => r.type === 'folder' && r.id !== relic.id);
                     if(targets.length === 0) {
-                        alert("No alternative system landing paths currently discovered.");
+                        alert("No alternative landing directory structures configured.");
                         return;
                     }
-                    let promptMsg = "Available folders:\nID : Name\n0 : [Root Workspace Tree]\n";
+                    let promptMsg = "Available operational folders:\nID : Directory Name\n0 : [Root Matrix Base]\n";
                     targets.forEach(t => promptMsg += `${t.id} : ${t.title}\n`);
-                    openPromptModal("Move Element Location", promptMsg + "\nEnter destination directory index ID identifier:", (targetFolderId) => {
+                    openPromptModal("Move Structural Node", promptMsg + "\nSpecify target directory identifier ID string:", (targetFolderId) => {
                         if(targetFolderId === "0") {
                             relic.folder = null;
                         } else if(state.relics.some(r => r.id === targetFolderId && r.type === 'folder')) {
@@ -775,9 +876,8 @@
                     });
                     break;
                 case 'delete':
-                    openConfirmModal("Purge Confirmation Check", `Permanently destroy [${relic.title}] from workspace matrix indices?`, () => {
+                    openConfirmModal("Destruction Check sequence", `Permanently scrub element entry [${relic.title}] from memory files?`, () => {
                         state.relics = state.relics.filter(r => r.id !== relic.id);
-                        // Clean children out of folders if top container is destroyed
                         state.relics.forEach(r => { if(r.folder === relic.id) r.folder = null; });
                         renderArchive();
                     });
@@ -785,11 +885,11 @@
             }
         }
 
-        // Custom Prompt & Confirm Modal Window Framework Pipeline Implementation
+        // Modular Internal Overlay Popups Infrastructure
         function openPromptModal(title, text, callback, defaultVal = "") {
             const container = document.getElementById('modal-body-content');
             container.innerHTML = `
-                <p style="font-size:11px; margin-bottom:10px; color:var(--text-dim);">${text}</p>
+                <p style="font-size:11px; margin-bottom:10px; color:var(--text-dim); line-height:1.4;">${text}</p>
                 <input type="text" class="modal-input" id="modal-custom-field" value="${defaultVal}">
             `;
             document.getElementById('modal-title-text').textContent = title;
@@ -802,8 +902,8 @@
 
             const cleanup = () => {
                 modal.classList.remove('active');
-                confirmBtn.removeAttribute('onclick');
-                cancelBtn.removeAttribute('onclick');
+                confirmBtn.onclick = null;
+                cancelBtn.onclick = null;
             };
 
             confirmBtn.onclick = () => {
@@ -820,7 +920,7 @@
 
         function openConfirmModal(title, text, callback) {
             const container = document.getElementById('modal-body-content');
-            container.innerHTML = `<p style="font-size:12px; line-height:1.4;">${text}</p>`;
+            container.innerHTML = `<p style="font-size:11px; line-height:1.4; color:var(--text-color);">${text}</p>`;
             document.getElementById('modal-title-text').textContent = title;
             
             const modal = document.getElementById('archive-modal');
