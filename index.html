@@ -2,576 +2,391 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Gothic Video Archive</title>
-    <!-- Firebase Modular SDKs (v10) -->
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-        import { initializeFirestore, collection, addDoc, onSnapshot, doc, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
-
-        // ===================================================
-        // PASTE YOUR COPIED FIREBASE CONFIG SNIPPET HERE:
-        // ===================================================
-        const firebaseConfig = {
-            apiKey: "YOUR_API_KEY",
-            authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
-            projectId: "YOUR_PROJECT_ID",
-            storageBucket: "YOUR_PROJECT_ID.appspot.com",
-            messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
-            appId: "YOUR_APP_ID"
-        };
-
-        // Initialize Core Services
-        const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
-        
-        // Force Firestore to bypass local cache and connect clean
-        const db = initializeFirestore(app, {
-            localCache: {
-                kind: 'persistent',
-                tabManager: { kind: 'fallback' }
-            }
-        }, { experimentalForceLongPolling: true });
-
-        // Expose Firebase utilities to standard window scope for the dynamic layout callbacks
-        window.dbInstance = db;
-        window.collectionPointer = collection;
-        window.addDocRecord = addDoc;
-        window.updateDocRecord = updateDoc;
-        window.docPointer = doc;
-        window.deleteDocRecord = deleteDoc;
-        window.isDbAuthenticated = false;
-
-        // CHANGE THIS IF YOUR FIREBASE CONSOLE COLLECTION USES A CAPITAL LETTER (e.g., "Videos")
-        window.TARGET_COLLECTION = "videos"; 
-
-        // Unified Real-Time Database Connection Listener
-        onSnapshot(collection(db, window.TARGET_COLLECTION), (snapshot) => {
-            let freshCollection = [];
-            snapshot.forEach((doc) => {
-                freshCollection.push({ id: doc.id, ...doc.data() });
-            });
-            window.updateCollectionData(freshCollection);
-        }, (error) => {
-            console.error("Master Database Sync Lost:", error);
-        });
-
-        // Force UI activation when authentication resolves
-        onAuthStateChanged(auth, (user) => {
-            if (user) {
-                console.log("Session verified: " + user.uid);
-                window.isDbAuthenticated = true;
-                const depositBtn = document.getElementById('depositBtn');
-                if (depositBtn) {
-                    depositBtn.disabled = false;
-                    depositBtn.style.opacity = "1";
-                }
-            }
-        });
-
-        // Initialize authorization background pipe
-        signInAnonymously(auth).catch(err => {
-            console.error("Auth Handshake Interrupted:", err);
-            window.isDbAuthenticated = true;
-            const depositBtn = document.getElementById('depositBtn');
-            if (depositBtn) {
-                depositBtn.disabled = false;
-                depositBtn.style.opacity = "1";
-            }
-        });
-    </script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Gothic Archive</title>
+    
+    <!-- 1. CORE FIREBASE V8 ENGINE SCRIPTS -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 
     <style>
+        /* --- CORE ARCHIVE INTERFACE STYLE --- */
         :root {
-            --bg-black: #000000;
-            --panel-dark: #0b0b0c;
-            --border-goth: #1f1f22;
-            --accent-glow: #7026c2;
-            --accent-hover: #8b3be6;
-            --text-main: #e2e2e5;
-            --text-muted: #6c6c75;
-            --danger: #e65a73;
+            --bg-dark: #0a0a0c;
+            --accent-blood: #800020;
+            --panel-dark: #121216;
+            --text-goth: #d4d4dc;
+            --grid-line: rgba(128, 0, 32, 0.15);
         }
 
-        * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
-        
         body {
-            background-color: var(--bg-black);
-            color: var(--text-main);
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-            padding: 24px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
+            background-color: var(--bg-dark);
+            color: var(--text-goth);
+            font-family: 'Courier New', Courier, monospace;
+            margin: 0;
+            padding: 20px;
+            overflow-x: hidden;
+        }
+
+        #archive-container {
+            position: relative;
+            width: 100%;
             min-height: 100vh;
+            padding-bottom: 100px;
         }
 
-        .archive-container { width: 100%; max-width: 1080px; display: flex; flex-direction: column; gap: 24px; }
-        
-        header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            border-bottom: 1px solid var(--border-goth);
-            padding-bottom: 16px;
-        }
-
-        h1 { font-size: 1.3rem; font-weight: 300; letter-spacing: 3px; text-transform: uppercase; color: #ffffff; }
-
-        .btn {
-            background: var(--panel-dark);
-            color: var(--text-main);
-            border: 1px solid var(--border-goth);
-            padding: 10px 18px;
-            border-radius: 6px;
-            cursor: pointer;
-            font-size: 0.85rem;
-            letter-spacing: 0.5px;
-            transition: all 0.2s ease;
-        }
-        .btn:hover:not(:disabled) { border-color: var(--accent-glow); color: #ffffff; }
-        .btn-primary { background: var(--accent-glow); border-color: var(--accent-glow); color: #ffffff; }
-        .btn-primary:hover:not(:disabled) { background: var(--accent-hover); border-color: var(--accent-hover); }
-        .btn-danger { background: rgba(230, 90, 115, 0.05); border-color: rgba(230, 90, 115, 0.2); color: var(--danger); }
-        .btn-danger:hover:not(:disabled) { background: var(--danger); color: #ffffff; }
-        .btn:disabled { opacity: 0.5; cursor: not-allowed; }
-
-        .player-stage {
-            background: #040405;
-            border: 1px solid var(--border-goth);
-            border-radius: 12px;
-            overflow: hidden;
-            position: relative;
-            width: 100%;
-            aspect-ratio: 16 / 9;
-            box-shadow: 0 20px 50px rgba(0,0,0,0.9);
-        }
-        video { width: 100%; height: 100%; object-fit: contain; background: #000; }
-
-        .now-playing-banner {
+        /* Guide Grid (Only active during editing) */
+        .edit-mode #archive-container::before {
+            content: "";
             position: absolute;
-            bottom: 0; left: 0; right: 0;
-            background: linear-gradient(transparent, rgba(0,0,0,0.95));
-            padding: 40px 20px 15px 20px;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-image: 
+                linear-gradient(to right, var(--grid-line) 1px, transparent 1px),
+                linear-gradient(to bottom, var(--grid-line) 1px, transparent 1px);
+            background-size: 40px 40px;
             pointer-events: none;
-        }
-        .now-playing-title { font-size: 1.05rem; font-weight: 400; color: #ffffff; }
-
-        .relic-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-            gap: 20px;
-            width: 100%;
-            margin-top: 10px;
+            z-index: 1;
         }
 
-        .relic-card {
+        .controls-bar {
             background: var(--panel-dark);
-            border: 1px solid var(--border-goth);
-            border-radius: 8px;
-            overflow: hidden;
-            cursor: pointer;
-            transition: border-color 0.2s ease, transform 0.2s ease;
-            position: relative;
+            border: 1px solid var(--accent-blood);
+            padding: 15px;
+            margin-bottom: 25px;
             display: flex;
-            flex-direction: column;
-        }
-        .relic-card:hover { border-color: var(--accent-glow); transform: translateY(-2px); }
-        .relic-card.active { border-color: var(--accent-glow); box-shadow: 0 0 14px rgba(112,38,194,0.25); }
-
-        .thumb-box {
-            width: 100%;
-            aspect-ratio: 16 / 9;
-            background: #050506;
-            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
             align-items: center;
-            justify-content: center;
-            border-bottom: 1px solid var(--border-goth);
-            position: relative;
+        }
+
+        button, input, select {
+            background: #1c1c22;
+            border: 1px solid var(--accent-blood);
+            color: var(--text-goth);
+            padding: 8px 15px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background: var(--accent-blood);
+            color: #fff;
+        }
+
+        /* Relic Grid Item Structure */
+        .relic-item {
+            position: absolute;
+            background: var(--panel-dark);
+            border: 1px solid #2a2a35;
+            padding: 10px;
+            box-sizing: border-box;
+            cursor: move;
+            z-index: 2;
+            transition: border-color 0.2s;
+        }
+
+        .relic-item:hover {
+            border-color: var(--accent-blood);
+        }
+
+        .relic-thumb {
+            width: 100%;
+            height: calc(100% - 30px);
+            object-fit: cover;
+            background: #000;
+        }
+
+        .relic-title {
+            height: 25px;
+            line-height: 25px;
+            text-align: center;
             overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            font-size: 12px;
         }
-        .thumb-box img { width: 100%; height: 100%; object-fit: cover; }
-        .thumb-fallback { color: var(--text-muted); font-size: 2rem; transition: color 0.2s ease; }
-        .relic-card:hover .thumb-fallback { color: var(--accent-glow); }
 
-        .relic-info { padding: 14px; display: flex; flex-direction: column; gap: 8px; position: relative; }
-        .relic-title { font-size: 0.95rem; font-weight: 400; color: #ffffff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding-right: 20px; }
-        
-        .tag-row { display: flex; flex-wrap: wrap; gap: 4px; min-height: 18px; }
-        .tag { background: #131316; border: 1px solid #222; color: var(--text-muted); font-size: 0.7rem; padding: 2px 6px; border-radius: 4px; }
+        /* Context Menu Styling (Scrollable) */
+        .goth-context-menu {
+            position: fixed;
+            background: var(--panel-dark);
+            border: 1px solid var(--accent-blood);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.8);
+            z-index: 10000;
+            max-height: 300px;
+            overflow-y: auto;
+            width: 200px;
+        }
 
-        .relic-menu-trigger {
-            position: absolute; right: 10px; top: 12px;
-            background: transparent; border: none; color: var(--text-muted);
-            cursor: pointer; font-size: 1rem; padding: 2px 6px; border-radius: 4px;
+        .goth-context-menu div {
+            padding: 10px 15px;
+            cursor: pointer;
+            border-bottom: 1px solid #1c1c22;
         }
-        .relic-menu-trigger:hover { color: #ffffff; background: rgba(255,255,255,0.05); }
 
-        .options-menu {
-            position: absolute; background: #111112; border: 1px solid var(--border-goth);
-            border-radius: 6px; width: 150px; display: none; z-index: 100; box-shadow: 0 5px 15px rgba(0,0,0,0.5);
+        .goth-context-menu div:hover {
+            background: var(--accent-blood);
+            color: #fff;
         }
-        .options-menu.visible { display: block; }
-        .menu-item {
-            width: 100%; padding: 10px 14px; background: transparent; border: none;
-            color: var(--text-main); text-align: left; font-size: 0.8rem; cursor: pointer;
-        }
-        .menu-item:hover { background: rgba(112, 38, 194, 0.15); color: #ffffff; }
-        .menu-item.danger { color: var(--danger); }
-        .menu-item.danger:hover { background: rgba(230, 90, 115, 0.1); }
-
-        .modal-overlay {
-            position: fixed; top: 0; left: 0; right: 0; bottom: 0;
-            background: rgba(0, 0, 0, 0.9); backdrop-filter: blur(3px);
-            display: flex; align-items: center; justify-content: center;
-            z-index: 1000; opacity: 0; pointer-events: none; transition: opacity 0.2s ease;
-        }
-        .modal-overlay.active { opacity: 1; pointer-events: auto; }
-        .modal-window {
-            background: #101012; border: 1px solid var(--border-goth);
-            border-radius: 12px; width: 100%; max-width: 460px; padding: 24px;
-            display: flex; flex-direction: column; gap: 16px; box-shadow: 0 20px 40px rgba(0,0,0,0.8);
-        }
-        .modal-title { font-size: 1.1rem; font-weight: 400; letter-spacing: 0.5px; }
-        .form-group { display: flex; flex-direction: column; gap: 6px; }
-        .form-group label { font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; }
-        .form-input {
-            background: #050506; border: 1px solid var(--border-goth);
-            color: #ffffff; padding: 10px; border-radius: 6px; font-size: 0.9rem; outline: none; transition: border-color 0.2s ease;
-        }
-        .form-input:focus { border-color: var(--accent-glow); }
-        .modal-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 10px; }
-
-        .toast {
-            position: fixed; bottom: 24px; right: 24px; background: #121214;
-            border-left: 3px solid var(--accent-glow); padding: 12px 20px;
-            border-radius: 4px; font-size: 0.85rem; transform: translateY(100px);
-            opacity: 0; transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); z-index: 2000;
-        }
-        .toast.visible { transform: translateY(0); opacity: 1; }
     </style>
 </head>
 <body>
 
-    <div class="archive-container">
-        <header>
-            <h1>Gothic Archive</h1>
-            <button id="depositBtn" class="btn btn-primary" onclick="openAddModal()" disabled style="opacity: 0.5;">+ Deposit Video</button>
-        </header>
-
-        <section class="player-stage">
-            <video id="mainPlayer" controls autoplay preload="auto" playsinline></video>
-            <div class="now-playing-banner">
-                <div class="now-playing-title" id="nowPlayingTitle">Vault Empty</div>
-            </div>
-        </section>
-
-        <main class="relic-grid" id="relicGrid"></main>
+    <!-- 2. CONTROLS INTERFACE -->
+    <div class="controls-bar">
+        <input type="text" id="relic-url" placeholder="Paste Video/Note Link Here">
+        <input type="text" id="relic-name" placeholder="Item Name">
+        <button id="btn-deposit">Deposit Link</button>
+        <button id="btn-toggle-edit">Toggle Edit Mode</button>
+        <button id="btn-recenter">Formation Recentering</button>
     </div>
 
-    <div id="contextMenu" class="options-menu">
-        <button class="menu-item" onclick="triggerRename()">Rename Entry</button>
-        <button class="menu-item" onclick="triggerChangeImage()">Change Image</button>
-        <button class="menu-item danger" onclick="triggerDelete()">Delete Entry</button>
-    </div>
-
-    <div id="modalOverlay" class="modal-overlay" onclick="if(event.target===this) closeModal()">
-        <div class="modal-window" id="modalWindow"></div>
-    </div>
-
-    <div id="toast" class="toast">Action Logged</div>
+    <!-- 3. PERSISTENT GRID WORKSPACE -->
+    <div id="archive-container"></div>
 
     <script>
-        let currentCollection = [];
-        let activeTargetId = null;
-        let base64ImageBuffer = "";
-
-        const mainPlayer = document.getElementById('mainPlayer');
-        const relicGrid = document.getElementById('relicGrid');
-        const contextMenu = document.getElementById('contextMenu');
-        const modalOverlay = document.getElementById('modalOverlay');
-        const modalWindow = document.getElementById('modalWindow');
-
-        window.updateCollectionData = function(data) {
-            currentCollection = data;
-            currentCollection.sort((a,b) => (Number(a.timestamp) || 0) - (Number(b.timestamp) || 0));
-            renderGrid();
-            
-            if(currentCollection.length > 0 && !mainPlayer.dataset.activeId) {
-                loadVideoIntoStage(currentCollection[0].id);
-            } else if (mainPlayer.dataset.activeId) {
-                // Keep playing current title sync updated in case it changed via rename
-                const currentItem = currentCollection.find(r => r.id === mainPlayer.dataset.activeId);
-                if (currentItem) {
-                    document.getElementById('nowPlayingTitle').textContent = currentItem.title || "Untitled Relic";
-                }
-            }
+        // ==========================================
+        // 4. DATABASE INITIALIZATION
+        // ==========================================
+        const firebaseConfig = {
+            apiKey: "YOUR_API_KEY",
+            authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
+            databaseURL: "https://YOUR_PROJECT_ID-default-rtdb.firebaseio.com",
+            projectId: "YOUR_PROJECT_ID",
+            storageBucket: "YOUR_PROJECT_ID.appspot.com",
+            messagingSenderId: "YOUR_SENDER_ID",
+            appId: "YOUR_APP_ID"
         };
 
-        function formatVideoUrl(urlStr) {
-            let target = urlStr.trim();
-            try {
-                let urlObj = new URL(target);
-                if (urlObj.hostname.includes('pcloud.com') || urlObj.hostname.includes('pc.cd')) {
-                    if(urlObj.pathname.includes('/publink/show')) {
-                        let code = urlObj.searchParams.get('code');
-                        if(code) return `https://api.pcloud.com/getpubthumb?code=${code}&size=video`;
-                    }
-                    if(urlObj.hostname === 'pc.cd') {
-                        let pathCode = urlObj.pathname.replace('/', '');
-                        if(pathCode) return `https://api.pcloud.com/getpublinkvideo?code=${pathCode}`;
-                    }
-                }
-            } catch (e) {}
-            return target;
+        // Secure Initialization check
+        if (!firebase.apps.length) {
+            firebase.initializeApp(firebaseConfig);
         }
 
-        function renderGrid() {
-            relicGrid.innerHTML = '';
-            if (currentCollection.length === 0) {
-                relicGrid.innerHTML = `<div style="grid-column:1/-1; text-align:center; color:var(--text-muted); padding:60px 0; font-size:0.85rem;">No media files indexed in database.</div>`;
+        const db = firebase.firestore();
+        let editModeActive = false;
+        const container = document.getElementById('archive-container');
+
+        // ==========================================
+        // 5. THE REAL-TIME REFRESH LINK
+        // ==========================================
+        // This watches the database live. When you reload, this immediately draws your entries.
+        db.collection("notes").orderBy("timestamp", "asc").onSnapshot((snapshot) => {
+            container.innerHTML = ""; // Clear out workspace to rebuild fresh state
+            
+            snapshot.forEach((doc) => {
+                const data = doc.data();
+                createRelicElement(doc.id, data);
+            });
+            
+            // Reapply item drag settings if edit mode was active
+            if (editModeActive) makeRelicsInteractive();
+        }, (error) => {
+            console.error("Firestore loading error on sync loop: ", error);
+        });
+
+        // ==========================================
+        // 6. DEPOSIT FUNCTION (DATA PERSISTENCE TARGET)
+        // ==========================================
+        document.getElementById('btn-deposit').addEventListener('click', () => {
+            const url = document.getElementById('relic-url').value.trim();
+            const name = document.getElementById('relic-name').value.trim() || "Untitled Relic";
+
+            if (!url) {
+                alert("Please drop a valid link before attempting deposit.");
                 return;
             }
 
-            currentCollection.forEach(item => {
-                const card = document.createElement('div');
-                card.className = `relic-card ${mainPlayer.dataset.activeId === item.id ? 'active' : ''}`;
-                card.dataset.id = item.id;
-                card.onclick = (e) => { if(!e.target.closest('.relic-menu-trigger')) loadVideoIntoStage(item.id); };
+            // Calculate staggered layout grid points safely
+            const currentItemCount = container.children.length;
+            const calculatedLeft = (currentItemCount * 50) % (window.innerWidth - 200) + 20;
+            const calculatedTop = Math.floor((currentItemCount * 50) / (window.innerWidth - 200)) * 200 + 100;
 
-                let tagsHtml = (item.tags || []).map(t => `<span class="tag">${escapeHtml(t)}</span>`).join('');
-                let thumbnailHtml = item.thumbnail ? `<img src="${item.thumbnail}" alt="">` : `<div class="thumb-fallback">🎬</div>`;
+            const newRelic = {
+                title: name,
+                linkUrl: url,
+                imageUrl: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=400", // Default gothic placeholder
+                x: calculatedLeft,
+                y: calculatedTop,
+                width: 220,
+                height: 160,
+                timestamp: firebase.firestore.FieldValue.serverTimestamp()
+            };
 
-                card.innerHTML = `
-                    <div class="thumb-box">${thumbnailHtml}</div>
-                    <div class="relic-info">
-                        <div class="relic-title" title="${escapeHtml(item.title)}">${escapeHtml(item.title || "Untitled Relic")}</div>
-                        <div class="tag-row">${tagsHtml}</div>
-                        <button class="relic-menu-trigger" onclick="openContextMenu(event, '${item.id}')">⋮</button>
-                    </div>
-                `;
-                relicGrid.appendChild(card);
+            // CRITICAL: We write to the server directly! The snapshot listener above handles drawing it.
+            db.collection("notes").add(newRelic)
+                .then(() => {
+                    document.getElementById('relic-url').value = "";
+                    document.getElementById('relic-name').value = "";
+                })
+                .catch((err) => {
+                    console.error("Write execution dropped by application script: ", err);
+                });
+        });
+
+        // ==========================================
+        // 7. INTERFACE BUILDER & EDIT MECHANICS
+        // ==========================================
+        function createRelicElement(id, data) {
+            const relic = document.createElement('div');
+            relic.className = 'relic-item';
+            relic.id = id;
+            relic.style.left = `${data.x}px`;
+            relic.style.top = `${data.y}px`;
+            relic.style.width = `${data.width}px`;
+            relic.style.height = `${data.height}px`;
+
+            relic.innerHTML = `
+                <img src="${data.imageUrl}" class="relic-thumb" alt="Archive Resource">
+                <div class="relic-title">${data.title}</div>
+            `;
+
+            // Handle standard viewing interaction (Double click opens resource link)
+            relic.addEventListener('dblclick', () => {
+                window.open(data.linkUrl, '_blank');
+            });
+
+            // Handle performance context menus (Long Press or Right Click)
+            relic.addEventListener('contextmenu', (e) => {
+                e.preventDefault();
+                spawnContextMenu(e, id, data);
+            });
+
+            container.appendChild(relic);
+        }
+
+        // Context Menu Implementation with mandatory layout requirements preserved
+        function spawnContextMenu(e, id, data) {
+            // Remove preexisting menus instantly
+            const oldMenu = document.querySelector('.goth-context-menu');
+            if (oldMenu) oldMenu.remove();
+
+            const menu = document.createElement('div');
+            menu.className = 'goth-context-menu';
+            menu.style.left = `${e.clientX}px`;
+            menu.style.top = `${e.clientY}px`;
+
+            menu.innerHTML = `
+                <div onclick="window.open('${data.linkUrl}', '_blank')">Open in New Tab</div>
+                <div onclick="renameRelic('${id}')">Rename</div>
+                <div onclick="changeRelicImage('${id}')">Change Image</div>
+                <div onclick="snapToOriginalShape('${id}')">Snap to Original Shape</div>
+                <div onclick="deleteRelicConfirmation('${id}')" style="color: #ff4d4d;">Delete Relic</div>
+            `;
+
+            document.body.appendChild(menu);
+
+            // Close context menu on external click safely
+            setTimeout(() => {
+                document.addEventListener('click', function closeMenu() {
+                    menu.remove();
+                    document.removeEventListener('click', closeMenu);
+                });
+            }, 50);
+        }
+
+        // ==========================================
+        // 8. MANDATORY DATABASE MUTATION MANAGEMENT
+        // ==========================================
+        window.renameRelic = function(id) {
+            const currentTitle = document.getElementById(id).querySelector('.relic-title').innerText;
+            const newName = prompt("Enter replacement asset marker designation:", currentTitle);
+            if (newName) {
+                db.collection("notes").doc(id).update({ title: newName });
+            }
+        };
+
+        window.changeRelicImage = function(id) {
+            const newImg = prompt("Paste structural URL target for asset thumb visualization:");
+            if (newImg) {
+                db.collection("notes").doc(id).update({ imageUrl: newImg });
+            }
+        };
+
+        window.snapToOriginalShape = function(id) {
+            db.collection("notes").doc(id).update({
+                width: 220,
+                height: 160
+            });
+        };
+
+        window.deleteRelicConfirmation = function(id) {
+            if (confirm("Are you absolutely sure you want to purge this record from the archive structure permanently?")) {
+                db.collection("notes").doc(id).delete();
+            }
+        };
+
+        // Grid Dragging with soft snap functionality integrated
+        function makeRelicsInteractive() {
+            const items = document.querySelectorAll('.relic-item');
+            items.forEach(item => {
+                let isDragging = false;
+                let startX, startY;
+
+                item.addEventListener('mousedown', (e) => {
+                    if (!editModeActive || e.button !== 0) return;
+                    isDragging = true;
+                    startX = e.clientX - item.offsetLeft;
+                    startY = e.clientY - item.offsetTop;
+                    item.style.zIndex = 1000;
+                });
+
+                document.addEventListener('mousemove', (e) => {
+                    if (!isDragging) return;
+                    let newX = e.clientX - startX;
+                    let newY = e.clientY - startY;
+
+                    // Soft grid alignment snapping (40px increments)
+                    if (editModeActive) {
+                        newX = Math.round(newX / 40) * 40;
+                        newY = Math.round(newY / 40) * 40;
+                    }
+
+                    item.style.left = `${newX}px`;
+                    item.style.top = `${newY}px`;
+                });
+
+                document.addEventListener('mouseup', () => {
+                    if (!isDragging) return;
+                    isDragging = false;
+                    item.style.zIndex = 2;
+
+                    // Write updated positions back into cloud documents permanently
+                    db.collection("notes").doc(item.id).update({
+                        x: parseInt(item.style.left),
+                        y: parseInt(item.style.top)
+                    });
+                });
             });
         }
 
-        function loadVideoIntoStage(id) {
-            const item = currentCollection.find(r => r.id === id);
-            if (!item) return;
-
-            mainPlayer.dataset.activeId = id;
-            mainPlayer.src = formatVideoUrl(item.url);
-            document.getElementById('nowPlayingTitle').textContent = item.title || "Untitled Relic";
-
-            document.querySelectorAll('.relic-card').forEach(c => {
-                c.classList.toggle('active', c.dataset.id === id);
-            });
-        }
-
-        window.processImageUpload = function(event) {
-            const file = event.target.files[0];
-            if (!file) return;
-
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                const img = new Image();
-                img.onload = function() {
-                    const canvas = document.createElement('canvas');
-                    const TARGET_WIDTH = 240;
-                    const scaleFactor = TARGET_WIDTH / img.width;
-                    const targetHeight = img.height * scaleFactor;
-                    
-                    canvas.width = TARGET_WIDTH;
-                    canvas.height = targetHeight;
-                    
-                    const ctx = canvas.getContext('2d');
-                    ctx.imageSmoothingEnabled = true;
-                    ctx.drawImage(img, 0, 0, TARGET_WIDTH, targetHeight);
-                    
-                    base64ImageBuffer = canvas.toDataURL('image/jpeg', 0.4);
-                };
-                img.src = e.target.result;
-            };
-            reader.readAsDataURL(file);
-        };
-
-        function openAddModal() {
-            base64ImageBuffer = ""; 
-            modalWindow.innerHTML = `
-                <h3 class="modal-title">Deposit Asset Records</h3>
-                <div class="form-group">
-                    <label>Video Address URL (pCloud Public Link)</label>
-                    <input type="url" id="modalUrl" class="form-input" placeholder="https://pc.cd/..." required>
-                </div>
-                <div class="form-group">
-                    <label>Title <span style="color:var(--text-muted)">(Optional)</span></label>
-                    <input type="text" id="modalTitle" class="form-input" placeholder="Enter custom file alias...">
-                </div>
-                <div class="form-group">
-                    <label>Tags <span style="color:var(--text-muted)">(Optional - Comma separated)</span></label>
-                    <input type="text" id="modalTags" class="form-input" placeholder="live, cabaret, archive">
-                </div>
-                <div class="form-group">
-                    <label>Custom Thumbnail Cover <span style="color:var(--text-muted)">(Optional)</span></label>
-                    <input type="file" id="modalFile" accept="image/*" class="form-input" onchange="processImageUpload(event)">
-                </div>
-                <div class="modal-actions">
-                    <button class="btn" onclick="closeModal()">Abort</button>
-                    <button class="btn btn-primary" onclick="commitAddRelic()">Index Entry</button>
-                </div>
-            `;
-            modalOverlay.classList.add('active');
-            document.getElementById('modalUrl').focus();
-        }
-
-        window.commitAddRelic = async function() {
-            const url = document.getElementById('modalUrl').value.trim();
-            let title = document.getElementById('modalTitle').value.trim();
-            const tagsRaw = document.getElementById('modalTags').value.trim();
-
-            if (!url) { alert("Video target link pointer is required."); return; }
-            if (!title) title = "Video Track " + (currentCollection.length + 1);
-
-            const tagsArray = tagsRaw ? tagsRaw.split(',').map(t => t.trim()).filter(t => t.length > 0) : [];
-
-            const payload = {
-                url: String(url),
-                title: String(title),
-                tags: tagsArray,
-                thumbnail: String(base64ImageBuffer),
-                timestamp: Number(Date.now())
-            };
-
-            try {
-                await window.addDocRecord(window.collectionPointer(window.dbInstance, window.TARGET_COLLECTION), payload);
-                closeModal();
-                showToast("Resource document committed.");
-            } catch (err) {
-                console.error("Raw Firebase Error:", err);
-                alert("Firebase Server Error: " + err.message);
+        // Mode Switching UI Controller
+        document.getElementById('btn-toggle-edit').addEventListener('click', () => {
+            editModeActive = !editModeActive;
+            document.body.classList.toggle('edit-mode', editModeActive);
+            document.getElementById('btn-toggle-edit').innerText = editModeActive ? "Exit Edit Mode" : "Toggle Edit Mode";
+            if (editModeActive) {
+                makeRelicsInteractive();
+            } else {
+                // Remove interactive styling bindings instantly
+                location.reload(); 
             }
-        };
+        });
 
-        window.openContextMenu = function(e, id) {
-            e.preventDefault(); e.stopPropagation();
-            activeTargetId = id;
-            const rect = e.target.getBoundingClientRect();
-            contextMenu.style.top = `${rect.bottom + window.scrollY + 6}px`;
-            contextMenu.style.left = `${rect.left + window.scrollX - 110}px`;
-            contextMenu.classList.add('visible');
-        };
-
-        window.triggerRename = function() {
-            contextMenu.classList.remove('visible');
-            const item = currentCollection.find(r => r.id === activeTargetId);
-            if (!item) return;
-
-            modalWindow.innerHTML = `
-                <h3 class="modal-title">Rename Relic</h3>
-                <div class="form-group">
-                    <label>New Resource Title</label>
-                    <input type="text" id="renameTitleField" class="form-input" value="${escapeHtml(item.title)}">
-                </div>
-                <div class="modal-actions">
-                    <button class="btn" onclick="closeModal()">Cancel</button>
-                    <button class="btn btn-primary" onclick="commitRename()">Apply Name</button>
-                </div>
-            `;
-            modalOverlay.classList.add('active');
-            document.getElementById('renameTitleField').focus();
-        };
-
-        window.commitRename = async function() {
-            const newTitle = document.getElementById('renameTitleField').value.trim();
-            if (!newTitle) { alert("Title string cannot be entirely empty."); return; }
-
-            try {
-                await window.updateDocRecord(window.docPointer(window.dbInstance, window.TARGET_COLLECTION, activeTargetId), {
-                    title: String(newTitle)
-                });
-                closeModal();
-                showToast("Resource updated.");
-            } catch (err) {
-                alert("Rename transaction rejected.");
-            }
-        };
-
-        window.triggerChangeImage = function() {
-            contextMenu.classList.remove('visible');
-            base64ImageBuffer = "";
-
-            modalWindow.innerHTML = `
-                <h3 class="modal-title">Update Cover Artwork</h3>
-                <div class="form-group">
-                    <label>Select New Thumbnail Photo</label>
-                    <input type="file" id="editImageFile" accept="image/*" class="form-input" onchange="processImageUpload(event)">
-                </div>
-                <div class="modal-actions">
-                    <button class="btn" onclick="closeModal()">Cancel</button>
-                    <button class="btn btn-primary" onclick="commitChangeImage()">Update Image</button>
-                </div>
-            `;
-            modalOverlay.classList.add('active');
-        };
-
-        window.commitChangeImage = async function() {
-            if (!base64ImageBuffer) { alert("Please select a new photo asset file first."); return; }
-
-            try {
-                await window.updateDocRecord(window.docPointer(window.dbInstance, window.TARGET_COLLECTION, activeTargetId), {
-                    thumbnail: String(base64ImageBuffer)
-                });
-                closeModal();
-                showToast("Cover graphics altered.");
-            } catch (err) {
-                alert("Image push transaction rejected.");
-            }
-        };
-
-        window.triggerDelete = function() {
-            contextMenu.classList.remove('visible');
-            modalWindow.innerHTML = `
-                <h3 class="modal-title" style="color:var(--danger)">Confirm Deletion</h3>
-                <p style="font-size:0.85rem; color:var(--text-muted)">Are you sure you want to permanently delete this video entry from Firestore? This action cannot be undone.</p>
-                <div class="modal-actions">
-                    <button class="btn" onclick="closeModal()">Cancel</button>
-                    <button class="btn btn-danger" onclick="commitDelete()">Purge Entry</button>
-                </div>
-            `;
-            modalOverlay.classList.add('active');
-        };
-
-        window.commitDelete = async function() {
-            try {
-                await window.deleteDocRecord(window.docPointer(window.dbInstance, window.TARGET_COLLECTION, activeTargetId));
-                let wasActive = mainPlayer.dataset.activeId === activeTargetId;
-                closeModal();
-                showToast("Record completely purged.");
+        // Formation Style Recentering Mechanics
+        document.getElementById('btn-recenter').addEventListener('click', () => {
+            const items = document.querySelectorAll('.relic-item');
+            items.forEach((item, index) => {
+                const targetX = (index * 60) % (window.innerWidth - 260) + 40;
+                const targetY = Math.floor((index * 60) / (window.innerWidth - 260)) * 180 + 120;
                 
-                if(wasActive) {
-                    mainPlayer.removeAttribute('src');
-                    mainPlayer.load();
-                    mainPlayer.dataset.activeId = "";
-                    document.getElementById('nowPlayingTitle').textContent = "Vault Empty";
-                }
-            } catch (err) {
-                alert("Purge transaction rejected.");
-            }
-        };
-
-        window.closeModal = function() { modalOverlay.classList.remove('active'); };
-        
-        function showToast(msg) {
-            const t = document.getElementById('toast'); t.textContent = msg;
-            t.classList.add('visible'); setTimeout(() => t.classList.remove('visible'), 2500);
-        }
-        
-        function escapeHtml(str) {
-            if(!str) return '';
-            return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
-        }
-        
-        document.addEventListener('click', (e) => { if(!e.target.closest('.relic-menu-trigger')) contextMenu.classList.remove('visible'); });
+                db.collection("notes").doc(item.id).update({
+                    x: targetX,
+                    y: targetY
+                });
+            });
+        });
     </script>
 </body>
 </html>
