@@ -321,7 +321,7 @@
             border-width: 3px;
         }
 
-        /* Context Popup Menu - Scrollable */
+        /* Context Popup Menu - Scrollable Infrastructure */
         #context-menu {
             position: fixed;
             background: #141414;
@@ -330,9 +330,12 @@
             z-index: 2000;
             display: none;
             border-radius: 3px;
-            max-height: 240px;
-            overflow-y: auto;
             width: 180px;
+            
+            /* Enhanced Scroll Configuration Matrix */
+            max-height: 180px;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
         }
 
         .menu-item {
@@ -429,8 +432,8 @@
             <button class="btn edit-only" id="btn-add-link">Add Video Link</button>
             <button class="btn edit-only" id="btn-add-folder">Add Folder</button>
             <button class="btn edit-only" id="btn-recentering">Recenter View</button>
-            <button class="btn" id="btn-save">Save Archive</button>
-            <button class="btn" id="btn-load">Load Archive</button>
+            <button class="btn edit-only" id="btn-save">Save Archive</button>
+            <button class="btn edit-only" id="btn-load">Load Archive</button>
             <span id="scale-display">100%</span>
         </div>
 
