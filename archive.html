@@ -20,6 +20,10 @@
         .relic-img { width: 100%; height: 80%; object-fit: cover; }
         .relic-title { font-size: 10px; margin-top: 5px; text-align: center; }
 
+        #modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 3000; display: none; align-items: center; justify-content: center; }
+        .modal-content { background: #1a1a1a; padding: 20px; width: 320px; border: 1px solid var(--accent-color); }
+        .input-row { width: 100%; margin-bottom: 10px; background: #000; color: #fff; border: 1px solid #333; padding: 8px; }
+        
         #context-menu { position: fixed; background: #1a1a1a; border: 1px solid var(--accent-color); z-index: 5000; display: none; width: 150px; }
         .menu-item { padding: 10px; border-bottom: 1px solid #333; font-size: 10px; text-transform: uppercase; cursor: pointer; }
         .menu-item:hover { background: var(--accent-color); }
@@ -33,14 +37,24 @@
 
     <div id="fixed-top-wrapper">
         <div id="control-bar">
-            <button class="btn" id="btn-edit-mode">Edit Mode</button>
+            <button class="btn" id="btn-toggle-mode">Edit Mode</button>
             <button class="btn edit-only" id="btn-add">Add Link</button>
-            <button class="btn edit-only" id="btn-bulk">Add Bulk Links</button>
+            <button class="btn edit-only" id="btn-bulk">Bulk Upload</button>
         </div>
         <div id="player-container"><iframe id="media-screen" src="" allow="autoplay; encrypted-media" playsinline></iframe></div>
     </div>
 
     <div id="viewport"><div id="gallery-grid"></div></div>
+
+    <div id="modal-overlay">
+        <div class="modal-content">
+            <input type="text" id="in-name" class="input-row" placeholder="Title">
+            <input type="text" id="in-url" class="input-row" placeholder="URL">
+            <input type="text" id="in-tags" class="input-row" placeholder="Tags">
+            <input type="file" id="in-img" class="input-row" accept="image/*">
+            <button class="btn" id="save-btn" style="width:100%">Save</button>
+        </div>
+    </div>
 
     <div id="context-menu">
         <div class="menu-item" onclick="exec('rename')">Rename</div>
@@ -81,17 +95,34 @@
             return m ? `https://img.youtube.com/vi/${m[1]}/hqdefault.jpg` : '';
         }
 
-        document.getElementById('btn-add').onclick = () => {
-            const t = prompt("Title (Optional)"), u = prompt("URL"), tg = prompt("Tags (Optional)");
-            if (u) { state.push({title: t||"Untitled", url: u, tags: tg||"", img: ""}); save(); }
+        document.getElementById('btn-toggle-mode').onclick = (e) => {
+            if (prompt("Enter Password:") === "1981") {
+                document.body.classList.toggle('edit-mode');
+                e.target.textContent = document.body.classList.contains('edit-mode') ? "Lock Mode" : "Edit Mode";
+            }
+        };
+
+        document.getElementById('btn-add').onclick = () => document.getElementById('modal-overlay').style.display = 'flex';
+        
+        document.getElementById('save-btn').onclick = () => {
+            const file = document.getElementById('in-img').files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    state.push({title: document.getElementById('in-name').value, url: document.getElementById('in-url').value, tags: document.getElementById('in-tags').value, img: e.target.result});
+                    save(); document.getElementById('modal-overlay').style.display = 'none';
+                };
+                reader.readAsDataURL(file);
+            } else {
+                state.push({title: document.getElementById('in-name').value, url: document.getElementById('in-url').value, tags: document.getElementById('in-tags').value, img: ""});
+                save(); document.getElementById('modal-overlay').style.display = 'none';
+            }
         };
 
         document.getElementById('btn-bulk').onclick = () => {
-            const input = prompt("Paste pCloud links (separated by spaces):");
+            const input = prompt("Paste links (space separated):");
             if (input) {
-                input.split(/\s+/).forEach(u => {
-                    if (u.trim()) state.push({title: "New Item", url: u.trim(), tags: "", img: ""});
-                });
+                input.split(/\s+/).forEach(u => { if(u.trim()) state.push({title:"Bulk Item", url:u.trim(), tags:"", img:""}); });
                 save();
             }
         };
@@ -99,8 +130,8 @@
         function exec(act) {
             const r = state[activeIdx];
             if (act === 'rename') r.title = prompt("New Name:", r.title);
-            if (act === 'tags') r.tags = prompt("New Tags:", r.tags || "");
-            if (act === 'delete' && confirm("Delete " + r.title + "?")) state.splice(activeIdx, 1);
+            if (act === 'tags') r.tags = prompt("New Tags:", r.tags);
+            if (act === 'delete' && confirm("Delete?")) state.splice(activeIdx, 1);
             document.getElementById('context-menu').style.display = 'none';
             save();
         }
@@ -110,13 +141,6 @@
             reader.onload = (ev) => { state[activeIdx].img = ev.target.result; save(); };
             reader.readAsDataURL(e.target.files[0]);
         }
-
-        document.getElementById('btn-edit-mode').onclick = (e) => {
-            if (prompt("Enter Admin Password:") === "1981") {
-                document.body.classList.toggle('edit-mode');
-                e.target.classList.toggle('active');
-            }
-        };
 
         render();
     </script>
