@@ -9,6 +9,7 @@
             --bg-color: #0d0d0d;
             --accent-color: #800020;
             --grid-line: rgba(128, 0, 32, 0.08);
+            --border-color: #262626;
         }
 
         body, html {
@@ -18,9 +19,10 @@
             background-color: var(--bg-color);
             overflow: hidden;
             font-family: 'Courier New', Courier, monospace;
+            color: #d9d9d9;
         }
 
-        /* Responsive Absolute Container */
+        /* Viewport Container */
         #viewport {
             position: relative;
             width: 100vw;
@@ -28,7 +30,7 @@
             overflow: auto;
         }
 
-        /* Subtle Guide Grid for Edit Mode */
+        /* Subtle Guide Grid (Only visible in Edit Mode) */
         #grid-canvas {
             position: absolute;
             top: 0; left: 0; width: 200%; height: 200%;
@@ -38,6 +40,7 @@
                 linear-gradient(to right, var(--grid-line) 1px, transparent 1px),
                 linear-gradient(to bottom, var(--grid-line) 1px, transparent 1px);
             background-size: 40px 40px;
+            z-index: 1;
         }
 
         body.edit-mode #grid-canvas { display: block; }
@@ -47,14 +50,15 @@
             width: 180px;
             height: 100px;
             background: #141414;
-            border: 1px solid #262626;
+            border: 1px solid var(--border-color);
             cursor: grab;
             transition: border 0.2s;
+            z-index: 2;
         }
 
         body.edit-mode .relic { border-color: var(--accent-color); }
 
-        /* Controls */
+        /* UI Controls */
         #ui-bar {
             position: fixed;
             bottom: 20px;
@@ -70,12 +74,13 @@
             color: #fff;
             border: 1px solid #333;
             cursor: pointer;
+            text-transform: uppercase;
+            font-family: inherit;
+            font-size: 10px;
         }
     </style>
 </head>
-<body>
-
-    <div id="grid-canvas"></div>
+<body class="edit-mode"> <div id="grid-canvas"></div>
     <div id="viewport">
         </div>
 
@@ -88,12 +93,12 @@
         const viewport = document.getElementById('viewport');
         const toggleEdit = document.getElementById('toggle-edit');
 
-        // Edit Mode Toggle
+        // Toggle Edit Mode
         toggleEdit.onclick = () => {
             document.body.classList.toggle('edit-mode');
         };
 
-        // Drag and Drop with Snap-to-Grid
+        // Drag and Drop with Snap-to-Grid (40px grid)
         let isDragging = false;
         let activeElement = null;
 
@@ -105,9 +110,11 @@
 
         document.onmousemove = (e) => {
             if (!isDragging || !activeElement) return;
-            // Soft Snap logic: 40px grid
+            
+            // Snap to grid calculation
             let x = Math.round(e.clientX / 40) * 40;
             let y = Math.round(e.clientY / 40) * 40;
+            
             activeElement.style.left = x + 'px';
             activeElement.style.top = y + 'px';
         };
