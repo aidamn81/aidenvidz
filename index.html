@@ -35,7 +35,6 @@
             overflow: hidden;
         }
 
-        /* Subtle ambient pulsing vignette background */
         body::before {
             content: '';
             position: absolute;
@@ -45,7 +44,6 @@
             z-index: 1;
         }
 
-        /* Login Card Container */
         .gate-wrapper {
             position: relative;
             background: var(--panel-bg);
@@ -53,7 +51,7 @@
             border-radius: 8px;
             width: 90vw;
             max-width: 420px;
-            padding: 30px 25px;
+            padding: 35px 25px;
             box-shadow: 0 20px 50px rgba(0, 0, 0, 0.9);
             z-index: 10;
             text-align: center;
@@ -65,7 +63,6 @@
             box-shadow: 0 0 20px rgba(128, 0, 32, 0.25);
         }
 
-        /* GitHub Header Placement Slot */
         .github-header-frame {
             width: 100%;
             height: 120px;
@@ -92,10 +89,9 @@
             text-transform: uppercase;
         }
 
-        /* Form Controls */
         .input-group {
             position: relative;
-            margin-bottom: 20px;
+            margin-bottom: 25px;
             text-align: left;
         }
 
@@ -107,6 +103,7 @@
             color: var(--text-dim);
             margin-bottom: 8px;
             padding-left: 2px;
+            text-align: center;
         }
 
         .password-field {
@@ -118,7 +115,7 @@
             font-family: inherit;
             font-size: 14px;
             border-radius: 4px;
-            letter-spacing: 3px;
+            letter-spacing: 2px;
             text-align: center;
             transition: all 0.25s ease;
         }
@@ -153,9 +150,8 @@
             box-shadow: 0 0 15px var(--accent-color);
         }
 
-        /* Feedback Readouts */
         .system-status {
-            margin-top: 15px;
+            margin-top: 20px;
             font-size: 9px;
             text-transform: uppercase;
             letter-spacing: 1px;
@@ -186,27 +182,26 @@
 
         <form id="gate-form" onsubmit="verifyAccess(event)">
             <div class="input-group">
-                <label class="input-label" for="pass-key">Enter Security Access Key Node:</label>
-                <input type="password" id="pass-key" class="password-field" placeholder="••••" autocomplete="current-password" required>
+                <label class="input-label" for="pass-key">Verify Identity Signature Access Code:</label>
+                <input type="password" id="pass-key" class="password-field" placeholder="ENTER LOG-IN PASSKEY" autocomplete="current-password" required>
             </div>
             
-            <button type="submit" class="submit-btn">Verify Signature</button>
+            <button type="submit" class="submit-btn">Validate Signature</button>
         </form>
 
-        <div id="status-readout" class="system-status">System Standby // Restrictive Gate Active</div>
+        <div id="status-readout" class="system-status">System Standby // Secured Gateway Active</div>
     </div>
 
     <script>
-        // Setup configuration parameters
-        const TARGET_PASS = "1981";
-        const REDIRECT_URL = "archive.html"; // Change this configuration to point to your video collection page file name
+        const KEY_ADMIN = "1981";
+        const KEY_GUEST = "07597 768613";
+        const REDIRECT_URL = "archive.html";
 
         function showPlaceholder() {
             document.getElementById('header-img').style.display = 'none';
             document.getElementById('placeholder-text').style.display = 'block';
         }
 
-        // Initialize header image checking
         const imgNode = document.getElementById('header-img');
         if (!imgNode.getAttribute('src')) {
             showPlaceholder();
@@ -218,25 +213,33 @@
             e.preventDefault();
             const inputField = document.getElementById('pass-key');
             const readout = document.getElementById('status-readout');
+            const trimmedValue = inputField.value.trim();
 
-            if (inputField.value === TARGET_PASS) {
+            if (trimmedValue === KEY_ADMIN) {
                 readout.classList.remove('error');
                 readout.style.color = "#00ff66";
-                readout.textContent = "Signature Accepted // Redirecting Array Sync...";
+                readout.textContent = "Admin Granted // Syncing Systems Matrix...";
                 
-                setTimeout(() => {
-                    window.location.href = REDIRECT_URL;
-                }, 800);
+                sessionStorage.setItem('archive_clearance', 'admin');
+                setTimeout(() => { window.location.href = REDIRECT_URL; }, 800);
+
+            } else if (trimmedValue === KEY_GUEST) {
+                readout.classList.remove('error');
+                readout.style.color = "#00bfff";
+                readout.textContent = "Guest Access Approved // Syncing Terminal Readout...";
+                
+                sessionStorage.setItem('archive_clearance', 'guest');
+                setTimeout(() => { window.location.href = REDIRECT_URL; }, 800);
+
             } else {
-                readout.textContent = "Access Denied: Mismatched Encryption Code.";
+                readout.textContent = "Access Denied: Invalid Access Token Signature.";
                 readout.classList.add('error');
                 inputField.value = '';
                 inputField.focus();
 
-                // Clear error look smoothly after animation cycles
                 setTimeout(() => {
                     readout.classList.remove('error');
-                    readout.textContent = "System Standby // Restrictive Gate Active";
+                    readout.textContent = "System Standby // Secured Gateway Active";
                 }, 3000);
             }
         }
