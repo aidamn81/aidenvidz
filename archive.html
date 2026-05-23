@@ -1,4 +1,4 @@
-<! DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -6,83 +6,30 @@
     <title>The Gothic Archive</title>
     <style>
         :root {
-            --bg-color: #0d0d0d;
-            --panel-bg: #141414;
-            --accent-color: #800020;
-            --accent-glow: #ff0033;
-            --text-color: #d9d9d9;
-            --border-color: #262626;
+            --bg-color: #0d0d0d; --panel-bg: #141414; --accent-color: #800020; 
+            --accent-glow: #ff0033; --text-color: #d9d9d9; --border-color: #262626;
         }
-
         * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
-        
-        body, html { 
-            width: 100%; 
-            height: 100%; 
-            overflow: hidden; 
-            background-color: var(--bg-color); 
-            font-family: 'Courier New', Courier, monospace; 
-            color: var(--text-color);
-            position: fixed; /* Prevents iOS bounce scrolling */
-        }
+        body, html { width: 100%; height: 100%; overflow: hidden; background-color: var(--bg-color); font-family: 'Courier New', Courier, monospace; color: var(--text-color); position: fixed; }
 
-        #fixed-top-wrapper { 
-            position: absolute; top: 0; left: 0; width: 100%; z-index: 1500; 
-            padding: 10px; border-bottom: 1px solid var(--border-color); 
-            display: flex; flex-direction: column; align-items: center; 
-        }
-
-        #control-bar { 
-            display: flex; gap: 10px; width: 100%; max-width: 800px; 
-            overflow-x: auto; padding: 10px;
-        }
-
-        #presentation-row { 
-            display: flex; align-items: stretch; gap: 10px; 
-            width: 100%; max-width: 800px; height: 180px; 
-        }
-
-        .side-asset-box { 
-            width: 60px; background: #0a0a0a; border: 1px solid var(--border-color); 
-            border-radius: 8px; display: flex; align-items: center; justify-content: center; 
-        }
-
-        #player-container { 
-            flex: 1; background: #000; border: 1px solid var(--border-color); 
-            border-radius: 8px; overflow: hidden; position: relative;
-        }
-
+        #fixed-top-wrapper { position: absolute; top: 0; left: 0; width: 100%; z-index: 1500; padding: 10px; border-bottom: 1px solid var(--border-color); display: flex; flex-direction: column; align-items: center; }
+        #control-bar { display: flex; gap: 10px; width: 100%; max-width: 800px; overflow-x: auto; padding: 10px; }
+        #presentation-row { display: flex; align-items: stretch; gap: 10px; width: 100%; max-width: 800px; height: 180px; }
+        .side-asset-box { width: 60px; background: #0a0a0a; border: 1px solid var(--border-color); border-radius: 8px; display: flex; align-items: center; justify-content: center; }
+        #player-container { flex: 1; background: #000; border: 1px solid var(--border-color); border-radius: 8px; overflow: hidden; position: relative; }
         #media-screen { width: 100%; height: 100%; border: none; }
 
-        .btn { 
-            background: #1a1a1a; color: #fff; border: 1px solid var(--border-color); 
-            padding: 8px 12px; cursor: pointer; font-size: 11px; text-transform: uppercase; 
-            white-space: nowrap;
-        }
-
-        #viewport { 
-            position: absolute; 
-            top: 250px; 
-            left: 0; 
-            width: 100%; 
-            height: calc(100% - 250px); 
-            overflow-y: auto; 
-            -webkit-overflow-scrolling: touch; /* Essential for iPhone */
-            padding: 20px; 
-        }
-
-        #gallery-grid { 
-            display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); 
-            gap: 15px; width: 100%; max-width: 850px; margin: 0 auto;
-        }
-
-        .relic { 
-            background: var(--panel-bg); border: 1px solid var(--border-color); 
-            padding: 8px; aspect-ratio: 1/1; cursor: pointer; 
-        }
-
+        .btn { background: #1a1a1a; color: #fff; border: 1px solid var(--border-color); padding: 8px 12px; cursor: pointer; font-size: 11px; text-transform: uppercase; white-space: nowrap; }
+        #viewport { position: absolute; top: 250px; left: 0; width: 100%; height: calc(100% - 250px); overflow-y: auto; -webkit-overflow-scrolling: touch; padding: 20px; }
+        #gallery-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 15px; width: 100%; max-width: 850px; margin: 0 auto; }
+        .relic { background: var(--panel-bg); border: 1px solid var(--border-color); padding: 8px; aspect-ratio: 1/1; cursor: pointer; position: relative; }
         .relic-img { width: 100%; height: 80%; object-fit: cover; }
         .relic-title { font-size: 10px; margin-top: 5px; text-align: center; }
+        
+        /* Modal */
+        #modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 2000; display: none; align-items: center; justify-content: center; }
+        .modal-content { background: #1a1a1a; padding: 20px; width: 300px; border: 1px solid var(--accent-color); }
+        .input-item { width: 100%; margin-bottom: 10px; background: #000; color: #fff; border: 1px solid var(--border-color); padding: 5px; }
 
         .edit-only { display: none !important; }
         body.edit-mode .edit-only { display: inline-block !important; }
@@ -90,67 +37,72 @@
 </head>
 <body>
 
-    <input type="file" id="device-image-picker" accept="image/*" style="display: none;">
-
     <div id="fixed-top-wrapper">
         <div id="control-bar">
             <button class="btn" id="btn-edit-mode">Edit</button>
             <button class="btn edit-only" id="btn-add-link">Add</button>
-            <button class="btn edit-only" id="btn-save">Save</button>
         </div>
         <div id="presentation-row">
-            <div class="side-asset-box" id="side-left-box">L</div>
-            <div id="player-container">
-                <iframe id="media-screen" src="" allow="autoplay; encrypted-media" playsinline></iframe>
-            </div>
-            <div class="side-asset-box" id="side-right-box">R</div>
+            <div class="side-asset-box">L</div>
+            <div id="player-container"><iframe id="media-screen" src="" allow="autoplay; encrypted-media" playsinline></iframe></div>
+            <div class="side-asset-box">R</div>
         </div>
     </div>
 
-    <div id="viewport">
-        <div id="gallery-grid"></div>
+    <div id="viewport"><div id="gallery-grid"></div></div>
+
+    <div id="modal-overlay">
+        <div class="modal-content">
+            <input type="text" id="in-name" class="input-item" placeholder="Optional Name">
+            <input type="text" id="in-url" class="input-item" placeholder="URL">
+            <input type="text" id="in-tags" class="input-item" placeholder="Tags">
+            <input type="file" id="in-img" class="input-item" accept="image/*">
+            <button class="btn" id="btn-save-modal">Save</button>
+        </div>
     </div>
 
     <script>
-        const state = { relics: JSON.parse(localStorage.getItem('gothic_archive_formation_save')) || [] };
+        let state = JSON.parse(localStorage.getItem('gothic_archive_formation_save')) || [];
         const galleryGrid = document.getElementById('gallery-grid');
 
         function render() {
             galleryGrid.innerHTML = '';
-            state.relics.forEach(relic => {
+            state.forEach((relic, index) => {
                 const div = document.createElement('div');
                 div.className = 'relic';
-                div.innerHTML = `
-                    <img class="relic-img" src="${relic.img || getThumb(relic.url)}">
-                    <div class="relic-title">${relic.title}</div>
-                `;
-                div.onclick = () => document.getElementById('media-screen').src = relic.url;
+                div.innerHTML = `<img class="relic-img" src="${relic.img || getThumb(relic.url)}"><div class="relic-title">${relic.title}</div>`;
+                div.onclick = () => {
+                    if (document.body.classList.contains('edit-mode')) {
+                        if (confirm("Delete " + relic.title + "?")) { state.splice(index, 1); save(); render(); }
+                    } else {
+                        document.getElementById('media-screen').src = relic.url;
+                    }
+                };
                 galleryGrid.appendChild(div);
             });
         }
 
-        function getThumb(url) {
-            const m = url.match(/(?:youtu\.be\/|v\/|embed\/|watch\?v=)([^"&?\/\s]{11})/);
-            return m ? `https://img.youtube.com/vi/${m[1]}/hqdefault.jpg` : '';
-        }
+        function save() { localStorage.setItem('gothic_archive_formation_save', JSON.stringify(state)); }
+        function getThumb(url) { const m = url.match(/(?:youtu\.be\/|v\/|embed\/|watch\?v=)([^"&?\/\s]{11})/); return m ? `https://img.youtube.com/vi/${m[1]}/hqdefault.jpg` : ''; }
 
-        document.getElementById('btn-edit-mode').onclick = (e) => {
-            document.body.classList.toggle('edit-mode');
-            e.target.classList.toggle('active');
-        };
+        document.getElementById('btn-edit-mode').onclick = (e) => { document.body.classList.toggle('edit-mode'); e.target.classList.toggle('active'); };
+        document.getElementById('btn-add-link').onclick = () => document.getElementById('modal-overlay').style.display = 'flex';
 
-        document.getElementById('btn-add-link').onclick = () => {
-            const input = prompt("Add Link (Format: Title|URL)");
-            if (input) {
-                const [title, url] = input.split('|');
-                state.relics.push({id: Date.now(), title, url, img: ""});
-                localStorage.setItem('gothic_archive_formation_save', JSON.stringify(state.relics));
-                render();
+        document.getElementById('btn-save-modal').onclick = () => {
+            const file = document.getElementById('in-img').files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    state.push({title: document.getElementById('in-name').value, url: document.getElementById('in-url').value, tags: document.getElementById('in-tags').value, img: e.target.result});
+                    save(); render(); document.getElementById('modal-overlay').style.display = 'none';
+                };
+                reader.readAsDataURL(file);
+            } else {
+                state.push({title: document.getElementById('in-name').value, url: document.getElementById('in-url').value, tags: document.getElementById('in-tags').value, img: ""});
+                save(); render(); document.getElementById('modal-overlay').style.display = 'none';
             }
         };
 
-        document.getElementById('btn-save').onclick = () => alert("Saved.");
-        
         render();
     </script>
 </body>
