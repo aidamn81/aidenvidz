@@ -40,7 +40,7 @@
             width: 100%;
             background: #0d0d0d;
             z-index: 1500;
-            padding-bottom: 10px;
+            padding-bottom: 15px;
             border-bottom: 1px solid var(--border-color);
             display: flex;
             flex-direction: column;
@@ -73,8 +73,35 @@
             gap: 15px;
             width: 95vw;
             max-width: 800px;
-            height: 20vh; /* Half the size it was previously */
+            height: 240px; /* Standard starting height close to default YouTube 16:9 box bounds */
             margin-bottom: 5px;
+            position: relative;
+        }
+
+        /* Resizable Handle Element */
+        #resize-handle {
+            position: absolute;
+            bottom: -5px;
+            right: -5px;
+            width: 16px;
+            height: 16px;
+            cursor: se-resize;
+            z-index: 1600;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 10px;
+            color: var(--text-dim);
+            font-weight: bold;
+            line-height: 1;
+            background: #111;
+            border: 1px solid var(--border-color);
+            border-radius: 3px;
+        }
+
+        #resize-handle:hover {
+            color: var(--accent-glow);
+            border-color: var(--accent-color);
         }
 
         /* Flanking Customizable Graphic Blocks */
@@ -82,7 +109,7 @@
             width: 70px;
             background: #0a0a0a;
             border: 1px solid var(--border-color);
-            border-radius: 12px; /* Rounded Cube Shape */
+            border-radius: 12px;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -90,6 +117,7 @@
             position: relative;
             box-shadow: 0 5px 15px rgba(0,0,0,0.5);
             transition: border-color 0.2s ease;
+            flex-shrink: 0;
         }
 
         body.edit-mode .side-asset-box {
@@ -128,7 +156,7 @@
             flex: 1;
             background: #000;
             border: 1px solid var(--border-color);
-            border-radius: 12px; /* Rounded Cube Shape */
+            border-radius: 12px;
             box-shadow: 0 10px 35px rgba(0,0,0,0.9);
             display: flex;
             flex-direction: column;
@@ -150,9 +178,10 @@
             border-bottom-right-radius: 11px;
         }
 
+        /* Updated Overlay Rules to fit 16:9 dynamic view accurately */
         #player-placeholder {
             position: absolute;
-            top: 25px; /* Offset below titlebar */
+            top: 25px;
             left: 0;
             width: 100%;
             height: calc(100% - 25px);
@@ -183,6 +212,7 @@
             text-overflow: ellipsis;
             border-top-left-radius: 11px;
             border-top-right-radius: 11px;
+            flex-shrink: 0;
         }
 
         .btn {
@@ -212,13 +242,13 @@
             box-shadow: 0 0 12px var(--accent-color);
         }
 
-        /* Viewport Adjusted Directly Below Video Player Stack */
+        /* Viewport Position Handled Dynamically by JavaScript Resize Observer Loop */
         #viewport {
             position: absolute;
-            top: calc(75px + 20vh);
+            top: 360px; 
             left: 0;
             width: 100%;
-            height: calc(100% - (75px + 20vh));
+            height: calc(100% - 360px);
             overflow-y: auto;
             padding: 20px;
             display: flex;
@@ -235,7 +265,6 @@
             align-content: start;
         }
 
-        /* Conditional Visibility Classes */
         .edit-only {
             display: none !important;
         }
@@ -442,6 +471,8 @@
             <div class="side-asset-box" id="side-right-box">
                 <div class="side-asset-placeholder">R Slot</div>
             </div>
+
+            <div id="resize-handle">⇲</div>
         </div>
     </div>
 
@@ -482,6 +513,10 @@
             { id: "2", title: "Gothic Tech Sound", url: "https://www.youtube.com/embed/dQw4w9WgXcQ", img: "" }
         ];
 
+        const fixedTopWrapper = document.getElementById('fixed-top-wrapper');
+        const presentationRow = document.getElementById('presentation-row');
+        const resizeHandle = document.getElementById('resize-handle');
+        const viewport = document.getElementById('viewport');
         const galleryGrid = document.getElementById('gallery-grid');
         const contextMenu = document.getElementById('context-menu');
         const mediaScreen = document.getElementById('media-screen');
@@ -506,12 +541,35 @@
             if (storedSides) {
                 state.sideImages = JSON.parse(storedSides);
             }
+
+            // Restore saved sizes if available, otherwise set default 16:9 width/height balance
+            const savedWidth = localStorage.getItem('gothic_archive_player_width');
+            const savedHeight = localStorage.getItem('gothic_archive_player_height');
+            if (savedWidth && savedHeight) {
+                presentationRow.style.width = savedWidth + 'px';
+                presentationRow.style.height = savedHeight + 'px';
+            } else {
+                // Perfect standard proportions mapping
+                const defaultWidth = Math.min(window.innerWidth * 0.95, 800);
+                presentationRow.style.width = defaultWidth + 'px';
+                // Calculate standard 16:9 video frame space + flanking offset pads
+                presentationRow.style.height = Math.round((defaultWidth - 170) * (9 / 16)) + 'px';
+            }
             
+            adjustViewportSpacing();
             renderSideImages();
             renderArchive();
             setupInteractions();
             setupGlobalMenus();
+            setupResizeEngine();
         });
+
+        // Dynamic Viewport Alignment Loop Tracker
+        function adjustViewportSpacing() {
+            const topHeight = fixedTopWrapper.offsetHeight;
+            viewport.style.top = topHeight + 'px';
+            viewport.style.height = `calc(100% - ${topHeight}px)`;
+        }
 
         // Extract preview image directly from target video track structures
         function getAutoThumbnail(url) {
@@ -588,6 +646,58 @@
 
             node.appendChild(body);
             return node;
+        }
+
+        // Modular Resizable Track Engine
+        function setupResizeEngine() {
+            let startX, startY, startW, startH;
+
+            const onPointerMove = (e) => {
+                const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+                const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+                
+                let newW = startW + (clientX - startX);
+                let newH = startH + (clientY - startY);
+
+                // Set boundaries to avoid clipping side graphics
+                if (newW < 320) newW = 320;
+                if (newW > window.innerWidth * 0.98) newW = window.innerWidth * 0.98;
+                if (newH < 120) newH = 120;
+                if (newH > window.innerHeight * 0.6) newH = window.innerHeight * 0.6;
+
+                presentationRow.style.width = newW + 'px';
+                presentationRow.style.height = newH + 'px';
+                
+                adjustViewportSpacing();
+            };
+
+            const onPointerUp = () => {
+                document.removeEventListener('mousemove', onPointerMove);
+                document.removeEventListener('mouseup', onPointerUp);
+                document.removeEventListener('touchmove', onPointerMove);
+                document.removeEventListener('touchend', onPointerUp);
+
+                localStorage.setItem('gothic_archive_player_width', presentationRow.offsetWidth);
+                localStorage.setItem('gothic_archive_player_height', presentationRow.offsetHeight);
+            };
+
+            const onPointerDown = (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                
+                startX = e.touches ? e.touches[0].clientX : e.clientX;
+                startY = e.touches ? e.touches[0].clientY : e.clientY;
+                startW = presentationRow.offsetWidth;
+                startH = presentationRow.offsetHeight;
+
+                document.addEventListener('mousemove', onPointerMove);
+                document.addEventListener('mouseup', onPointerUp);
+                document.addEventListener('touchmove', onPointerMove, { passive: false });
+                document.addEventListener('touchend', onPointerUp);
+            };
+
+            resizeHandle.addEventListener('mousedown', onPointerDown);
+            resizeHandle.addEventListener('touchstart', onPointerDown, { passive: false });
         }
 
         function setupInteractions() {
