@@ -3,59 +3,243 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>The Gate</title>
-    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
-    
+    <title>The Gothic Archive — Terminal Gate</title>
     <style>
-        body { margin: 0; background: #0a0a0a; color: #c5a059; font-family: serif; display: flex; justify-content: center; align-items: center; height: 100vh; overflow: hidden; }
-        .gate-container { border: 1px solid #c5a059; padding: 50px; text-align: center; }
-        button { background: none; border: 1px solid #c5a059; color: #c5a059; padding: 15px 30px; cursor: pointer; letter-spacing: 3px; }
-        #status { margin-top: 20px; font-size: 12px; opacity: 0.7; }
+        :root {
+            --bg-color: #050505;
+            --panel-bg: #0d0d0d;
+            --accent-color: #800020;
+            --accent-glow: #ff0033;
+            --text-color: #d9d9d9;
+            --text-dim: #545454;
+            --border-color: #1a1a1a;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            -webkit-user-select: none;
+            user-select: none;
+        }
+
+        body, html {
+            width: 100%;
+            height: 100%;
+            background-color: var(--bg-color);
+            font-family: 'Courier New', Courier, monospace;
+            color: var(--text-color);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+
+        /* Subtle ambient pulsing vignette background */
+        body::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: radial-gradient(circle at center, transparent 40%, #000 100%);
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        /* Login Card Container */
+        .gate-wrapper {
+            position: relative;
+            background: var(--panel-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            width: 90vw;
+            max-width: 420px;
+            padding: 30px 25px;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.9);
+            z-index: 10;
+            text-align: center;
+            transition: border-color 0.4s ease, box-shadow 0.4s ease;
+        }
+
+        .gate-wrapper:focus-within {
+            border-color: var(--accent-color);
+            box-shadow: 0 0 20px rgba(128, 0, 32, 0.25);
+        }
+
+        /* GitHub Header Placement Slot */
+        .github-header-frame {
+            width: 100%;
+            height: 120px;
+            background: #080808;
+            border: 1px dashed #222;
+            border-radius: 4px;
+            margin-bottom: 25px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+
+        .github-header-frame img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .fallback-placeholder-text {
+            font-size: 10px;
+            color: var(--text-dim);
+            letter-spacing: 2px;
+            text-transform: uppercase;
+        }
+
+        /* Form Controls */
+        .input-group {
+            position: relative;
+            margin-bottom: 20px;
+            text-align: left;
+        }
+
+        .input-label {
+            display: block;
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            color: var(--text-dim);
+            margin-bottom: 8px;
+            padding-left: 2px;
+        }
+
+        .password-field {
+            width: 100%;
+            background: #050505;
+            border: 1px solid var(--border-color);
+            color: #fff;
+            padding: 12px 15px;
+            font-family: inherit;
+            font-size: 14px;
+            border-radius: 4px;
+            letter-spacing: 3px;
+            text-align: center;
+            transition: all 0.25s ease;
+        }
+
+        .password-field:focus {
+            outline: none;
+            border-color: var(--accent-color);
+            background: #090204;
+            color: var(--accent-glow);
+            box-shadow: inset 0 0 5px rgba(255, 0, 51, 0.1);
+        }
+
+        .submit-btn {
+            width: 100%;
+            background: #141414;
+            color: var(--text-color);
+            border: 1px solid var(--border-color);
+            padding: 14px;
+            font-family: inherit;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            cursor: pointer;
+            border-radius: 4px;
+            transition: all 0.3s ease;
+        }
+
+        .submit-btn:hover {
+            background: var(--accent-color);
+            border-color: var(--accent-glow);
+            color: #fff;
+            box-shadow: 0 0 15px var(--accent-color);
+        }
+
+        /* Feedback Readouts */
+        .system-status {
+            margin-top: 15px;
+            font-size: 9px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--text-dim);
+            height: 12px;
+            transition: color 0.2s ease;
+        }
+
+        .system-status.error {
+            color: var(--accent-glow);
+            animation: shake 0.3s ease;
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            20%, 60% { transform: translateX(-4px); }
+            40%, 80% { transform: translateX(4px); }
+        }
     </style>
 </head>
 <body>
 
-    <div class="gate-container">
-        <h1 style="letter-spacing: 5px; font-weight: 300;">THE GATE</h1>
-        <button onclick="summon()">SUMMON ARCHIVE</button>
-        <div id="status"></div>
+    <div class="gate-wrapper">
+        <div class="github-header-frame">
+            <img id="header-img" src="" alt="" onerror="showPlaceholder()">
+            <div id="placeholder-text" class="fallback-placeholder-text">[ PENDING GITHUB HEADER IMAGE ]</div>
+        </div>
+
+        <form id="gate-form" onsubmit="verifyAccess(event)">
+            <div class="input-group">
+                <label class="input-label" for="pass-key">Enter Security Access Key Node:</label>
+                <input type="password" id="pass-key" class="password-field" placeholder="••••" autocomplete="current-password" required>
+            </div>
+            
+            <button type="submit" class="submit-btn">Verify Signature</button>
+        </form>
+
+        <div id="status-readout" class="system-status">System Standby // Restrictive Gate Active</div>
     </div>
 
     <script>
-        const firebaseConfig = {
-            apiKey: "AIzaSyB95B-M07ZWK0SW5JFCt3uawB3erjjhMCM",
-            authDomain: "aidenvidz.firebaseapp.com",
-            projectId: "aidenvidz",
-        };
+        // Setup configuration parameters
+        const TARGET_PASS = "1981";
+        const REDIRECT_URL = "archive.html"; // Change this configuration to point to your video collection page file name
 
-        firebase.initializeApp(firebaseConfig);
-        const auth = firebase.auth();
-        const provider = new firebase.auth.GoogleAuthProvider();
-        const MASTER_UID = "ca58db7b-32a7-4ebe-b918-754161bd1fe0";
-
-        async function summon() {
-            document.getElementById('status').innerText = "Invoking Google...";
-            await auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL);
-            await auth.signInWithRedirect(provider);
+        function showPlaceholder() {
+            document.getElementById('header-img').style.display = 'none';
+            document.getElementById('placeholder-text').style.display = 'block';
         }
 
-        auth.getRedirectResult().catch(err => {
-            if(err.code !== 'auth/no-auth-event') document.getElementById('status').innerText = err.message;
-        });
+        // Initialize header image checking
+        const imgNode = document.getElementById('header-img');
+        if (!imgNode.getAttribute('src')) {
+            showPlaceholder();
+        } else {
+            document.getElementById('placeholder-text').style.display = 'none';
+        }
 
-        auth.onAuthStateChanged((user) => {
-            if (user) {
-                if (user.uid === MASTER_UID) {
-                    document.getElementById('status').innerText = "Master Verified. Entering...";
-                    // PHYSICAL REDIRECT TO YOUR ARCHIVE
-                    setTimeout(() => { window.location.href = "index.html"; }, 1000);
-                } else {
-                    document.getElementById('status').innerText = "Access Denied.";
-                    auth.signOut();
-                }
+        function verifyAccess(e) {
+            e.preventDefault();
+            const inputField = document.getElementById('pass-key');
+            const readout = document.getElementById('status-readout');
+
+            if (inputField.value === TARGET_PASS) {
+                readout.classList.remove('error');
+                readout.style.color = "#00ff66";
+                readout.textContent = "Signature Accepted // Redirecting Array Sync...";
+                
+                setTimeout(() => {
+                    window.location.href = REDIRECT_URL;
+                }, 800);
+            } else {
+                readout.textContent = "Access Denied: Mismatched Encryption Code.";
+                readout.classList.add('error');
+                inputField.value = '';
+                inputField.focus();
+
+                // Clear error look smoothly after animation cycles
+                setTimeout(() => {
+                    readout.classList.remove('error');
+                    readout.textContent = "System Standby // Restrictive Gate Active";
+                }, 3000);
             }
-        });
+        }
     </script>
 </body>
 </html>
