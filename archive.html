@@ -3,124 +3,116 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>The Gothic Archive (Gallery Edition)</title>
+    <title>The Gothic Archive (Formation & Snap-to-Grid)</title>
     <style>
         :root {
             --bg-color: #0d0d0d;
-            --panel-bg: #141414;
             --accent-color: #800020;
-            --text-color: #d9d9d9;
-            --text-dim: #737373;
-            --border-color: #262626;
+            --grid-line: rgba(128, 0, 32, 0.08);
         }
 
-        * { box-sizing: border-box; margin: 0; padding: 0; -webkit-user-select: none; user-select: none; -webkit-tap-highlight-color: transparent; }
-        body, html { width: 100%; height: 100%; overflow: hidden; background-color: var(--bg-color); font-family: 'Courier New', Courier, monospace; color: var(--text-color); }
+        body, html {
+            width: 100%;
+            height: 100%;
+            margin: 0;
+            background-color: var(--bg-color);
+            overflow: hidden;
+            font-family: 'Courier New', Courier, monospace;
+        }
 
-        #fixed-top-wrapper { position: fixed; top: 0; left: 0; width: 100%; background: #0d0d0d; z-index: 1500; border-bottom: 1px solid var(--border-color); display: flex; flex-direction: column; align-items: center; }
-        #control-bar { padding: 10px; display: flex; gap: 10px; width: 95vw; max-width: 900px; }
-        .btn { background: #1a1a1a; color: var(--text-color); border: 1px solid var(--border-color); padding: 8px 12px; cursor: pointer; font-size: 10px; text-transform: uppercase; border-radius: 4px; }
-        .btn.active { background: var(--accent-color); border-color: #ff0033; }
+        /* Responsive Absolute Container */
+        #viewport {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            overflow: auto;
+        }
 
-        #master-tag-dock { width: 95vw; max-width: 900px; margin-bottom: 10px; display: flex; gap: 8px; overflow-x: auto; padding-bottom: 5px; }
-        .dock-tag-item { background: #141414; border: 1px solid var(--border-color); color: var(--text-dim); padding: 6px 12px; font-size: 10px; cursor: pointer; border-radius: 4px; text-transform: uppercase; }
-        .dock-tag-item.active-filter { background: var(--accent-color); color: #fff; }
+        /* Subtle Guide Grid for Edit Mode */
+        #grid-canvas {
+            position: absolute;
+            top: 0; left: 0; width: 200%; height: 200%;
+            pointer-events: none;
+            display: none;
+            background-image: 
+                linear-gradient(to right, var(--grid-line) 1px, transparent 1px),
+                linear-gradient(to bottom, var(--grid-line) 1px, transparent 1px);
+            background-size: 40px 40px;
+        }
 
-        #presentation-row { display: flex; align-items: stretch; gap: 10px; width: 95vw; max-width: 850px; height: 230px; margin-bottom: 10px; position: relative; }
-        #player-container { flex: 1; background: #000; border: 1px solid var(--border-color); border-radius: 8px; overflow: hidden; }
-        #media-screen { width: 100%; height: 100%; border: none; }
-        #resize-handle { position: absolute; bottom: -5px; right: -5px; width: 25px; height: 25px; background: #333; cursor: se-resize; z-index: 2000; border-radius: 4px; }
-        
-        #viewport { position: absolute; top: 380px; left: 0; width: 100%; height: calc(100% - 380px); overflow-y: auto; padding: 20px; display: flex; justify-content: center; }
-        #relics-container { width: 100%; max-width: 960px; display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 20px; }
-        .relic { background: var(--panel-bg); border: 1px solid var(--border-color); padding: 10px; cursor: pointer; aspect-ratio: 16/9; }
+        body.edit-mode #grid-canvas { display: block; }
+
+        .relic {
+            position: absolute;
+            width: 180px;
+            height: 100px;
+            background: #141414;
+            border: 1px solid #262626;
+            cursor: grab;
+            transition: border 0.2s;
+        }
+
         body.edit-mode .relic { border-color: var(--accent-color); }
+
+        /* Controls */
+        #ui-bar {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            z-index: 1000;
+            display: flex;
+            gap: 10px;
+        }
+
+        button {
+            padding: 10px;
+            background: #1a1a1a;
+            color: #fff;
+            border: 1px solid #333;
+            cursor: pointer;
+        }
     </style>
 </head>
 <body>
 
-    <div id="fixed-top-wrapper">
-        <div id="control-bar">
-            <button class="btn" id="btn-edit-mode">Edit Mode</button>
-            <button class="btn" id="btn-save">Save</button>
-        </div>
-        <div id="master-tag-dock"></div>
-        <div id="presentation-row">
-            <div id="player-container">
-                <iframe id="media-screen" src=""></iframe>
-            </div>
-            <div id="resize-handle"></div>
-        </div>
-    </div>
-
+    <div id="grid-canvas"></div>
     <div id="viewport">
-        <div id="relics-container"></div>
+        </div>
+
+    <div id="ui-bar">
+        <button id="toggle-edit">Edit Mode</button>
+        <button id="resize-original">Resize to Original</button>
     </div>
 
     <script>
-        const state = {
-            relics: JSON.parse(localStorage.getItem('gothic_archive_formation_save')) || [],
-            selectedFilterTag: "ALL",
-            isEditMode: false
+        const viewport = document.getElementById('viewport');
+        const toggleEdit = document.getElementById('toggle-edit');
+
+        // Edit Mode Toggle
+        toggleEdit.onclick = () => {
+            document.body.classList.toggle('edit-mode');
         };
 
-        // Initialize Everything
-        window.onload = () => {
-            initResize();
-            initEditMode();
-            renderArchive();
+        // Drag and Drop with Snap-to-Grid
+        let isDragging = false;
+        let activeElement = null;
+
+        viewport.onmousedown = (e) => {
+            if (!document.body.classList.contains('edit-mode')) return;
+            activeElement = e.target.closest('.relic');
+            if (activeElement) isDragging = true;
         };
 
-        function initResize() {
-            const row = document.getElementById('presentation-row');
-            const handle = document.getElementById('resize-handle');
-            handle.onmousedown = (e) => {
-                document.onmousemove = (ev) => {
-                    row.style.width = ev.clientX - row.offsetLeft + 'px';
-                    row.style.height = ev.clientY - row.offsetTop + 'px';
-                };
-                document.onmouseup = () => { document.onmousemove = null; };
-            };
-        }
+        document.onmousemove = (e) => {
+            if (!isDragging || !activeElement) return;
+            // Soft Snap logic: 40px grid
+            let x = Math.round(e.clientX / 40) * 40;
+            let y = Math.round(e.clientY / 40) * 40;
+            activeElement.style.left = x + 'px';
+            activeElement.style.top = y + 'px';
+        };
 
-        function initEditMode() {
-            document.getElementById('btn-edit-mode').onclick = (e) => {
-                state.isEditMode = !state.isEditMode;
-                document.body.classList.toggle('edit-mode', state.isEditMode);
-                e.target.classList.toggle('active', state.isEditMode);
-            };
-        }
-
-        function renderTagDock() {
-            const dock = document.getElementById('master-tag-dock');
-            dock.innerHTML = '';
-            const tagSet = new Set(['ALL']);
-            state.relics.forEach(r => r.tags?.forEach(t => tagSet.add(t.toUpperCase())));
-            
-            Array.from(tagSet).sort().forEach(tag => {
-                const btn = document.createElement('div');
-                btn.className = 'dock-tag-item' + (state.selectedFilterTag === tag ? ' active-filter' : '');
-                btn.textContent = tag;
-                btn.onclick = () => { state.selectedFilterTag = tag; renderArchive(); };
-                dock.appendChild(btn);
-            });
-        }
-
-        function renderArchive() {
-            renderTagDock();
-            const container = document.getElementById('relics-container');
-            container.innerHTML = '';
-            state.relics.forEach(relic => {
-                const matches = state.selectedFilterTag === "ALL" || relic.tags?.map(t => t.toUpperCase()).includes(state.selectedFilterTag);
-                if (matches) {
-                    const div = document.createElement('div');
-                    div.className = 'relic';
-                    div.innerHTML = `<div>${relic.title}</div>`;
-                    div.onclick = () => { document.getElementById('media-screen').src = relic.url; };
-                    container.appendChild(div);
-                }
-            });
-        }
+        document.onmouseup = () => { isDragging = false; };
     </script>
 </body>
 </html>
