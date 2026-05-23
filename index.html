@@ -431,7 +431,6 @@
         // Helper function to extract preview image directly from target video track structures
         function getAutoThumbnail(url) {
             if (!url) return '';
-            // Match standard YouTube ID formats
             const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
             const match = url.match(regExp);
             if (match && match[2].length === 11) {
@@ -490,7 +489,7 @@
         }
 
         function setupInteractions() {
-            // Master Tap Router System (Single Tap plays stream, Double Tap pops open settings workspace in Edit Mode)
+            // Master Tap Router System (Single/Double tap plays video in View mode; Double tap edits in Edit Mode)
             galleryGrid.addEventListener('click', (e) => {
                 const relicEl = e.target.closest('.relic');
                 if (!relicEl) return;
@@ -504,6 +503,9 @@
                     // Double Tap Sequence Detected
                     if (state.isEditMode) {
                         showContextMenu(e.clientX, e.clientY);
+                    } else {
+                        // In view mode, double tap plays the media instantly
+                        executeMenuAction('play-media');
                     }
                 } else {
                     // Single Tap Sequence Execution
@@ -533,6 +535,8 @@
                     if (tapLength < 300 && tapLength > 0) {
                         if (state.isEditMode) {
                             showContextMenu(touch.clientX, touch.clientY);
+                        } else {
+                            executeMenuAction('play-media');
                         }
                     }
                     state.lastTapTime = currentTime;
@@ -648,7 +652,6 @@
                     }, relic.title);
                     break;
                 case 'change-image':
-                    // Trigger the hardware device upload process array automatically
                     deviceImagePicker.value = '';
                     deviceImagePicker.click();
                     break;
