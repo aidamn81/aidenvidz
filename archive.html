@@ -2,8 +2,8 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>The Gothic Archive (Gallery Edition)</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>The Gothic Archive</title>
     <style>
         :root {
             --bg-color: #0d0d0d;
@@ -11,61 +11,97 @@
             --accent-color: #800020;
             --accent-glow: #ff0033;
             --text-color: #d9d9d9;
-            --text-dim: #737373;
             --border-color: #262626;
         }
 
-        * { box-sizing: border-box; margin: 0; padding: 0; -webkit-user-select: none; user-select: none; }
-        body, html { width: 100%; height: 100%; overflow: hidden; background-color: var(--bg-color); font-family: 'Courier New', Courier, monospace; color: var(--text-color); }
-
-        #fixed-top-wrapper { position: fixed; top: 0; left: 0; width: 100%; background: #0d0d0d; z-index: 1500; padding-bottom: 10px; border-bottom: 1px solid var(--border-color); display: flex; flex-direction: column; align-items: center; }
-        #control-bar { background: rgba(20, 20, 20, 0.85); border: 1px solid var(--border-color); padding: 10px 20px; border-radius: 4px; display: flex; gap: 15px; align-items: center; width: 95vw; max-width: 800px; margin-top: 15px; margin-bottom: 15px; overflow-x: auto; }
+        * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
         
-        #presentation-row { display: flex; align-items: stretch; gap: 15px; width: 95vw; max-width: 800px; height: 20vh; margin-bottom: 5px; }
-        .side-asset-box { width: 70px; background: #0a0a0a; border: 1px solid var(--border-color); border-radius: 12px; display: flex; align-items: center; justify-content: center; overflow: hidden; position: relative; }
-        
-        #player-container { flex: 1; background: #000; border: 1px solid var(--border-color); border-radius: 12px; display: flex; flex-direction: column; overflow: hidden; position: relative; }
-        #media-screen { flex: 1; width: 100%; height: 100%; border: none; }
-        #player-titlebar { background: #111; border-bottom: 1px solid var(--border-color); padding: 4px 12px; font-size: 10px; }
+        body, html { 
+            width: 100%; 
+            height: 100%; 
+            overflow: hidden; 
+            background-color: var(--bg-color); 
+            font-family: 'Courier New', Courier, monospace; 
+            color: var(--text-color);
+            position: fixed; /* Prevents iOS bounce scrolling */
+        }
 
-        .btn { background: #1a1a1a; color: var(--text-color); border: 1px solid var(--border-color); padding: 8px 14px; cursor: pointer; font-family: inherit; font-size: 12px; text-transform: uppercase; border-radius: 2px; }
-        .btn.active { background: var(--accent-color); border-color: var(--accent-glow); color: #fff; }
+        #fixed-top-wrapper { 
+            position: absolute; top: 0; left: 0; width: 100%; z-index: 1500; 
+            padding: 10px; border-bottom: 1px solid var(--border-color); 
+            display: flex; flex-direction: column; align-items: center; 
+        }
 
-        #viewport { position: absolute; top: calc(75px + 20vh); left: 0; width: 100%; height: calc(100% - (75px + 20vh)); overflow-y: auto; padding: 20px; display: flex; justify-content: center; }
-        #gallery-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 20px; width: 100%; max-width: 850px; align-content: start; }
-        
-        .relic { background: var(--panel-bg); border: 1px solid var(--border-color); border-radius: 4px; padding: 10px; display: flex; flex-direction: column; gap: 8px; aspect-ratio: 1/1; cursor: pointer; }
-        .relic-img { width: 100%; height: 100%; object-fit: cover; border-radius: 2px; }
-        .relic-title { font-size: 11px; font-weight: bold; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+        #control-bar { 
+            display: flex; gap: 10px; width: 100%; max-width: 800px; 
+            overflow-x: auto; padding: 10px;
+        }
+
+        #presentation-row { 
+            display: flex; align-items: stretch; gap: 10px; 
+            width: 100%; max-width: 800px; height: 180px; 
+        }
+
+        .side-asset-box { 
+            width: 60px; background: #0a0a0a; border: 1px solid var(--border-color); 
+            border-radius: 8px; display: flex; align-items: center; justify-content: center; 
+        }
+
+        #player-container { 
+            flex: 1; background: #000; border: 1px solid var(--border-color); 
+            border-radius: 8px; overflow: hidden; position: relative;
+        }
+
+        #media-screen { width: 100%; height: 100%; border: none; }
+
+        .btn { 
+            background: #1a1a1a; color: #fff; border: 1px solid var(--border-color); 
+            padding: 8px 12px; cursor: pointer; font-size: 11px; text-transform: uppercase; 
+            white-space: nowrap;
+        }
+
+        #viewport { 
+            position: absolute; 
+            top: 250px; 
+            left: 0; 
+            width: 100%; 
+            height: calc(100% - 250px); 
+            overflow-y: auto; 
+            -webkit-overflow-scrolling: touch; /* Essential for iPhone */
+            padding: 20px; 
+        }
+
+        #gallery-grid { 
+            display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); 
+            gap: 15px; width: 100%; max-width: 850px; margin: 0 auto;
+        }
+
+        .relic { 
+            background: var(--panel-bg); border: 1px solid var(--border-color); 
+            padding: 8px; aspect-ratio: 1/1; cursor: pointer; 
+        }
+
+        .relic-img { width: 100%; height: 80%; object-fit: cover; }
+        .relic-title { font-size: 10px; margin-top: 5px; text-align: center; }
 
         .edit-only { display: none !important; }
         body.edit-mode .edit-only { display: inline-block !important; }
-
-        #context-menu { position: fixed; background: #141414; border: 1px solid var(--border-color); z-index: 2000; display: none; border-radius: 3px; width: 180px; }
-        .menu-item { padding: 10px; font-size: 11px; text-transform: uppercase; cursor: pointer; border-bottom: 1px solid #262626; }
-        .menu-item:hover { background: var(--accent-color); }
-
-        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(5,5,5,0.85); z-index: 3000; display: none; align-items: center; justify-content: center; }
-        .modal-overlay.active { display: flex; }
-        .modal-box { background: #141414; border: 1px solid var(--border-color); padding: 20px; width: 350px; }
-        .modal-input { background: #0d0d0d; border: 1px solid var(--border-color); color: #fff; padding: 8px; width: 100%; margin-top: 10px; }
     </style>
 </head>
 <body>
 
     <input type="file" id="device-image-picker" accept="image/*" style="display: none;">
-    
+
     <div id="fixed-top-wrapper">
         <div id="control-bar">
-            <button class="btn" id="btn-edit-mode">Edit Mode</button>
-            <button class="btn edit-only" id="btn-add-link">Add Video Link</button>
-            <button class="btn edit-only" id="btn-save">Save Archive</button>
+            <button class="btn" id="btn-edit-mode">Edit</button>
+            <button class="btn edit-only" id="btn-add-link">Add</button>
+            <button class="btn edit-only" id="btn-save">Save</button>
         </div>
         <div id="presentation-row">
             <div class="side-asset-box" id="side-left-box">L</div>
             <div id="player-container">
-                <div id="player-titlebar">System Player: Idle</div>
-                <iframe id="media-screen" src=""></iframe>
+                <iframe id="media-screen" src="" allow="autoplay; encrypted-media" playsinline></iframe>
             </div>
             <div class="side-asset-box" id="side-right-box">R</div>
         </div>
@@ -75,116 +111,47 @@
         <div id="gallery-grid"></div>
     </div>
 
-    <div id="context-menu">
-        <div class="menu-item" data-action="play-media">Play Video</div>
-        <div class="menu-item edit-only" data-action="rename">Rename</div>
-        <div class="menu-item edit-only" data-action="change-image">Change Thumbnail</div>
-        <div class="menu-item edit-only" data-action="delete">Delete</div>
-    </div>
-
-    <div class="modal-overlay" id="archive-modal">
-        <div class="modal-box">
-            <div id="modal-title-text" style="font-size:12px; margin-bottom:10px;"></div>
-            <div id="modal-body-content"></div>
-            <div style="margin-top:15px; display:flex; gap:10px;">
-                <button class="btn" id="modal-cancel">Cancel</button>
-                <button class="btn" id="modal-confirm" style="background:var(--accent-color);">Confirm</button>
-            </div>
-        </div>
-    </div>
-
     <script>
-        const state = { isEditMode: false, activeTargetId: null, relics: JSON.parse(localStorage.getItem('gothic_archive_formation_save')) || [] };
-        
+        const state = { relics: JSON.parse(localStorage.getItem('gothic_archive_formation_save')) || [] };
         const galleryGrid = document.getElementById('gallery-grid');
-        const contextMenu = document.getElementById('context-menu');
-        const deviceImagePicker = document.getElementById('device-image-picker');
 
-        function renderArchive() {
+        function render() {
             galleryGrid.innerHTML = '';
             state.relics.forEach(relic => {
-                const node = document.createElement('div');
-                node.className = 'relic';
-                node.innerHTML = `
+                const div = document.createElement('div');
+                div.className = 'relic';
+                div.innerHTML = `
+                    <img class="relic-img" src="${relic.img || getThumb(relic.url)}">
                     <div class="relic-title">${relic.title}</div>
-                    <div style="flex:1; overflow:hidden;"><img class="relic-img" src="${relic.img || getAutoThumbnail(relic.url)}"></div>
                 `;
-                node.onclick = (e) => {
-                    if (state.isEditMode) {
-                        state.activeTargetId = relic.id;
-                        contextMenu.style.display = 'block';
-                        contextMenu.style.left = e.clientX + 'px';
-                        contextMenu.style.top = e.clientY + 'px';
-                    } else {
-                        document.getElementById('media-screen').src = relic.url;
-                        document.getElementById('player-titlebar').textContent = relic.title;
-                    }
-                };
-                galleryGrid.appendChild(node);
+                div.onclick = () => document.getElementById('media-screen').src = relic.url;
+                galleryGrid.appendChild(div);
             });
         }
 
-        function getAutoThumbnail(url) {
-            const match = url.match(/(?:youtu\.be\/|youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=))([^"&?\/\s]{11})/);
-            return match ? `https://img.youtube.com/vi/${match[1]}/hqdefault.jpg` : '';
-        }
-
-        document.getElementById('btn-add-link').onclick = () => {
-            const isBulk = confirm("Add in bulk? (Format: Title|URL per line)");
-            if (isBulk) {
-                showModal("Bulk Import", `<textarea id="bulk-input" class="modal-input" rows="5"></textarea>`, () => {
-                    const lines = document.getElementById('bulk-input').value.split('\n');
-                    lines.forEach(line => {
-                        const [t, u] = line.split('|');
-                        if (t && u) state.relics.push({id: Date.now()+Math.random(), title: t.trim(), url: u.trim(), img: ""});
-                    });
-                    localStorage.setItem('gothic_archive_formation_save', JSON.stringify(state.relics));
-                    renderArchive();
-                });
-            } else {
-                showModal("Add Video", `<input id="new-title" class="modal-input" placeholder="Title"><input id="new-url" class="modal-input" placeholder="URL">`, () => {
-                    state.relics.push({id: Date.now(), title: document.getElementById('new-title').value, url: document.getElementById('new-url').value, img: ""});
-                    localStorage.setItem('gothic_archive_formation_save', JSON.stringify(state.relics));
-                    renderArchive();
-                });
-            }
-        };
-
-        function showModal(title, content, onConfirm) {
-            document.getElementById('modal-title-text').textContent = title;
-            document.getElementById('modal-body-content').innerHTML = content;
-            document.getElementById('archive-modal').classList.add('active');
-            document.getElementById('modal-confirm').onclick = () => { onConfirm(); document.getElementById('archive-modal').classList.remove('active'); };
-            document.getElementById('modal-cancel').onclick = () => document.getElementById('archive-modal').classList.remove('active');
+        function getThumb(url) {
+            const m = url.match(/(?:youtu\.be\/|v\/|embed\/|watch\?v=)([^"&?\/\s]{11})/);
+            return m ? `https://img.youtube.com/vi/${m[1]}/hqdefault.jpg` : '';
         }
 
         document.getElementById('btn-edit-mode').onclick = (e) => {
-            state.isEditMode = !state.isEditMode;
-            document.body.classList.toggle('edit-mode', state.isEditMode);
-            e.target.classList.toggle('active', state.isEditMode);
+            document.body.classList.toggle('edit-mode');
+            e.target.classList.toggle('active');
         };
 
-        deviceImagePicker.onchange = (e) => {
-            const reader = new FileReader();
-            reader.onload = (ev) => {
-                const relic = state.relics.find(r => r.id == state.activeTargetId);
-                if (relic) { relic.img = ev.target.result; localStorage.setItem('gothic_archive_formation_save', JSON.stringify(state.relics)); renderArchive(); }
-            };
-            reader.readAsDataURL(e.target.files[0]);
-        };
-
-        contextMenu.onclick = (e) => {
-            const action = e.target.getAttribute('data-action');
-            if (action === 'change-image') deviceImagePicker.click();
-            if (action === 'delete') {
-                state.relics = state.relics.filter(r => r.id != state.activeTargetId);
+        document.getElementById('btn-add-link').onclick = () => {
+            const input = prompt("Add Link (Format: Title|URL)");
+            if (input) {
+                const [title, url] = input.split('|');
+                state.relics.push({id: Date.now(), title, url, img: ""});
                 localStorage.setItem('gothic_archive_formation_save', JSON.stringify(state.relics));
-                renderArchive();
+                render();
             }
-            contextMenu.style.display = 'none';
         };
 
-        renderArchive();
+        document.getElementById('btn-save').onclick = () => alert("Saved.");
+        
+        render();
     </script>
 </body>
 </html>
