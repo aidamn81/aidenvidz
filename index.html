@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>The Gothic Archive (Gallery Layout Edition)</title>
+    <title>The Gothic Archive (Gallery & PiP Edition)</title>
     <style>
         :root {
             --bg-color: #0d0d0d;
@@ -46,6 +46,7 @@
             display: flex;
             flex-direction: column;
             align-items: center;
+            transition: transform 0.3s ease;
         }
 
         /* Fixed Navigation / Control Bar */
@@ -94,6 +95,24 @@
             height: 240px; 
             margin-bottom: 5px;
             position: relative;
+            transition: all 0.3s cubic-bezier(0.25, 1, 0.5, 1);
+        }
+
+        /* Dynamic CSS Picture-in-Picture State Transitions */
+        #presentation-row.pip-active {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            width: 320px !important;
+            height: 180px !important;
+            z-index: 2500;
+            box-shadow: 0 15px 40px rgba(0,0,0,0.9);
+            margin: 0;
+        }
+
+        #presentation-row.pip-active .side-asset-box,
+        #presentation-row.pip-active #resize-handle {
+            display: none !important; 
         }
 
         /* Resizable Handle Element */
@@ -271,6 +290,7 @@
             padding: 30px;
             display: flex;
             justify-content: center;
+            -webkit-overflow-scrolling: touch;
         }
 
         /* Subtle Guide Grid for Edit Mode Background Layout alignment */
@@ -312,7 +332,7 @@
             display: inline-block !important;
         }
 
-        /* Flowing Relic Thumbnail Box Layout */
+        /* Flowing Relic Thumbnail Box Layout - Uniformly Sized Configuration */
         .relic {
             background: var(--panel-bg);
             border: 1px solid var(--border-color);
@@ -325,7 +345,8 @@
             cursor: pointer;
             overflow: hidden;
             position: relative;
-            aspect-ratio: 1 / 1;
+            aspect-ratio: 1 / 1; /* Locks all elements into perfectly matched uniform squares */
+            width: 100%;
             transition: transform 0.15s ease, border-color 0.15s ease;
         }
 
@@ -345,6 +366,7 @@
             border-bottom: 1px solid var(--border-color);
             padding-bottom: 6px;
             pointer-events: none;
+            flex-shrink: 0;
         }
 
         .relic-title {
@@ -390,9 +412,10 @@
             display: flex;
             flex-wrap: wrap;
             gap: 4px;
-            max-height: 35px;
+            max-height: 20px;
             overflow: hidden;
             pointer-events: none;
+            flex-shrink: 0;
         }
 
         .mini-tag {
@@ -668,12 +691,33 @@
             setupInteractions();
             setupGlobalMenus();
             setupResizeEngine();
+            setupPiPMonitor();
         });
 
         function adjustViewportSpacing() {
             const topHeight = fixedTopWrapper.offsetHeight;
             viewport.style.top = topHeight + 'px';
             viewport.style.height = `calc(100% - ${topHeight}px)`;
+        }
+
+        function setupPiPMonitor() {
+            viewport.addEventListener('scroll', () => {
+                if (viewport.scrollTop > 60) {
+                    if (!presentationRow.classList.contains('pip-active')) {
+                        presentationRow.classList.add('pip-active');
+                    }
+                } else {
+                    if (presentationRow.classList.contains('pip-active')) {
+                        presentationRow.classList.remove('pip-active');
+                        const savedWidth = localStorage.getItem('gothic_archive_player_width');
+                        const savedHeight = localStorage.getItem('gothic_archive_player_height');
+                        if (savedWidth && savedHeight) {
+                            presentationRow.style.width = savedWidth + 'px';
+                            presentationRow.style.height = savedHeight + 'px';
+                        }
+                    }
+                }
+            });
         }
 
         function getAutoThumbnail(url) {
@@ -708,7 +752,6 @@
             }
         }
 
-        // Auto-Flowing Matrix Gallery Filtering Core
         function renderArchive() {
             relicsContainer.innerHTML = '';
             const query = state.searchQuery.trim().toLowerCase();
@@ -728,9 +771,15 @@
             node.className = 'relic';
             node.setAttribute('data-id', relic.id);
 
-            // Optional custom override dimension handling if set via manual adjustment tools
-            if (relic.w) node.style.width = relic.w + 'px';
-            if (relic.h) node.style.height = relic.h + 'px';
+            // Conditional dimensional injection supporting custom scaling profiles
+            if (relic.w) {
+                node.style.width = relic.w + 'px';
+                node.style.aspectRatio = 'auto';
+            }
+            if (relic.h) {
+                node.style.height = relic.h + 'px';
+                node.style.aspectRatio = 'auto';
+            }
 
             const header = document.createElement('div');
             header.className = 'relic-header';
@@ -761,7 +810,6 @@
 
             node.appendChild(body);
 
-            // Render Tags Element Row Layout Map
             if (relic.tags && relic.tags.length > 0) {
                 const tagsRow = document.createElement('div');
                 tagsRow.className = 'relic-tags-row';
@@ -774,7 +822,6 @@
                 node.appendChild(tagsRow);
             }
 
-            // Finger size anchor element mapping injection
             const resizeAnchor = document.createElement('div');
             resizeAnchor.className = 'resize-finger-anchor';
             node.appendChild(resizeAnchor);
@@ -786,6 +833,7 @@
             let startX, startY, startW, startH;
 
             const onPointerMove = (e) => {
+                if (presentationRow.classList.contains('pip-active')) return;
                 const clientX = e.touches ? e.touches[0].clientX : e.clientX;
                 const clientY = e.touches ? e.touches[0].clientY : e.clientY;
                 
@@ -809,11 +857,14 @@
                 document.removeEventListener('touchmove', onPointerMove);
                 document.removeEventListener('touchend', onPointerUp);
 
-                localStorage.setItem('gothic_archive_player_width', presentationRow.offsetWidth);
-                localStorage.setItem('gothic_archive_player_height', presentationRow.offsetHeight);
+                if (!presentationRow.classList.contains('pip-active')) {
+                    localStorage.setItem('gothic_archive_player_width', presentationRow.offsetWidth);
+                    localStorage.setItem('gothic_archive_player_height', presentationRow.offsetHeight);
+                }
             };
 
             const onPointerDown = (e) => {
+                if (presentationRow.classList.contains('pip-active')) return;
                 e.preventDefault();
                 e.stopPropagation();
                 
@@ -842,7 +893,6 @@
                 renderArchive();
             });
 
-            // Grid Interaction Pointer Route Management System
             relicsContainer.addEventListener('mousedown', handlePointerDown);
             relicsContainer.addEventListener('touchstart', handlePointerDown, { passive: false });
 
@@ -858,7 +908,6 @@
                 const clientX = e.touches ? e.touches[0].clientX : e.clientX;
                 const clientY = e.touches ? e.touches[0].clientY : e.clientY;
 
-                // Handle Resizing Action Node Trigger Hooks
                 if (target.classList.contains('resize-finger-anchor') && state.isEditMode) {
                     e.preventDefault();
                     e.stopPropagation();
@@ -875,24 +924,18 @@
                     return;
                 }
 
-                // Double Tap / Double Click detection mechanism logic
                 const currentTime = new Date().getTime();
                 const tapLength = currentTime - state.lastTapTime;
                 
                 if (tapLength < 300 && tapLength > 0) {
                     e.preventDefault();
                     e.stopPropagation();
-                    if (state.isEditMode) {
-                        showContextMenu(clientX, clientY);
-                    } else {
-                        executeMenuAction('play-media');
-                    }
+                    showContextMenu(clientX, clientY);
                     state.lastTapTime = 0;
                     return;
                 }
                 state.lastTapTime = currentTime;
 
-                // Drag handling context within Grid sorting framework
                 if (state.isEditMode) {
                     e.preventDefault();
                     dragRelic = relic;
@@ -913,13 +956,11 @@
                 const clientY = e.touches ? e.touches[0].clientY : e.clientY;
 
                 if (dragRelic) {
-                    // Soft sorting position index visual adjustment framework
                     let dx = clientX - dragStartX;
                     if (Math.abs(dx) > 60) {
                         const currentIndex = state.relics.findIndex(r => r.id === dragRelic.id);
                         let targetIndex = currentIndex + (dx > 0 ? 1 : -1);
                         if (targetIndex >= 0 && targetIndex < state.relics.length) {
-                            // Swap internal order arrays to reorder grid positions natively
                             state.relics.splice(currentIndex, 1);
                             state.relics.splice(targetIndex, 0, dragRelic);
                             dragStartX = clientX;
@@ -932,7 +973,6 @@
                     let dx = clientX - dragStartX;
                     let dy = clientY - dragStartY;
 
-                    // Apply soft snapping measurements to size transformations
                     let targetW = Math.round((initialW + dx) / 40) * 40;
                     let targetH = Math.round((initialH + dy) / 40) * 40;
 
@@ -948,6 +988,7 @@
                     if (el) {
                         el.style.width = targetW + 'px';
                         el.style.height = targetH + 'px';
+                        el.style.aspectRatio = 'auto';
                     }
                 }
             }
@@ -1052,7 +1093,6 @@
                 }
             });
 
-            // Singular Tracking Add Mode Input Engine Interface Module
             document.getElementById('btn-add-link').addEventListener('click', () => {
                 openPromptModal("Upload Video Connection", "Enter descriptive track title configuration designation:", (title) => {
                     if(!title) return;
@@ -1076,7 +1116,6 @@
                 });
             });
 
-            // Bulk Parsing Overlay Import Interface System
             document.getElementById('btn-add-bulk').addEventListener('click', () => {
                 openBulkModal("Inject Mass Media Arrays", "Paste your multi-link addresses below (one absolute stream mapping per line layout):", (textBlock) => {
                     if (!textBlock) return;
