@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>The Gothic Archive — Terminal Gate</title>
     <style>
         :root {
@@ -21,6 +21,7 @@
             padding: 0;
             -webkit-user-select: none;
             user-select: none;
+            -webkit-tap-highlight-color: transparent;
         }
 
         body, html {
@@ -33,6 +34,8 @@
             align-items: center;
             justify-content: center;
             overflow: hidden;
+            /* Safe area spacing pads for iOS layout wrappers */
+            padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
         }
 
         body::before {
@@ -48,8 +51,8 @@
             position: relative;
             background: var(--panel-bg);
             border: 1px solid var(--border-color);
-            border-radius: 8px;
-            width: 90vw;
+            border-radius: 12px;
+            width: 92vw;
             max-width: 420px;
             padding: 35px 25px;
             box-shadow: 0 20px 50px rgba(0, 0, 0, 0.9);
@@ -68,7 +71,7 @@
             height: 120px;
             background: #080808;
             border: 1px dashed #222;
-            border-radius: 4px;
+            border-radius: 6px;
             margin-bottom: 25px;
             display: flex;
             align-items: center;
@@ -97,12 +100,11 @@
 
         .input-label {
             display: block;
-            font-size: 10px;
+            font-size: 11px;
             text-transform: uppercase;
             letter-spacing: 1.5px;
             color: var(--text-dim);
-            margin-bottom: 8px;
-            padding-left: 2px;
+            margin-bottom: 10px;
             text-align: center;
         }
 
@@ -111,13 +113,15 @@
             background: #050505;
             border: 1px solid var(--border-color);
             color: #fff;
-            padding: 12px 15px;
+            padding: 14px 15px;
             font-family: inherit;
-            font-size: 14px;
-            border-radius: 4px;
-            letter-spacing: 2px;
+            font-size: 16px; /* Prevents auto-zooming context on iOS inputs */
+            border-radius: 6px;
+            letter-spacing: 1px;
             text-align: center;
             transition: all 0.25s ease;
+            -webkit-user-select: text;
+            user-select: text;
         }
 
         .password-field:focus {
@@ -133,30 +137,29 @@
             background: #141414;
             color: var(--text-color);
             border: 1px solid var(--border-color);
-            padding: 14px;
+            padding: 16px; /* Maximized tap hit box targets for fingers */
             font-family: inherit;
-            font-size: 12px;
+            font-size: 13px;
             text-transform: uppercase;
             letter-spacing: 2px;
             cursor: pointer;
-            border-radius: 4px;
+            border-radius: 6px;
             transition: all 0.3s ease;
         }
 
-        .submit-btn:hover {
+        .submit-btn:hover, .submit-btn:active {
             background: var(--accent-color);
             border-color: var(--accent-glow);
             color: #fff;
-            box-shadow: 0 0 15px var(--accent-color);
         }
 
         .system-status {
             margin-top: 20px;
-            font-size: 9px;
+            font-size: 10px;
             text-transform: uppercase;
             letter-spacing: 1px;
             color: var(--text-dim);
-            height: 12px;
+            min-height: 14px;
             transition: color 0.2s ease;
         }
 
