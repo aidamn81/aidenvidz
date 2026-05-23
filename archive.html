@@ -2,8 +2,8 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>The Gothic Archive (Gallery & PiP Edition)</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>The Gothic Archive (Adaptive iPhone & iPad Matrix)</title>
     <style>
         :root {
             --bg-color: #0d0d0d;
@@ -22,6 +22,7 @@
             padding: 0;
             -webkit-user-select: none;
             user-select: none;
+            -webkit-tap-highlight-color: transparent;
         }
 
         body, html {
@@ -33,7 +34,7 @@
             color: var(--text-color);
         }
 
-        /* Fixed Upper Interface Wrapper */
+        /* Fixed Upper Control Area Configuration Layout */
         #fixed-top-wrapper {
             position: fixed;
             top: 0;
@@ -41,43 +42,49 @@
             width: 100%;
             background: #0d0d0d;
             z-index: 1500;
-            padding-bottom: 15px;
+            padding-top: env(safe-area-inset-top, 0px);
             border-bottom: 1px solid var(--border-color);
             display: flex;
             flex-direction: column;
             align-items: center;
-            transition: transform 0.3s ease;
         }
 
-        /* Fixed Navigation / Control Bar */
         #control-bar {
-            background: rgba(20, 20, 20, 0.85);
+            background: rgba(20, 20, 20, 0.9);
             border: 1px solid var(--border-color);
-            padding: 10px 20px;
-            border-radius: 4px;
+            padding: 10px 15px;
+            border-radius: 6px;
             display: flex;
-            gap: 15px;
+            gap: 12px;
             align-items: center;
-            backdrop-filter: blur(10px);
-            box-shadow: 0 10px 30px rgba(0,0,0,0.7);
+            backdrop-filter: blur(15px);
+            -webkit-backdrop-filter: blur(15px);
             width: 95vw;
             max-width: 900px;
-            margin-top: 15px;
-            margin-bottom: 15px;
+            margin-top: 10px;
+            margin-bottom: 10px;
             overflow-x: auto;
             white-space: nowrap;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        /* Clean scrollbars for the horizontal control rail tracking */
+        #control-bar::-webkit-scrollbar {
+            display: none;
         }
 
         #search-input {
             background: #0d0d0d;
             border: 1px solid var(--border-color);
             color: #fff;
-            padding: 6px 12px;
+            padding: 10px 14px;
             font-family: inherit;
-            font-size: 11px;
-            border-radius: 2px;
-            width: 140px;
+            font-size: 16px; /* Lock zoom interactions scale on iOS triggers */
+            border-radius: 4px;
+            width: 160px;
             text-transform: uppercase;
+            -webkit-user-select: text;
+            user-select: text;
         }
 
         #search-input:focus {
@@ -85,29 +92,40 @@
             border-color: var(--accent-color);
         }
 
-        /* Upper Presentation Row - Holds Player & Flanking Side Images */
+        /* Universal Presentation Layout Node Wrapper Container */
         #presentation-row {
             display: flex;
             align-items: stretch;
-            gap: 15px;
+            gap: 12px;
             width: 95vw;
-            max-width: 800px;
-            height: 240px; 
-            margin-bottom: 5px;
+            max-width: 850px;
+            height: 230px; 
+            margin-bottom: 12px;
             position: relative;
-            transition: all 0.3s cubic-bezier(0.25, 1, 0.5, 1);
+            transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
         }
 
-        /* Dynamic CSS Picture-in-Picture State Transitions */
+        /* Adaptive scaling behaviors for compact phone landscape view modes */
+        @media (max-height: 450px) and (orientation: landscape) {
+            #presentation-row { height: 140px; }
+            .side-asset-box { display: none !important; }
+        }
+
+        /* Mobile PiP Terminal Layout Alignment Modification Rules */
         #presentation-row.pip-active {
             position: fixed;
-            bottom: 20px;
-            right: 20px;
-            width: 320px !important;
-            height: 180px !important;
+            bottom: calc(20px + env(safe-area-inset-bottom, 0px));
+            right: calc(20px + env(safe-area-inset-right, 0px));
+            width: 42vw !important;
+            max-width: 280px !important;
+            min-width: 160px !important;
+            height: 24vw !important;
+            max-height: 158px !important;
+            min-height: 90px !important;
             z-index: 2500;
-            box-shadow: 0 15px 40px rgba(0,0,0,0.9);
+            box-shadow: 0 15px 40px rgba(0,0,0,0.95);
             margin: 0;
+            pointer-events: auto;
         }
 
         #presentation-row.pip-active .side-asset-box,
@@ -115,56 +133,40 @@
             display: none !important; 
         }
 
-        /* Resizable Handle Element */
         #resize-handle {
             position: absolute;
-            bottom: -5px;
-            right: -5px;
-            width: 16px;
-            height: 16px;
+            bottom: -6px;
+            right: -6px;
+            width: 28px; /* Expanded interaction node for reliable touch targets */
+            height: 28px;
             cursor: se-resize;
             z-index: 1600;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 10px;
-            color: var(--text-dim);
-            font-weight: bold;
-            line-height: 1;
-            background: #111;
+            font-size: 12px;
+            color: var(--text-color);
+            background: #1a1a1a;
             border: 1px solid var(--border-color);
-            border-radius: 3px;
+            border-radius: 6px;
         }
 
-        #resize-handle:hover {
-            color: var(--accent-glow);
-            border-color: var(--accent-color);
-        }
-
-        /* Flanking Customizable Graphic Blocks */
         .side-asset-box {
-            width: 70px;
+            width: 65px;
             background: #0a0a0a;
             border: 1px solid var(--border-color);
-            border-radius: 12px;
+            border-radius: 8px;
             display: flex;
             align-items: center;
             justify-content: center;
             overflow: hidden;
             position: relative;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.5);
-            transition: border-color 0.2s ease;
             flex-shrink: 0;
         }
 
         body.edit-mode .side-asset-box {
             cursor: pointer;
-            border-color: rgba(128, 0, 32, 0.5);
-        }
-
-        body.edit-mode .side-asset-box:hover {
-            border-color: var(--accent-glow);
-            box-shadow: 0 0 8px var(--accent-color);
+            border-color: rgba(128, 0, 32, 0.6);
         }
 
         .side-asset-box img {
@@ -178,32 +180,25 @@
             font-size: 9px;
             color: #333;
             text-transform: uppercase;
-            letter-spacing: 0.5px;
             text-align: center;
-            padding: 4px;
-            pointer-events: none;
+            padding: 2px;
         }
 
-        body.edit-mode .side-asset-placeholder {
-            color: var(--text-dim);
-        }
+        body.edit-mode .side-asset-placeholder { color: var(--text-dim); }
 
-        /* Master Presentation Video Player Frame */
         #player-container {
             flex: 1;
             background: #000;
             border: 1px solid var(--border-color);
-            border-radius: 12px;
-            box-shadow: 0 10px 35px rgba(0,0,0,0.9);
+            border-radius: 8px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.8);
             display: flex;
             flex-direction: column;
             overflow: hidden;
             position: relative;
         }
 
-        body.edit-mode #player-container {
-            border-color: var(--accent-color);
-        }
+        body.edit-mode #player-container { border-color: var(--accent-color); }
 
         #media-screen {
             flex: 1;
@@ -211,18 +206,15 @@
             height: 100%;
             border: none;
             background: #000;
-            border-bottom-left-radius: 11px;
-            border-bottom-right-radius: 11px;
         }
 
         #player-placeholder {
             position: absolute;
-            top: 25px;
+            top: 28px;
             left: 0;
             width: 100%;
-            height: calc(100% - 25px);
+            height: calc(100% - 28px);
             display: flex;
-            flex-direction: column;
             align-items: center;
             justify-content: center;
             background: #0a0a0a;
@@ -230,24 +222,19 @@
             font-size: 10px;
             letter-spacing: 1px;
             text-transform: uppercase;
-            gap: 4px;
-            pointer-events: none;
             z-index: 5;
-            border-bottom-left-radius: 11px;
-            border-bottom-right-radius: 11px;
+            pointer-events: none;
         }
 
         #player-titlebar {
             background: #111;
             border-bottom: 1px solid var(--border-color);
-            padding: 4px 12px;
+            padding: 6px 12px;
             font-size: 10px;
             letter-spacing: 0.5px;
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
-            border-top-left-radius: 11px;
-            border-top-right-radius: 11px;
             flex-shrink: 0;
         }
 
@@ -255,51 +242,42 @@
             background: #1a1a1a;
             color: var(--text-color);
             border: 1px solid var(--border-color);
-            padding: 8px 14px;
+            padding: 10px 16px; /* Upgraded mobile size metrics */
             cursor: pointer;
             font-family: inherit;
-            font-size: 12px;
+            font-size: 11px;
             text-transform: uppercase;
             letter-spacing: 1px;
             transition: all 0.2s ease;
-            border-radius: 2px;
+            border-radius: 4px;
+            flex-shrink: 0;
         }
 
-        .btn:hover {
-            border-color: var(--accent-color);
-            color: #fff;
-            box-shadow: 0 0 8px rgba(128, 0, 32, 0.4);
-        }
-
-        .btn.active {
+        .btn:active, .btn.active {
             background: var(--accent-color);
             border-color: var(--accent-glow);
             color: #fff;
-            box-shadow: 0 0 12px var(--accent-color);
         }
 
-        /* Clean Auto-Flowing Workspace Scrollable Area */
+        /* Resilient Flow Layout Scroll Shell Container Frame */
         #viewport {
             position: absolute;
-            top: 360px; 
+            top: 350px; 
             left: 0;
             width: 100%;
-            height: calc(100% - 360px);
+            height: calc(100% - 350px);
             overflow-y: auto;
             background-color: #0d0d0d;
-            padding: 30px;
+            padding: 20px;
+            padding-bottom: calc(40px + env(safe-area-inset-bottom, 0px));
             display: flex;
             justify-content: center;
-            -webkit-overflow-scrolling: touch;
+            -webkit-overflow-scrolling: touch; /* Native inertial track acceleration controls */
         }
 
-        /* Subtle Guide Grid for Edit Mode Background Layout alignment */
         #grid-canvas {
             position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
+            top: 0; left: 0; width: 100%; height: 100%;
             pointer-events: none;
             display: none;
             background-image: 
@@ -309,40 +287,33 @@
             z-index: 1;
         }
 
-        body.edit-mode #grid-canvas {
-            display: block;
-        }
+        body.edit-mode #grid-canvas { display: block; }
 
-        /* Flexible Grid Matrix Area for Thumbnails appearing next to each other */
+        /* Highly fluid multi-column alignment grid schema mapping for multi-screen sizes */
         #relics-container {
             position: relative;
             width: 100%;
-            max-width: 900px;
+            max-width: 960px;
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-            gap: 20px;
+            grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+            @media (min-width: 768px) { grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); }
+            gap: 15px;
             align-content: start;
             z-index: 2;
         }
 
-        .edit-only {
-            display: none !important;
-        }
-        body.edit-mode .edit-only {
-            display: inline-block !important;
-        }
+        .edit-only { display: none !important; }
+        body.edit-mode .edit-only { display: inline-block !important; }
 
-        /* Flowing Relic Thumbnail Box Layout - Uniformly Sized Configuration */
         .relic {
             background: var(--panel-bg);
             border: 1px solid var(--border-color);
-            border-radius: 4px;
-            padding: 10px;
+            border-radius: 6px;
+            padding: 8px;
             display: flex;
             flex-direction: column;
-            gap: 8px;
+            gap: 6px;
             box-shadow: 0 5px 15px rgba(0,0,0,0.5);
-            cursor: pointer;
             overflow: hidden;
             position: relative;
             aspect-ratio: 1 / 1;
@@ -350,29 +321,20 @@
             transition: transform 0.15s ease, border-color 0.15s ease;
         }
 
-        body.edit-mode .relic {
-            border-color: rgba(128, 0, 32, 0.4);
-            cursor: grab;
-        }
-
-        body.edit-mode .relic:active {
-            cursor: grabbing;
-        }
+        body.edit-mode .relic { border-color: rgba(128, 0, 32, 0.4); }
 
         .relic-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
             border-bottom: 1px solid var(--border-color);
-            padding-bottom: 6px;
+            padding-bottom: 4px;
             pointer-events: none;
-            flex-shrink: 0;
         }
 
         .relic-title {
             font-size: 11px;
             font-weight: bold;
-            letter-spacing: 0.5px;
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
@@ -388,7 +350,7 @@
             position: relative;
             overflow: hidden;
             background: #0a0a0a;
-            border-radius: 2px;
+            border-radius: 4px;
             pointer-events: none;
         }
 
@@ -396,26 +358,23 @@
             width: 100%;
             height: 100%;
             object-fit: cover;
-            border-radius: 2px;
         }
 
         .relic-fallback-text {
-            font-size: 11px;
+            font-size: 10px;
             text-align: center;
-            padding: 6px;
+            padding: 4px;
             text-transform: uppercase;
             color: var(--text-dim);
         }
 
-        /* Tags Matrix Row Layout */
         .relic-tags-row {
             display: flex;
             flex-wrap: wrap;
             gap: 4px;
-            max-height: 20px;
+            max-height: 18px;
             overflow: hidden;
             pointer-events: none;
-            flex-shrink: 0;
         }
 
         .mini-tag {
@@ -425,69 +384,62 @@
             font-size: 8px;
             padding: 1px 4px;
             border-radius: 2px;
-            text-transform: uppercase;
         }
 
-        /* Scale Finger Tab Node for Resizability */
         .resize-finger-anchor {
             position: absolute;
             bottom: 0;
             right: 0;
-            width: 18px;
-            height: 18px;
-            background: rgba(128, 0, 32, 0.6);
-            border-top-left-radius: 4px;
+            width: 32px; /* Enhanced touch anchor zone for heavy thumb pads */
+            height: 32px;
+            background: rgba(128, 0, 32, 0.7);
+            border-top-left-radius: 8px;
             cursor: se-resize;
             display: none;
             z-index: 10;
         }
-
-        body.edit-mode .resize-finger-anchor {
-            display: block;
+        /* Visual diagonal signifier for resizability */
+        .resize-finger-anchor::after {
+            content: '⇲';
+            position: absolute;
+            bottom: 4px; right: 4px;
+            font-size: 10px; color: #fff;
         }
 
-        /* Scrollable Popup Menu on Double Tap */
+        body.edit-mode .resize-finger-anchor { display: block; }
+
+        /* Universal Native Overlay Context Menu Configuration */
         #context-menu {
             position: fixed;
             background: #141414;
             border: 1px solid var(--border-color);
-            box-shadow: 0 10px 25px rgba(0,0,0,0.8);
+            box-shadow: 0 15px 35px rgba(0,0,0,0.85);
             z-index: 2000;
             display: none;
-            border-radius: 3px;
-            width: 200px;
-            max-height: 260px;
+            border-radius: 8px;
+            width: 220px;
+            max-height: 280px;
             overflow-y: auto;
             -webkit-overflow-scrolling: touch;
         }
 
         .menu-item {
-            padding: 10px 14px;
-            font-size: 11px;
+            padding: 14px 16px; /* Enhanced selection touch spacing height metrics */
+            font-size: 12px;
             text-transform: uppercase;
             letter-spacing: 0.5px;
             cursor: pointer;
             color: var(--text-color);
-            border-bottom: 1px solid rgba(38, 38, 38, 0.5);
+            border-bottom: 1px solid rgba(38, 38, 38, 0.6);
         }
 
-        .menu-item:last-child {
-            border-bottom: none;
-        }
+        .menu-item:active { background: var(--accent-color); color: #fff; }
 
-        .menu-item:hover {
-            background: var(--accent-color);
-            color: #fff;
-        }
-
-        /* Modals Architecture Overlay */
+        /* Modals Structure Layout Shell */
         .modal-overlay {
             position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(5, 5, 5, 0.85);
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(5, 5, 5, 0.9);
             z-index: 3000;
             display: flex;
             align-items: center;
@@ -495,19 +447,18 @@
             opacity: 0;
             pointer-events: none;
             transition: opacity 0.2s ease;
+            padding: 15px;
         }
 
-        .modal-overlay.active {
-            opacity: 1;
-            pointer-events: auto;
-        }
+        .modal-overlay.active { opacity: 1; pointer-events: auto; }
 
         .modal-box {
             background: #141414;
             border: 1px solid var(--border-color);
-            padding: 25px;
-            border-radius: 4px;
-            width: 360px;
+            padding: 22px;
+            border-radius: 8px;
+            width: 100%;
+            max-width: 380px;
             box-shadow: 0 15px 40px rgba(0,0,0,0.8);
             display: flex;
             flex-direction: column;
@@ -517,7 +468,6 @@
         .modal-title {
             font-size: 13px;
             text-transform: uppercase;
-            letter-spacing: 1px;
             color: #fff;
             border-bottom: 1px solid var(--border-color);
             padding-bottom: 8px;
@@ -527,41 +477,34 @@
             background: #0d0d0d;
             border: 1px solid var(--border-color);
             color: #fff;
-            padding: 8px 12px;
+            padding: 12px;
             font-family: inherit;
-            font-size: 12px;
-            border-radius: 2px;
+            font-size: 16px; /* Strictly enforces exclusion of auto-zooming scaling hooks on iOS */
+            border-radius: 4px;
             width: 100%;
-        }
-
-        .modal-input:focus {
-            outline: none;
-            border-color: var(--accent-color);
+            -webkit-user-select: text;
+            user-select: text;
         }
 
         .modal-textarea {
             background: #0d0d0d;
             border: 1px solid var(--border-color);
             color: #fff;
-            padding: 8px 12px;
+            padding: 12px;
             font-family: inherit;
-            font-size: 11px;
-            border-radius: 2px;
+            font-size: 16px;
+            border-radius: 4px;
             width: 100%;
-            height: 120px;
+            height: 110px;
             resize: none;
-        }
-
-        .modal-textarea:focus {
-            outline: none;
-            border-color: var(--accent-color);
+            -webkit-user-select: text;
+            user-select: text;
         }
 
         .modal-actions {
             display: flex;
             justify-content: flex-end;
             gap: 10px;
-            margin-top: 5px;
         }
     </style>
 </head>
@@ -630,7 +573,6 @@
     </div>
 
     <script>
-        // Security Clearance Gate Verification Checks
         const clearance = sessionStorage.getItem('archive_clearance');
         if (clearance !== 'admin' && clearance !== 'guest') {
             window.location.href = "index.html";
@@ -669,7 +611,6 @@
         const sideRightPicker = document.getElementById('side-right-picker');
 
         window.addEventListener('DOMContentLoaded', () => {
-            // Force-remove Edit Mode buttons entirely if signed in as Guest
             if (clearance === 'guest') {
                 if (btnEditMode) btnEditMode.remove();
             }
@@ -694,8 +635,13 @@
             } else {
                 const defaultWidth = Math.min(window.innerWidth * 0.95, 800);
                 presentationRow.style.width = defaultWidth + 'px';
-                presentationRow.style.height = Math.round((defaultWidth - 170) * (9 / 16)) + 'px';
+                presentationRow.style.height = Math.round((defaultWidth - 150) * (9 / 16)) + 'px';
             }
+            
+            // Adjust to handle orientation state variants gracefully
+            window.addEventListener('resize', () => {
+                setTimeout(adjustViewportSpacing, 150);
+            });
             
             adjustViewportSpacing();
             renderSideImages();
@@ -714,7 +660,7 @@
 
         function setupPiPMonitor() {
             viewport.addEventListener('scroll', () => {
-                if (viewport.scrollTop > 60) {
+                if (viewport.scrollTop > 80) {
                     if (!presentationRow.classList.contains('pip-active')) {
                         presentationRow.classList.add('pip-active');
                     }
@@ -729,7 +675,7 @@
                         }
                     }
                 }
-            });
+            }, { passive: true });
         }
 
         function getAutoThumbnail(url) {
@@ -853,10 +799,10 @@
                 let newW = startW + (clientX - startX);
                 let newH = startH + (clientY - startY);
 
-                if (newW < 320) newW = 320;
-                if (newW > window.innerWidth * 0.98) newW = window.innerWidth * 0.98;
-                if (newH < 120) newH = 120;
-                if (newH > window.innerHeight * 0.6) newH = window.innerHeight * 0.6;
+                if (newW < 280) newW = 280;
+                if (newW > window.innerWidth * 0.96) newW = window.innerWidth * 0.96;
+                if (newH < 110) newH = 110;
+                if (newH > window.innerHeight * 0.55) newH = window.innerHeight * 0.55;
 
                 presentationRow.style.width = newW + 'px';
                 presentationRow.style.height = newH + 'px';
@@ -878,7 +824,8 @@
 
             const onPointerDown = (e) => {
                 if (presentationRow.classList.contains('pip-active')) return;
-                e.preventDefault();
+                // Avoid breaking native scroll flows on touches
+                if (e.cancelable) e.preventDefault();
                 e.stopPropagation();
                 
                 startX = e.touches ? e.touches[0].clientX : e.clientX;
@@ -922,7 +869,7 @@
                 const clientY = e.touches ? e.touches[0].clientY : e.clientY;
 
                 if (target.classList.contains('resize-finger-anchor') && state.isEditMode && clearance === 'admin') {
-                    e.preventDefault();
+                    if (e.cancelable) e.preventDefault();
                     e.stopPropagation();
                     resizeRelic = relic;
                     dragStartX = clientX;
@@ -940,8 +887,8 @@
                 const currentTime = new Date().getTime();
                 const tapLength = currentTime - state.lastTapTime;
                 
-                if (tapLength < 300 && tapLength > 0) {
-                    e.preventDefault();
+                if (tapLength < 350 && tapLength > 0) {
+                    if (e.cancelable) e.preventDefault();
                     e.stopPropagation();
                     showContextMenu(clientX, clientY);
                     state.lastTapTime = 0;
@@ -950,7 +897,7 @@
                 state.lastTapTime = currentTime;
 
                 if (state.isEditMode && clearance === 'admin') {
-                    e.preventDefault();
+                    if (e.cancelable) e.preventDefault();
                     dragRelic = relic;
                     dragStartX = clientX;
                     dragStartY = clientY;
@@ -970,7 +917,7 @@
 
                 if (dragRelic && clearance === 'admin') {
                     let dx = clientX - dragStartX;
-                    if (Math.abs(dx) > 60) {
+                    if (Math.abs(dx) > 50) {
                         const currentIndex = state.relics.findIndex(r => r.id === dragRelic.id);
                         let targetIndex = currentIndex + (dx > 0 ? 1 : -1);
                         if (targetIndex >= 0 && targetIndex < state.relics.length) {
@@ -1067,12 +1014,18 @@
         }
 
         function showContextMenu(mx, my) {
-            // Hide contextual custom edit flags if signed in as guest observer
             if (clearance === 'guest') {
                 const contextItems = contextMenu.querySelectorAll('.edit-only');
                 contextItems.forEach(item => item.style.display = 'none');
             }
-            contextMenu.style.left = `${mx}px`;
+            
+            // Reposition viewport window checks if double taps are next to right screen bounds
+            let adjustedX = mx;
+            if (mx + 220 > window.innerWidth) {
+                adjustedX = window.innerWidth - 230;
+            }
+
+            contextMenu.style.left = `${adjustedX}px`;
             contextMenu.style.top = `${my}px`;
             contextMenu.style.display = 'block';
         }
@@ -1161,7 +1114,6 @@
                         if(counter > 0) {
                             saveStateToStorage();
                             renderArchive();
-                            alert(`Successfully imported [${counter}] stream tracking arrays inside network node registry.`);
                         }
                     });
                 });
@@ -1173,7 +1125,6 @@
                     if (clearance !== 'admin') return;
                     saveStateToStorage();
                     saveSidesToStorage();
-                    alert("Archive structures safely saved.");
                 });
             }
 
