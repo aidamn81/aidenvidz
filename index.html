@@ -66,14 +66,69 @@
             white-space: nowrap;
         }
 
-        /* Master Presentation Video Player Frame */
-        #player-container {
+        /* Upper Presentation Row - Holds Player & Flanking Side Images */
+        #presentation-row {
+            display: flex;
+            align-items: stretch;
+            gap: 15px;
             width: 95vw;
             max-width: 800px;
-            height: 40vh;
+            height: 20vh; /* Half the size it was previously */
+            margin-bottom: 5px;
+        }
+
+        /* Flanking Customizable Graphic Blocks */
+        .side-asset-box {
+            width: 70px;
+            background: #0a0a0a;
+            border: 1px solid var(--border-color);
+            border-radius: 12px; /* Rounded Cube Shape */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            position: relative;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.5);
+            transition: border-color 0.2s ease;
+        }
+
+        body.edit-mode .side-asset-box {
+            cursor: pointer;
+            border-color: rgba(128, 0, 32, 0.5);
+        }
+
+        body.edit-mode .side-asset-box:hover {
+            border-color: var(--accent-glow);
+            box-shadow: 0 0 8px var(--accent-color);
+        }
+
+        .side-asset-box img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            pointer-events: none;
+        }
+
+        .side-asset-placeholder {
+            font-size: 9px;
+            color: #333;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            text-align: center;
+            padding: 4px;
+            pointer-events: none;
+        }
+
+        body.edit-mode .side-asset-placeholder {
+            color: var(--text-dim);
+        }
+
+        /* Master Presentation Video Player Frame */
+        #player-container {
+            flex: 1;
             background: #000;
             border: 1px solid var(--border-color);
-            border-radius: 4px;
+            border-radius: 12px; /* Rounded Cube Shape */
             box-shadow: 0 10px 35px rgba(0,0,0,0.9);
             display: flex;
             flex-direction: column;
@@ -91,37 +146,43 @@
             height: 100%;
             border: none;
             background: #000;
+            border-bottom-left-radius: 11px;
+            border-bottom-right-radius: 11px;
         }
 
         #player-placeholder {
             position: absolute;
-            top: 0;
+            top: 25px; /* Offset below titlebar */
             left: 0;
             width: 100%;
-            height: 100%;
+            height: calc(100% - 25px);
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
             background: #0a0a0a;
             color: var(--text-dim);
-            font-size: 11px;
+            font-size: 10px;
             letter-spacing: 1px;
             text-transform: uppercase;
-            gap: 10px;
+            gap: 4px;
             pointer-events: none;
             z-index: 5;
+            border-bottom-left-radius: 11px;
+            border-bottom-right-radius: 11px;
         }
 
         #player-titlebar {
             background: #111;
             border-bottom: 1px solid var(--border-color);
-            padding: 6px 12px;
-            font-size: 11px;
+            padding: 4px 12px;
+            font-size: 10px;
             letter-spacing: 0.5px;
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
+            border-top-left-radius: 11px;
+            border-top-right-radius: 11px;
         }
 
         .btn {
@@ -154,10 +215,10 @@
         /* Viewport Adjusted Directly Below Video Player Stack */
         #viewport {
             position: absolute;
-            top: calc(90px + 40vh);
+            top: calc(75px + 20vh);
             left: 0;
             width: 100%;
-            height: calc(100% - (90px + 40vh));
+            height: calc(100% - (75px + 20vh));
             overflow-y: auto;
             padding: 20px;
             display: flex;
@@ -352,6 +413,8 @@
 <body>
 
     <input type="file" id="device-image-picker" accept="image/*" style="display: none;">
+    <input type="file" id="side-left-picker" accept="image/*" style="display: none;">
+    <input type="file" id="side-right-picker" accept="image/*" style="display: none;">
 
     <div id="fixed-top-wrapper">
         <div id="control-bar">
@@ -361,14 +424,23 @@
             <button class="btn edit-only" id="btn-load">Load Archive</button>
         </div>
 
-        <div id="player-container">
-            <div id="player-titlebar">System Player: Idle</div>
-            <div style="position: relative; flex: 1; width: 100%; height: 100%;">
-                <div id="player-placeholder">
-                    <span>☠ No Active Video Streaming ☠</span>
-                    <span style="font-size: 10px; color: #555;">Select any video thumbnail below to load stream tracks</span>
+        <div id="presentation-row">
+            <div class="side-asset-box" id="side-left-box">
+                <div class="side-asset-placeholder">L Slot</div>
+            </div>
+
+            <div id="player-container">
+                <div id="player-titlebar">System Player: Idle</div>
+                <div style="position: relative; flex: 1; width: 100%; height: 100%;">
+                    <div id="player-placeholder">
+                        <span>☠ No Stream Tracks Loaded ☠</span>
+                    </div>
+                    <iframe id="media-screen" src="" allow="autoplay; encrypted-media" allowfullscreen></iframe>
                 </div>
-                <iframe id="media-screen" src="" allow="autoplay; encrypted-media" allowfullscreen></iframe>
+            </div>
+
+            <div class="side-asset-box" id="side-right-box">
+                <div class="side-asset-placeholder">R Slot</div>
             </div>
         </div>
     </div>
@@ -401,7 +473,8 @@
             isEditMode: false,
             activeTargetId: null,
             lastTapTime: 0,
-            relics: []
+            relics: [],
+            sideImages: { left: "", right: "" }
         };
 
         const defaultSetup = [
@@ -414,7 +487,12 @@
         const mediaScreen = document.getElementById('media-screen');
         const playerPlaceholder = document.getElementById('player-placeholder');
         const playerTitlebar = document.getElementById('player-titlebar');
+        
         const deviceImagePicker = document.getElementById('device-image-picker');
+        const sideLeftBox = document.getElementById('side-left-box');
+        const sideRightBox = document.getElementById('side-right-box');
+        const sideLeftPicker = document.getElementById('side-left-picker');
+        const sideRightPicker = document.getElementById('side-right-picker');
 
         window.addEventListener('DOMContentLoaded', () => {
             const stored = localStorage.getItem('gothic_archive_formation_save');
@@ -423,12 +501,19 @@
             } else {
                 state.relics = JSON.parse(JSON.stringify(defaultSetup));
             }
+
+            const storedSides = localStorage.getItem('gothic_archive_side_images');
+            if (storedSides) {
+                state.sideImages = JSON.parse(storedSides);
+            }
+            
+            renderSideImages();
             renderArchive();
             setupInteractions();
             setupGlobalMenus();
         });
 
-        // Helper function to extract preview image directly from target video track structures
+        // Extract preview image directly from target video track structures
         function getAutoThumbnail(url) {
             if (!url) return '';
             const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
@@ -443,10 +528,27 @@
             localStorage.setItem('gothic_archive_formation_save', JSON.stringify(state.relics));
         }
 
+        function saveSidesToStorage() {
+            localStorage.setItem('gothic_archive_side_images', JSON.stringify(state.sideImages));
+        }
+
+        function renderSideImages() {
+            if (state.sideImages.left) {
+                sideLeftBox.innerHTML = `<img src="${state.sideImages.left}">`;
+            } else {
+                sideLeftBox.innerHTML = `<div class="side-asset-placeholder">L Slot</div>`;
+            }
+
+            if (state.sideImages.right) {
+                sideRightBox.innerHTML = `<img src="${state.sideImages.right}">`;
+            } else {
+                sideRightBox.innerHTML = `<div class="side-asset-placeholder">R Slot</div>`;
+            }
+        }
+
         // Horizontal Gallery Rendering Core
         function renderArchive() {
             galleryGrid.innerHTML = '';
-            
             state.relics.forEach(relic => {
                 galleryGrid.appendChild(createRelicElement(relic));
             });
@@ -500,15 +602,12 @@
                 const tapLength = currentTime - state.lastTapTime;
                 
                 if (tapLength < 300 && tapLength > 0) {
-                    // Double Tap Sequence Detected
                     if (state.isEditMode) {
                         showContextMenu(e.clientX, e.clientY);
                     } else {
-                        // In view mode, double tap plays the media instantly
                         executeMenuAction('play-media');
                     }
                 } else {
-                    // Single Tap Sequence Execution
                     setTimeout(() => {
                         if (new Date().getTime() - state.lastTapTime >= 300) {
                             const relic = state.relics.find(r => r.id === state.activeTargetId);
@@ -543,11 +642,43 @@
                 }
             }, {passive: true});
 
-            // Handle device file upload conversion matrix pipeline
+            // Handle independent side image box clicks in edit mode
+            sideLeftBox.addEventListener('click', () => {
+                if (state.isEditMode) sideLeftPicker.click();
+            });
+
+            sideRightBox.addEventListener('click', () => {
+                if (state.isEditMode) sideRightPicker.click();
+            });
+
+            // Conversion matrix pipelines for hardware uploads
+            sideLeftPicker.addEventListener('change', (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+                const reader = new FileReader();
+                reader.onload = function(event) {
+                    state.sideImages.left = event.target.result;
+                    saveSidesToStorage();
+                    renderSideImages();
+                };
+                reader.readAsDataURL(file);
+            });
+
+            sideRightPicker.addEventListener('change', (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+                const reader = new FileReader();
+                reader.onload = function(event) {
+                    state.sideImages.right = event.target.result;
+                    saveSidesToStorage();
+                    renderSideImages();
+                };
+                reader.readAsDataURL(file);
+            });
+
             deviceImagePicker.addEventListener('change', (e) => {
                 const file = e.target.files[0];
                 if (!file) return;
-
                 const reader = new FileReader();
                 reader.onload = function(event) {
                     const relic = state.relics.find(r => r.id === state.activeTargetId);
@@ -618,6 +749,7 @@
 
             document.getElementById('btn-save').addEventListener('click', () => {
                 saveStateToStorage();
+                saveSidesToStorage();
                 alert("Archive structures safely saved.");
             });
 
@@ -626,8 +758,11 @@
                 if (stored) {
                     state.relics = JSON.parse(stored);
                     renderArchive();
-                } else {
-                    alert("No previous data matrix maps discovered inside cache registry.");
+                }
+                const storedSides = localStorage.getItem('gothic_archive_side_images');
+                if (storedSides) {
+                    state.sideImages = JSON.parse(storedSides);
+                    renderSideImages();
                 }
             });
         }
