@@ -331,8 +331,6 @@
             display: none;
             border-radius: 3px;
             width: 180px;
-            
-            /* Enhanced Scroll Configuration Matrix */
             max-height: 180px;
             overflow-y: auto;
             -webkit-overflow-scrolling: touch;
@@ -478,8 +476,8 @@
         const state = {
             isEditMode: false,
             scale: 1,
-            panX: 0,
-            panY: 0,
+            panX: 40,
+            panY: 40,
             isPanning: false,
             startX: 0,
             startY: 0,
@@ -491,11 +489,10 @@
             initialHeight: 0,
             activeTargetId: null,
             gridSnapSize: 20,
-            longPressTimer: null,
+            lastTapTime: 0,
             relics: []
         };
 
-        // Static hardcoded fallback initialization blocks used if no database registry is saved
         const defaultSetup = [
             { id: "1", title: "The Crow", type: "link", url: "https://www.youtube.com/embed/dQw4w9WgXcQ", img: "https://picsum.photos/id/1062/200/200", x: 40, y: 40, w: 160, h: 160, origW: 160, origH: 160, folder: null },
             { id: "2", title: "Gothic Tech", type: "folder", x: 260, y: 40, w: 180, h: 180, origW: 180, origH: 180, folder: null },
@@ -510,7 +507,6 @@
         const playerPlaceholder = document.getElementById('player-placeholder');
         const playerTitlebar = document.getElementById('player-titlebar');
 
-        // Initialization systems trigger routing
         window.addEventListener('DOMContentLoaded', () => {
             const stored = localStorage.getItem('gothic_archive_formation_save');
             if (stored) {
@@ -536,18 +532,15 @@
             scaleDisplay.textContent = `${Math.round(state.scale * 100)}%`;
         }
 
-        // Infinite Scroll Field Rendering Engine Core
         function renderArchive() {
             canvas.innerHTML = '';
             
-            // Generate root level framework items map
             state.relics.forEach(relic => {
                 if (relic.folder === null) {
                     canvas.appendChild(createRelicElement(relic));
                 }
             });
 
-            // Map inner elements clean within folders mapping matrices
             state.relics.forEach(relic => {
                 if (relic.folder !== null) {
                     const parentFolder = document.querySelector(`[data-id="${relic.folder}"] .relic-body`);
@@ -618,7 +611,6 @@
             return node;
         }
 
-        // Event Handling and Multi-Touch Matrix Routing
         function setupInteractions() {
             viewport.addEventListener('mousedown', (e) => {
                 if (e.target === viewport || e.target === canvas) {
@@ -662,7 +654,6 @@
             });
 
             window.addEventListener('mouseup', () => {
-                clearLongPress();
                 if (state.draggedElement) {
                     const relic = state.relics.find(r => r.id === state.draggedElement.getAttribute('data-id'));
                     if (relic) {
@@ -683,7 +674,7 @@
                 state.isPanning = false;
             });
 
-            // Handle Interaction Clicks, Context Configurations, and Dynamic Triggers
+            // Input Routing Engine (Mouse Click + Tap Handler Sequence)
             canvas.addEventListener('mousedown', (e) => {
                 const trigger = e.target.closest('.relic-menu-trigger');
                 const handle = e.target.closest('.resize-handle');
@@ -706,48 +697,68 @@
                     return;
                 }
 
-                if (relicEl) {
+                if (relicEl && state.isEditMode && e.target.closest('.relic-header')) {
                     e.stopPropagation();
-                    state.activeTargetId = relicEl.getAttribute('data-id');
-                    
-                    // Trigger tracking configurations layout mapping for long tap thumbnail processing adjustments
-                    startLongPress(e.clientX, e.clientY);
-
-                    if (state.isEditMode && e.target.closest('.relic-header')) {
-                        state.draggedElement = relicEl;
-                        relicEl.classList.add('dragging');
-                        const rect = relicEl.getBoundingClientRect();
-                        state.dragOffsetX = e.clientX - rect.left;
-                        state.dragOffsetY = e.clientY - rect.top;
-                    }
+                    state.draggedElement = relicEl;
+                    relicEl.classList.add('dragging');
+                    const rect = relicEl.getBoundingClientRect();
+                    state.dragOffsetX = e.clientX - rect.left;
+                    state.dragOffsetY = e.clientY - rect.top;
                 }
             });
 
+            // Master Tap Router (Plays single tap, opens scrollable options panel on edit double-tap)
             canvas.addEventListener('click', (e) => {
                 const trigger = e.target.closest('.relic-menu-trigger');
                 const handle = e.target.closest('.resize-handle');
                 const relicEl = e.target.closest('.relic');
 
                 if (!trigger && !handle && relicEl) {
-                    // Regular viewing mode tap plays video directly inside system iframe screen
-                    const relic = state.relics.find(r => r.id === relicEl.getAttribute('data-id'));
-                    if (relic && relic.type === 'link') {
-                        e.stopPropagation();
-                        executeMenuAction('play-media');
+                    e.stopPropagation();
+                    state.activeTargetId = relicEl.getAttribute('data-id');
+                    const currentTime = new Date().getTime();
+                    const tapLength = currentTime - state.lastTapTime;
+                    
+                    if (tapLength < 300 && tapLength > 0) {
+                        // Double Tap Detected
+                        if (state.isEditMode) {
+                            showContextMenu(e.clientX, e.clientY);
+                        }
+                    } else {
+                        // Single Tap Sequence
+                        setTimeout(() => {
+                            // Verify another tap didn't override state to perform double-tap operations
+                            if (new Date().getTime() - state.lastTapTime >= 300) {
+                                const relic = state.relics.find(r => r.id === state.activeTargetId);
+                                if (relic && relic.type === 'link') {
+                                    executeMenuAction('play-media');
+                                }
+                            }
+                        }, 300);
                     }
+                    state.lastTapTime = currentTime;
                 }
             });
 
-            // Touch support finger gesture mapping parameters
+            // Touch Support Gestures Framework
             canvas.addEventListener('touchstart', (e) => {
                 if(e.touches.length === 1) {
                     const touch = e.touches[0];
+                    const trigger = touch.target.closest('.relic-menu-trigger');
                     const handle = touch.target.closest('.resize-handle');
                     const relicEl = touch.target.closest('.relic');
 
-                    if (relicEl) {
+                    if (!trigger && !handle && relicEl) {
                         state.activeTargetId = relicEl.getAttribute('data-id');
-                        startLongPress(touch.clientX, touch.clientY);
+                        const currentTime = new Date().getTime();
+                        const tapLength = currentTime - state.lastTapTime;
+
+                        if (tapLength < 300 && tapLength > 0) {
+                            if (state.isEditMode) {
+                                showContextMenu(touch.clientX, touch.clientY);
+                            }
+                        }
+                        state.lastTapTime = currentTime;
                     }
 
                     if (handle && relicEl && state.isEditMode) {
@@ -759,34 +770,6 @@
                     }
                 }
             }, {passive: true});
-
-            canvas.addEventListener('touchend', () => {
-                clearLongPress();
-            });
-            canvas.addEventListener('touchmove', () => {
-                clearLongPress();
-            });
-        }
-
-        // Long Press Timing Mechanisms Context Configuration Mapping
-        function startLongPress(mx, my) {
-            clearLongPress();
-            state.longPressTimer = setTimeout(() => {
-                // If edit mode is initialized, long press brings up the thumbnail modification modal dialogue
-                if (state.isEditMode) {
-                    executeMenuAction('change-image');
-                } else {
-                    // Non-authorized viewers receive regular contextual stream setup options
-                    showContextMenu(mx, my);
-                }
-            }, 700); // 700 millisecond precision threshold hold mapping parameter matrix
-        }
-
-        function clearLongPress() {
-            if (state.longPressTimer) {
-                clearTimeout(state.longPressTimer);
-                state.longPressTimer = null;
-            }
         }
 
         function showContextMenu(mx, my) {
@@ -795,7 +778,6 @@
             contextMenu.style.display = 'block';
         }
 
-        // Global Command Handlers Infrastructure Map Pipelines
         function setupGlobalMenus() {
             document.addEventListener('click', (e) => {
                 if (!e.target.closest('#context-menu') && !e.target.closest('.relic-menu-trigger')) {
@@ -812,7 +794,6 @@
 
             document.getElementById('btn-edit-mode').addEventListener('click', (e) => {
                 if (!state.isEditMode) {
-                    // Security verification entry logic barrier block protection matrix
                     openPromptModal("Security Access Verification", "Enter secure pass code key alignment data:", (password) => {
                         if (password === "1981") {
                             state.isEditMode = true;
@@ -836,7 +817,7 @@
             document.getElementById('btn-add-link').addEventListener('click', () => {
                 openPromptModal("Upload Video Connection", "Enter descriptive track title configuration designation:", (title) => {
                     if(!title) return;
-                    openPromptModal("Input Absolute Stream Path", "Provide valid embedded stream URL code destination index mapping (e.g. YouTube Embed path URL):", (targetUrl) => {
+                    openPromptModal("Input Absolute Stream Path", "Provide valid embedded stream URL code destination index mapping:", (targetUrl) => {
                         if(!targetUrl) return;
                         const newId = String(Date.now());
                         state.relics.push({
@@ -871,7 +852,7 @@
                     state.relics = JSON.parse(stored);
                     renderArchive();
                 } else {
-                    alert("No previous data matrix maps discovered inside application cache registry.");
+                    alert("No previous data matrix maps discovered inside cache registry.");
                 }
             });
         }
@@ -897,7 +878,7 @@
                     }, relic.title);
                     break;
                 case 'change-image':
-                    openPromptModal("Modify Display Thumbnail Source", "Provide target graphic index link asset localization mapping absolute path:", (newUrl) => {
+                    openPromptModal("Modify Display Thumbnail Source", "Provide target graphic link localization mapping path:", (newUrl) => {
                         if (newUrl !== null) {
                             relic.img = newUrl;
                             renderArchive();
@@ -912,12 +893,12 @@
                 case 'move-folder':
                     const targets = state.relics.filter(r => r.type === 'folder' && r.id !== relic.id);
                     if(targets.length === 0) {
-                        alert("No alternative directory sorting maps configured yet inside database registries.");
+                        alert("No alternative directory sorting maps configured yet.");
                         return;
                     }
                     let promptMsg = "Available operational directory pathways:\nID : Name\n0 : [Root Framework Layout Grid Base]\n";
                     targets.forEach(t => promptMsg += `${t.id} : ${t.title}\n`);
-                    openPromptModal("Move Element Location Layer", promptMsg + "\nSpecify target operational index locator ID data tag:", (targetFolderId) => {
+                    openPromptModal("Move Element Location Layer", promptMsg + "\nSpecify target operational index locator ID:", (targetFolderId) => {
                         if(targetFolderId === "0") {
                             relic.folder = null;
                         } else if(state.relics.some(r => r.id === targetFolderId && r.type === 'folder')) {
@@ -927,7 +908,7 @@
                     });
                     break;
                 case 'delete':
-                    openConfirmModal("Purge Confirmation Verification", `Permanently dismantle tracking data for element path [${relic.title}] from memory layers?`, () => {
+                    openConfirmModal("Purge Confirmation Verification", `Permanently dismantle tracking data for element path [${relic.title}]?`, () => {
                         state.relics = state.relics.filter(r => r.id !== relic.id);
                         state.relics.forEach(r => { if(r.folder === relic.id) r.folder = null; });
                         renderArchive();
@@ -936,7 +917,6 @@
             }
         }
 
-        // Custom Overlay Modal Frame Window Infrastructure Setup Logic Implementation
         function openPromptModal(title, text, callback, defaultVal = "") {
             const container = document.getElementById('modal-body-content');
             const isPasswordType = title === "Security Access Verification";
@@ -969,6 +949,12 @@
                 callback(null);
             };
         }
+
+        document.getElementById('modal-confirm').parentNode.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                document.getElementById('modal-confirm').click();
+            }
+        });
 
         function openConfirmModal(title, text, callback) {
             const container = document.getElementById('modal-body-content');
