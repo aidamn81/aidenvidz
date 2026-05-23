@@ -96,6 +96,9 @@
         }
 
         document.getElementById('btn-toggle-mode').onclick = (e) => {
+            if (!document.body.classList.contains('edit-mode')) {
+                if (prompt("Enter Password:") !== "1981") return;
+            }
             document.body.classList.toggle('edit-mode');
             e.target.textContent = document.body.classList.contains('edit-mode') ? "Lock Mode" : "Edit Mode";
         };
@@ -104,16 +107,16 @@
         
         document.getElementById('save-btn').onclick = () => {
             const file = document.getElementById('in-img').files[0];
+            const addItem = (imgData) => {
+                state.push({title: document.getElementById('in-name').value, url: document.getElementById('in-url').value, tags: document.getElementById('in-tags').value, img: imgData});
+                save(); document.getElementById('modal-overlay').style.display = 'none';
+            };
             if (file) {
                 const reader = new FileReader();
-                reader.onload = (e) => {
-                    state.push({title: document.getElementById('in-name').value, url: document.getElementById('in-url').value, tags: document.getElementById('in-tags').value, img: e.target.result});
-                    save(); document.getElementById('modal-overlay').style.display = 'none';
-                };
+                reader.onload = (e) => addItem(e.target.result);
                 reader.readAsDataURL(file);
             } else {
-                state.push({title: document.getElementById('in-name').value, url: document.getElementById('in-url').value, tags: document.getElementById('in-tags').value, img: ""});
-                save(); document.getElementById('modal-overlay').style.display = 'none';
+                addItem("");
             }
         };
 
