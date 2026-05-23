@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>The Gothic Archive (Formation & Snap-to-Grid)</title>
+    <title>The Gothic Archive (Gallery Edition)</title>
     <style>
         :root {
             --bg-color: #0d0d0d;
@@ -13,7 +13,6 @@
             --text-color: #d9d9d9;
             --text-dim: #737373;
             --border-color: #262626;
-            --grid-size: 20px;
         }
 
         * {
@@ -33,7 +32,7 @@
             color: var(--text-color);
         }
 
-        /* Fixed Upper Interface Wrapper for Layout Synchronization */
+        /* Fixed Upper Interface Wrapper */
         #fixed-top-wrapper {
             position: fixed;
             top: 0;
@@ -48,7 +47,7 @@
             align-items: center;
         }
 
-        /* Fixed Navigation / Control Bar on Top of Video Player */
+        /* Fixed Navigation / Control Bar */
         #control-bar {
             background: rgba(20, 20, 20, 0.85);
             border: 1px solid var(--border-color);
@@ -67,7 +66,7 @@
             white-space: nowrap;
         }
 
-        /* Master Media Stream Presentation Player Screen Framework */
+        /* Master Presentation Video Player Frame */
         #player-container {
             width: 95vw;
             max-width: 800px;
@@ -152,56 +151,27 @@
             box-shadow: 0 0 12px var(--accent-color);
         }
 
-        /* Scale Indicator */
-        #scale-display {
-            font-size: 11px;
-            color: var(--text-dim);
-            min-width: 45px;
-            text-align: center;
-        }
-
-        /* Dynamic Field Viewport Adjusted Below Player Wrapper Stack */
+        /* Viewport Adjusted Directly Below Video Player Stack */
         #viewport {
             position: absolute;
             top: calc(90px + 40vh);
             left: 0;
             width: 100%;
             height: calc(100% - (90px + 40vh));
-            overflow: auto;
-            cursor: grab;
+            overflow-y: auto;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
         }
 
-        #viewport:active {
-            cursor: grabbing;
-        }
-
-        #canvas {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 5000px;
-            height: 5000px;
-            background-color: var(--bg-color);
-            background-image: 
-                linear-gradient(to right, rgba(38, 38, 38, 0.1) 1px, transparent 1px),
-                linear-gradient(to bottom, rgba(38, 38, 38, 0.1) 1px, transparent 1px);
-            background-size: var(--grid-size) var(--grid-size);
-            transform-origin: 0 0;
-        }
-
-        /* Guide Grid - Visible only in Edit Mode */
-        body.edit-mode #canvas::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
+        /* Horizontal Layout Grid Container */
+        #gallery-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+            gap: 20px;
             width: 100%;
-            height: 100%;
-            background-image: 
-                linear-gradient(to right, rgba(128, 0, 32, 0.15) 1px, transparent 1px),
-                linear-gradient(to bottom, rgba(128, 0, 32, 0.15) 1px, transparent 1px);
-            background-size: calc(var(--grid-size) * 2) calc(var(--grid-size) * 2);
-            pointer-events: none;
+            max-width: 850px;
+            align-content: start;
         }
 
         /* Conditional Visibility Classes */
@@ -211,13 +181,9 @@
         body.edit-mode .edit-only {
             display: inline-block !important;
         }
-        body.edit-mode .btn.edit-only {
-            display: inline-block !important;
-        }
 
-        /* Relic Display Nodes / Folders */
+        /* Pure Video Thumbnail Module Block styling */
         .relic {
-            position: absolute;
             background: var(--panel-bg);
             border: 1px solid var(--border-color);
             border-radius: 4px;
@@ -225,17 +191,15 @@
             display: flex;
             flex-direction: column;
             gap: 8px;
-            min-width: 140px;
-            min-height: 140px;
+            aspect-ratio: 1 / 1;
             box-shadow: 0 5px 15px rgba(0,0,0,0.5);
-            touch-action: none;
-            z-index: 10;
+            cursor: pointer;
+            position: relative;
+            transition: border-color 0.2s ease;
         }
 
-        .relic.dragging {
-            z-index: 100;
+        body.edit-mode .relic:hover {
             border-color: var(--accent-color);
-            box-shadow: 0 0 15px rgba(128, 0, 32, 0.6);
         }
 
         .relic-header {
@@ -244,31 +208,16 @@
             align-items: center;
             border-bottom: 1px solid var(--border-color);
             padding-bottom: 6px;
-            cursor: move;
-        }
-
-        body:not(.edit-mode) .relic-header {
-            cursor: pointer;
         }
 
         .relic-title {
-            font-size: 12px;
+            font-size: 11px;
             font-weight: bold;
             letter-spacing: 0.5px;
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
-            max-width: calc(100% - 16px);
-        }
-
-        .relic-menu-trigger {
-            cursor: pointer;
-            color: var(--text-dim);
-            padding: 0 4px;
-        }
-
-        .relic-menu-trigger:hover {
-            color: var(--text-color);
+            width: 100%;
         }
 
         .relic-body {
@@ -281,7 +230,6 @@
             overflow: hidden;
             background: #0a0a0a;
             border-radius: 2px;
-            cursor: pointer;
         }
 
         .relic-img {
@@ -300,28 +248,7 @@
             color: var(--text-dim);
         }
 
-        /* Resize Handle */
-        .resize-handle {
-            position: absolute;
-            bottom: 0;
-            right: 0;
-            width: 14px;
-            height: 14px;
-            cursor: se-resize;
-            background: linear-gradient(135deg, transparent 50%, var(--border-color) 50%);
-        }
-
-        body.edit-mode .resize-handle {
-            background: linear-gradient(135deg, transparent 50%, var(--accent-color) 50%);
-        }
-
-        /* Folders Style Modification */
-        .folder {
-            border-style: double;
-            border-width: 3px;
-        }
-
-        /* Context Popup Menu - Scrollable Infrastructure */
+        /* Context Popup Menu - Scrollable Elements */
         #context-menu {
             position: fixed;
             background: #141414;
@@ -355,7 +282,7 @@
             color: #fff;
         }
 
-        /* Modals Frame Infrastructure */
+        /* Modals Architecture Overlay */
         .modal-overlay {
             position: fixed;
             top: 0;
@@ -428,11 +355,8 @@
         <div id="control-bar">
             <button class="btn" id="btn-edit-mode">Edit Mode</button>
             <button class="btn edit-only" id="btn-add-link">Add Video Link</button>
-            <button class="btn edit-only" id="btn-add-folder">Add Folder</button>
-            <button class="btn edit-only" id="btn-recentering">Recenter View</button>
             <button class="btn edit-only" id="btn-save">Save Archive</button>
             <button class="btn edit-only" id="btn-load">Load Archive</button>
-            <span id="scale-display">100%</span>
         </div>
 
         <div id="player-container">
@@ -440,7 +364,7 @@
             <div style="position: relative; flex: 1; width: 100%; height: 100%;">
                 <div id="player-placeholder">
                     <span>☠ No Active Video Streaming ☠</span>
-                    <span style="font-size: 10px; color: #555;">Select any video thumbnail element below to load stream tracks</span>
+                    <span style="font-size: 10px; color: #555;">Select any video thumbnail below to load stream tracks</span>
                 </div>
                 <iframe id="media-screen" src="" allow="autoplay; encrypted-media" allowfullscreen></iframe>
             </div>
@@ -448,15 +372,13 @@
     </div>
 
     <div id="viewport">
-        <div id="canvas"></div>
+        <div id="gallery-grid"></div>
     </div>
 
     <div id="context-menu">
         <div class="menu-item" data-action="play-media">Play Video</div>
         <div class="menu-item edit-only" data-action="rename">Rename</div>
         <div class="menu-item edit-only" data-action="change-image">Change Thumbnail</div>
-        <div class="menu-item edit-only" data-action="snap-shape">Resize to Original</div>
-        <div class="menu-item edit-only" data-action="move-folder">Move to Folder</div>
         <div class="menu-item edit-only" data-action="delete">Delete</div>
     </div>
 
@@ -472,96 +394,50 @@
     </div>
 
     <script>
-        // State Configuration Architecture Map Modules Data Setup
+        // State Configuration Data Setup
         const state = {
             isEditMode: false,
-            scale: 1,
-            panX: 40,
-            panY: 40,
-            isPanning: false,
-            startX: 0,
-            startY: 0,
-            draggedElement: null,
-            dragOffsetX: 0,
-            dragOffsetY: 0,
-            resizingElement: null,
-            initialWidth: 0,
-            initialHeight: 0,
             activeTargetId: null,
-            gridSnapSize: 20,
             lastTapTime: 0,
             relics: []
         };
 
+        // Fallback default system items
         const defaultSetup = [
-            { id: "1", title: "The Crow", type: "link", url: "https://www.youtube.com/embed/dQw4w9WgXcQ", img: "https://picsum.photos/id/1062/200/200", x: 40, y: 40, w: 160, h: 160, origW: 160, origH: 160, folder: null },
-            { id: "2", title: "Gothic Tech", type: "folder", x: 260, y: 40, w: 180, h: 180, origW: 180, origH: 180, folder: null },
-            { id: "3", title: "Sub-Item Alpha", type: "link", url: "https://www.youtube.com/embed/dQw4w9WgXcQ", img: "", x: 20, y: 40, w: 140, h: 140, origW: 140, origH: 140, folder: "2" }
+            { id: "1", title: "The Crow", url: "https://www.youtube.com/embed/dQw4w9WgXcQ", img: "https://picsum.photos/id/1062/200/200" },
+            { id: "2", title: "Gothic Tech Sound", url: "https://www.youtube.com/embed/dQw4w9WgXcQ", img: "" }
         ];
 
-        const viewport = document.getElementById('viewport');
-        const canvas = document.getElementById('canvas');
+        const galleryGrid = document.getElementById('gallery-grid');
         const contextMenu = document.getElementById('context-menu');
-        const scaleDisplay = document.getElementById('scale-display');
         const mediaScreen = document.getElementById('media-screen');
         const playerPlaceholder = document.getElementById('player-placeholder');
         const playerTitlebar = document.getElementById('player-titlebar');
 
         window.addEventListener('DOMContentLoaded', () => {
-            const stored = localStorage.getItem('gothic_archive_formation_save');
+            const stored = localStorage.getItem('gothic_archive_gallery_save');
             if (stored) {
                 state.relics = JSON.parse(stored);
             } else {
                 state.relics = JSON.parse(JSON.stringify(defaultSetup));
             }
-            recenterWorkspace();
             renderArchive();
             setupInteractions();
             setupGlobalMenus();
         });
 
-        function recenterWorkspace() {
-            state.panX = 40;
-            state.panY = 40;
-            state.scale = 1;
-            updateTransform();
-        }
-
-        function updateTransform() {
-            canvas.style.transform = `translate(${state.panX}px, ${state.panY}px) scale(${state.scale})`;
-            scaleDisplay.textContent = `${Math.round(state.scale * 100)}%`;
-        }
-
+        // Horizontal Gallery Rendering Core
         function renderArchive() {
-            canvas.innerHTML = '';
+            galleryGrid.innerHTML = '';
             
             state.relics.forEach(relic => {
-                if (relic.folder === null) {
-                    canvas.appendChild(createRelicElement(relic));
-                }
-            });
-
-            state.relics.forEach(relic => {
-                if (relic.folder !== null) {
-                    const parentFolder = document.querySelector(`[data-id="${relic.folder}"] .relic-body`);
-                    if (parentFolder) {
-                        const el = createRelicElement(relic);
-                        el.style.position = "absolute";
-                        el.style.left = `${relic.x}px`;
-                        el.style.top = `${relic.y}px`;
-                        parentFolder.appendChild(el);
-                    }
-                }
+                galleryGrid.appendChild(createRelicElement(relic));
             });
         }
 
         function createRelicElement(relic) {
             const node = document.createElement('div');
-            node.className = `relic ${relic.type === 'folder' ? 'folder' : ''}`;
-            node.style.left = `${relic.x}px`;
-            node.style.top = `${relic.y}px`;
-            node.style.width = `${relic.w}px`;
-            node.style.height = `${relic.h}px`;
+            node.className = 'relic';
             node.setAttribute('data-id', relic.id);
 
             const header = document.createElement('div');
@@ -571,203 +447,75 @@
             title.className = 'relic-title';
             title.textContent = relic.title;
             
-            const trigger = document.createElement('div');
-            trigger.className = 'relic-menu-trigger';
-            trigger.innerHTML = '&#8942;';
-            
             header.appendChild(title);
-            header.appendChild(trigger);
             node.appendChild(header);
 
             const body = document.createElement('div');
             body.className = 'relic-body';
 
-            if (relic.type === 'link') {
-                if (relic.img) {
-                    const img = document.createElement('img');
-                    img.className = 'relic-img';
-                    img.src = relic.img;
-                    body.appendChild(img);
-                } else {
-                    const fallback = document.createElement('div');
-                    fallback.className = 'relic-fallback-text';
-                    fallback.textContent = relic.title;
-                    body.appendChild(fallback);
-                }
-            } else if (relic.type === 'folder') {
-                const folderLabel = document.createElement('div');
-                folderLabel.className = 'relic-fallback-text';
-                folderLabel.style.color = 'var(--accent-color)';
-                folderLabel.textContent = "[ Directory Folder ]";
-                body.appendChild(folderLabel);
+            if (relic.img) {
+                const img = document.createElement('img');
+                img.className = 'relic-img';
+                img.src = relic.img;
+                body.appendChild(img);
+            } else {
+                const fallback = document.createElement('div');
+                fallback.className = 'relic-fallback-text';
+                fallback.textContent = relic.title;
+                body.appendChild(fallback);
             }
 
             node.appendChild(body);
-
-            const handle = document.createElement('div');
-            handle.className = 'resize-handle';
-            node.appendChild(handle);
-
             return node;
         }
 
         function setupInteractions() {
-            viewport.addEventListener('mousedown', (e) => {
-                if (e.target === viewport || e.target === canvas) {
-                    state.isPanning = true;
-                    state.startX = e.clientX - state.panX;
-                    state.startY = e.clientY - state.panY;
-                }
-            });
-
-            viewport.addEventListener('wheel', (e) => {
-                e.preventDefault();
-                const zoomFactor = 0.05;
-                state.scale = e.deltaY < 0 ? Math.min(state.scale + zoomFactor, 2) : Math.max(state.scale - zoomFactor, 0.4);
-                updateTransform();
-            }, { passive: false });
-
-            window.addEventListener('mousemove', (e) => {
-                if (state.isPanning) {
-                    state.panX = e.clientX - state.startX;
-                    state.panY = e.clientY - state.startY;
-                    updateTransform();
-                } else if (state.draggedElement && state.isEditMode) {
-                    let rawX = (e.clientX - state.dragOffsetX) / state.scale;
-                    let rawY = (e.clientY - state.dragOffsetY) / state.scale;
-                    
-                    let snappedX = Math.round(rawX / state.gridSnapSize) * state.gridSnapSize;
-                    let snappedY = Math.round(rawY / state.gridSnapSize) * state.gridSnapSize;
-
-                    state.draggedElement.style.left = `${snappedX}px`;
-                    state.draggedElement.style.top = `${snappedY}px`;
-                } else if (state.resizingElement && state.isEditMode) {
-                    const deltaX = (e.clientX - state.startX) / state.scale;
-                    const deltaY = (e.clientY - state.startY) / state.scale;
-                    
-                    let targetW = Math.round((state.initialWidth + deltaX) / state.gridSnapSize) * state.gridSnapSize;
-                    let targetH = Math.round((state.initialHeight + deltaY) / state.gridSnapSize) * state.gridSnapSize;
-
-                    state.resizingElement.style.width = `${Math.max(targetW, 80)}px`;
-                    state.resizingElement.style.height = `${Math.max(targetH, 80)}px`;
-                }
-            });
-
-            window.addEventListener('mouseup', () => {
-                if (state.draggedElement) {
-                    const relic = state.relics.find(r => r.id === state.draggedElement.getAttribute('data-id'));
-                    if (relic) {
-                        relic.x = parseInt(state.draggedElement.style.left);
-                        relic.y = parseInt(state.draggedElement.style.top);
-                    }
-                    state.draggedElement.classList.remove('dragging');
-                    state.draggedElement = null;
-                }
-                if (state.resizingElement) {
-                    const relic = state.relics.find(r => r.id === state.resizingElement.getAttribute('data-id'));
-                    if (relic) {
-                        relic.w = parseInt(state.resizingElement.style.width);
-                        relic.h = parseInt(state.resizingElement.style.height);
-                    }
-                    state.resizingElement = null;
-                }
-                state.isPanning = false;
-            });
-
-            // Input Routing Engine (Mouse Click + Tap Handler Sequence)
-            canvas.addEventListener('mousedown', (e) => {
-                const trigger = e.target.closest('.relic-menu-trigger');
-                const handle = e.target.closest('.resize-handle');
+            // Master Tap Router System (Single Tap plays stream, Double Tap pops open settings workspace in Edit Mode)
+            galleryGrid.addEventListener('click', (e) => {
                 const relicEl = e.target.closest('.relic');
+                if (!relicEl) return;
 
-                if (trigger && relicEl) {
-                    e.stopPropagation();
-                    state.activeTargetId = relicEl.getAttribute('data-id');
-                    showContextMenu(e.clientX, e.clientY);
-                    return;
+                e.stopPropagation();
+                state.activeTargetId = relicEl.getAttribute('data-id');
+                const currentTime = new Date().getTime();
+                const tapLength = currentTime - state.lastTapTime;
+                
+                if (tapLength < 300 && tapLength > 0) {
+                    // Double Tap Sequence Detected
+                    if (state.isEditMode) {
+                        showContextMenu(e.clientX, e.clientY);
+                    }
+                } else {
+                    // Single Tap Sequence Execution
+                    setTimeout(() => {
+                        if (new Date().getTime() - state.lastTapTime >= 300) {
+                            const relic = state.relics.find(r => r.id === state.activeTargetId);
+                            if (relic) {
+                                executeMenuAction('play-media');
+                            }
+                        }
+                    }, 300);
                 }
-
-                if (handle && relicEl && state.isEditMode) {
-                    e.stopPropagation();
-                    state.resizingElement = relicEl;
-                    state.startX = e.clientX;
-                    state.startY = e.clientY;
-                    state.initialWidth = relicEl.offsetWidth;
-                    state.initialHeight = relicEl.offsetHeight;
-                    return;
-                }
-
-                if (relicEl && state.isEditMode && e.target.closest('.relic-header')) {
-                    e.stopPropagation();
-                    state.draggedElement = relicEl;
-                    relicEl.classList.add('dragging');
-                    const rect = relicEl.getBoundingClientRect();
-                    state.dragOffsetX = e.clientX - rect.left;
-                    state.dragOffsetY = e.clientY - rect.top;
-                }
+                state.lastTapTime = currentTime;
             });
 
-            // Master Tap Router (Plays single tap, opens scrollable options panel on edit double-tap)
-            canvas.addEventListener('click', (e) => {
-                const trigger = e.target.closest('.relic-menu-trigger');
-                const handle = e.target.closest('.resize-handle');
-                const relicEl = e.target.closest('.relic');
+            // Touch support finger sequence router mapping
+            galleryGrid.addEventListener('touchstart', (e) => {
+                if(e.touches.length === 1) {
+                    const touch = e.touches[0];
+                    const relicEl = touch.target.closest('.relic');
+                    if (!relicEl) return;
 
-                if (!trigger && !handle && relicEl) {
-                    e.stopPropagation();
                     state.activeTargetId = relicEl.getAttribute('data-id');
                     const currentTime = new Date().getTime();
                     const tapLength = currentTime - state.lastTapTime;
-                    
+
                     if (tapLength < 300 && tapLength > 0) {
-                        // Double Tap Detected
                         if (state.isEditMode) {
-                            showContextMenu(e.clientX, e.clientY);
+                            showContextMenu(touch.clientX, touch.clientY);
                         }
-                    } else {
-                        // Single Tap Sequence
-                        setTimeout(() => {
-                            // Verify another tap didn't override state to perform double-tap operations
-                            if (new Date().getTime() - state.lastTapTime >= 300) {
-                                const relic = state.relics.find(r => r.id === state.activeTargetId);
-                                if (relic && relic.type === 'link') {
-                                    executeMenuAction('play-media');
-                                }
-                            }
-                        }, 300);
                     }
                     state.lastTapTime = currentTime;
-                }
-            });
-
-            // Touch Support Gestures Framework
-            canvas.addEventListener('touchstart', (e) => {
-                if(e.touches.length === 1) {
-                    const touch = e.touches[0];
-                    const trigger = touch.target.closest('.relic-menu-trigger');
-                    const handle = touch.target.closest('.resize-handle');
-                    const relicEl = touch.target.closest('.relic');
-
-                    if (!trigger && !handle && relicEl) {
-                        state.activeTargetId = relicEl.getAttribute('data-id');
-                        const currentTime = new Date().getTime();
-                        const tapLength = currentTime - state.lastTapTime;
-
-                        if (tapLength < 300 && tapLength > 0) {
-                            if (state.isEditMode) {
-                                showContextMenu(touch.clientX, touch.clientY);
-                            }
-                        }
-                        state.lastTapTime = currentTime;
-                    }
-
-                    if (handle && relicEl && state.isEditMode) {
-                        state.resizingElement = relicEl;
-                        state.startX = touch.clientX;
-                        state.startY = touch.clientY;
-                        state.initialWidth = relicEl.offsetWidth;
-                        state.initialHeight = relicEl.offsetHeight;
-                    }
                 }
             }, {passive: true});
         }
@@ -780,7 +528,7 @@
 
         function setupGlobalMenus() {
             document.addEventListener('click', (e) => {
-                if (!e.target.closest('#context-menu') && !e.target.closest('.relic-menu-trigger')) {
+                if (!e.target.closest('#context-menu')) {
                     contextMenu.style.display = 'none';
                 }
             });
@@ -801,7 +549,7 @@
                             e.target.classList.add('active');
                             renderArchive();
                         } else if (password !== null) {
-                            alert("Access Denied: Terminal encryption signature validation mismatched.");
+                            alert("Access Denied: Encryption signature validation mismatched.");
                         }
                     }, "");
                 } else {
@@ -812,8 +560,6 @@
                 }
             });
 
-            document.getElementById('btn-recentering').addEventListener('click', recenterWorkspace);
-
             document.getElementById('btn-add-link').addEventListener('click', () => {
                 openPromptModal("Upload Video Connection", "Enter descriptive track title configuration designation:", (title) => {
                     if(!title) return;
@@ -821,33 +567,20 @@
                         if(!targetUrl) return;
                         const newId = String(Date.now());
                         state.relics.push({
-                            id: newId, title: title, type: "link", url: targetUrl, img: "",
-                            x: 60, y: 60, w: 140, h: 140, origW: 140, origH: 140, folder: null
+                            id: newId, title: title, url: targetUrl, img: ""
                         });
                         renderArchive();
                     });
                 });
             });
 
-            document.getElementById('btn-add-folder').addEventListener('click', () => {
-                openPromptModal("Create Dynamic Directory", "Specify folder structural categorization sorting index string:", (title) => {
-                    if(!title) return;
-                    const newId = String(Date.now());
-                    state.relics.push({
-                        id: newId, title: title, type: "folder",
-                        x: 80, y: 80, w: 180, h: 180, origW: 180, origH: 180, folder: null
-                    });
-                    renderArchive();
-                });
-            });
-
             document.getElementById('btn-save').addEventListener('click', () => {
-                localStorage.setItem('gothic_archive_formation_save', JSON.stringify(state.relics));
-                alert("Archive structures safely parsed and saved within local indices.");
+                localStorage.setItem('gothic_archive_gallery_save', JSON.stringify(state.relics));
+                alert("Archive structures safely saved.");
             });
 
             document.getElementById('btn-load').addEventListener('click', () => {
-                const stored = localStorage.getItem('gothic_archive_formation_save');
+                const stored = localStorage.getItem('gothic_archive_gallery_save');
                 if (stored) {
                     state.relics = JSON.parse(stored);
                     renderArchive();
@@ -863,11 +596,9 @@
 
             switch(action) {
                 case 'play-media':
-                    if (relic.type === 'link') {
-                        playerPlaceholder.style.display = 'none';
-                        mediaScreen.src = relic.url;
-                        playerTitlebar.textContent = `System Player Now Streaming: ${relic.title}`;
-                    }
+                    playerPlaceholder.style.display = 'none';
+                    mediaScreen.src = relic.url;
+                    playerTitlebar.textContent = `System Player Now Streaming: ${relic.title}`;
                     break;
                 case 'rename':
                     openPromptModal("Rename Element Index", `Modify name configuration mappings for [${relic.title}]:`, (newName) => {
@@ -885,32 +616,9 @@
                         }
                     }, relic.img || "");
                     break;
-                case 'snap-shape':
-                    relic.w = relic.origW || 140;
-                    relic.h = relic.origH || 140;
-                    renderArchive();
-                    break;
-                case 'move-folder':
-                    const targets = state.relics.filter(r => r.type === 'folder' && r.id !== relic.id);
-                    if(targets.length === 0) {
-                        alert("No alternative directory sorting maps configured yet.");
-                        return;
-                    }
-                    let promptMsg = "Available operational directory pathways:\nID : Name\n0 : [Root Framework Layout Grid Base]\n";
-                    targets.forEach(t => promptMsg += `${t.id} : ${t.title}\n`);
-                    openPromptModal("Move Element Location Layer", promptMsg + "\nSpecify target operational index locator ID:", (targetFolderId) => {
-                        if(targetFolderId === "0") {
-                            relic.folder = null;
-                        } else if(state.relics.some(r => r.id === targetFolderId && r.type === 'folder')) {
-                            relic.folder = targetFolderId;
-                        }
-                        renderArchive();
-                    });
-                    break;
                 case 'delete':
                     openConfirmModal("Purge Confirmation Verification", `Permanently dismantle tracking data for element path [${relic.title}]?`, () => {
                         state.relics = state.relics.filter(r => r.id !== relic.id);
-                        state.relics.forEach(r => { if(r.folder === relic.id) r.folder = null; });
                         renderArchive();
                     });
                     break;
@@ -949,12 +657,6 @@
                 callback(null);
             };
         }
-
-        document.getElementById('modal-confirm').parentNode.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter') {
-                document.getElementById('modal-confirm').click();
-            }
-        });
 
         function openConfirmModal(title, text, callback) {
             const container = document.getElementById('modal-body-content');
