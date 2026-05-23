@@ -345,7 +345,7 @@
             cursor: pointer;
             overflow: hidden;
             position: relative;
-            aspect-ratio: 1 / 1; /* Locks all elements into perfectly matched uniform squares */
+            aspect-ratio: 1 / 1;
             width: 100%;
             transition: transform 0.15s ease, border-color 0.15s ease;
         }
@@ -630,6 +630,12 @@
     </div>
 
     <script>
+        // Security Clearance Gate Verification Checks
+        const clearance = sessionStorage.getItem('archive_clearance');
+        if (clearance !== 'admin' && clearance !== 'guest') {
+            window.location.href = "index.html";
+        }
+
         const state = {
             isEditMode: false,
             activeTargetId: null,
@@ -654,6 +660,7 @@
         const playerPlaceholder = document.getElementById('player-placeholder');
         const playerTitlebar = document.getElementById('player-titlebar');
         const searchInput = document.getElementById('search-input');
+        const btnEditMode = document.getElementById('btn-edit-mode');
         
         const deviceImagePicker = document.getElementById('device-image-picker');
         const sideLeftBox = document.getElementById('side-left-box');
@@ -662,6 +669,11 @@
         const sideRightPicker = document.getElementById('side-right-picker');
 
         window.addEventListener('DOMContentLoaded', () => {
+            // Force-remove Edit Mode buttons entirely if signed in as Guest
+            if (clearance === 'guest') {
+                if (btnEditMode) btnEditMode.remove();
+            }
+
             const stored = localStorage.getItem('gothic_archive_formation_save');
             if (stored) {
                 state.relics = JSON.parse(stored);
@@ -731,10 +743,12 @@
         }
 
         function saveStateToStorage() {
+            if (clearance !== 'admin') return;
             localStorage.setItem('gothic_archive_formation_save', JSON.stringify(state.relics));
         }
 
         function saveSidesToStorage() {
+            if (clearance !== 'admin') return;
             localStorage.setItem('gothic_archive_side_images', JSON.stringify(state.sideImages));
         }
 
@@ -771,7 +785,6 @@
             node.className = 'relic';
             node.setAttribute('data-id', relic.id);
 
-            // Conditional dimensional injection supporting custom scaling profiles
             if (relic.w) {
                 node.style.width = relic.w + 'px';
                 node.style.aspectRatio = 'auto';
@@ -908,7 +921,7 @@
                 const clientX = e.touches ? e.touches[0].clientX : e.clientX;
                 const clientY = e.touches ? e.touches[0].clientY : e.clientY;
 
-                if (target.classList.contains('resize-finger-anchor') && state.isEditMode) {
+                if (target.classList.contains('resize-finger-anchor') && state.isEditMode && clearance === 'admin') {
                     e.preventDefault();
                     e.stopPropagation();
                     resizeRelic = relic;
@@ -936,7 +949,7 @@
                 }
                 state.lastTapTime = currentTime;
 
-                if (state.isEditMode) {
+                if (state.isEditMode && clearance === 'admin') {
                     e.preventDefault();
                     dragRelic = relic;
                     dragStartX = clientX;
@@ -955,7 +968,7 @@
                 const clientX = e.touches ? e.touches[0].clientX : e.clientX;
                 const clientY = e.touches ? e.touches[0].clientY : e.clientY;
 
-                if (dragRelic) {
+                if (dragRelic && clearance === 'admin') {
                     let dx = clientX - dragStartX;
                     if (Math.abs(dx) > 60) {
                         const currentIndex = state.relics.findIndex(r => r.id === dragRelic.id);
@@ -969,7 +982,7 @@
                     }
                 }
 
-                if (resizeRelic) {
+                if (resizeRelic && clearance === 'admin') {
                     let dx = clientX - dragStartX;
                     let dy = clientY - dragStartY;
 
@@ -994,7 +1007,7 @@
             }
 
             function handlePointerUp() {
-                if (dragRelic || resizeRelic) {
+                if ((dragRelic || resizeRelic) && clearance === 'admin') {
                     saveStateToStorage();
                 }
                 dragRelic = null;
@@ -1006,11 +1019,11 @@
             }
 
             sideLeftBox.addEventListener('click', () => {
-                if (state.isEditMode) sideLeftPicker.click();
+                if (state.isEditMode && clearance === 'admin') sideLeftPicker.click();
             });
 
             sideRightBox.addEventListener('click', () => {
-                if (state.isEditMode) sideRightPicker.click();
+                if (state.isEditMode && clearance === 'admin') sideRightPicker.click();
             });
 
             sideLeftPicker.addEventListener('change', (e) => {
@@ -1043,7 +1056,7 @@
                 const reader = new FileReader();
                 reader.onload = function(event) {
                     const relic = state.relics.find(r => r.id === state.activeTargetId);
-                    if (relic) {
+                    if (relic && clearance === 'admin') {
                         relic.img = event.target.result;
                         saveStateToStorage();
                         renderArchive();
@@ -1054,6 +1067,11 @@
         }
 
         function showContextMenu(mx, my) {
+            // Hide contextual custom edit flags if signed in as guest observer
+            if (clearance === 'guest') {
+                const contextItems = contextMenu.querySelectorAll('.edit-only');
+                contextItems.forEach(item => item.style.display = 'none');
+            }
             contextMenu.style.left = `${mx}px`;
             contextMenu.style.top = `${my}px`;
             contextMenu.style.display = 'block';
@@ -1073,95 +1091,107 @@
                 executeMenuAction(action);
             });
 
-            document.getElementById('btn-edit-mode').addEventListener('click', (e) => {
-                if (!state.isEditMode) {
-                    openPromptModal("Security Access Verification", "Enter secure pass code key alignment data:", (password) => {
-                        if (password === "1981") {
-                            state.isEditMode = true;
-                            document.body.classList.add('edit-mode');
-                            e.target.classList.add('active');
-                            renderArchive();
-                        } else if (password !== null) {
-                            alert("Access Denied: Encryption signature validation mismatched.");
-                        }
-                    }, "");
-                } else {
-                    state.isEditMode = false;
-                    document.body.classList.remove('edit-mode');
-                    e.target.classList.remove('active');
-                    renderArchive();
-                }
-            });
-
-            document.getElementById('btn-add-link').addEventListener('click', () => {
-                openPromptModal("Upload Video Connection", "Enter descriptive track title configuration designation:", (title) => {
-                    if(!title) return;
-                    openPromptModal("Input Absolute Stream Path", "Provide valid embedded stream URL code destination index mapping:", (targetUrl) => {
-                        if(!targetUrl) return;
-                        openPromptModal("Assign Metadata Indexing Tags", "Provide unique tags separated by commas (Optional):", (rawTags) => {
-                            const processedTags = rawTags ? rawTags.split(',').map(t => t.trim()).filter(t => t !== "") : [];
-                            const newId = String(Date.now());
-                            
-                            state.relics.push({
-                                id: newId, 
-                                title: title, 
-                                url: targetUrl, 
-                                img: "", 
-                                tags: processedTags
-                            });
-                            saveStateToStorage();
-                            renderArchive();
-                        });
-                    });
-                });
-            });
-
-            document.getElementById('btn-add-bulk').addEventListener('click', () => {
-                openBulkModal("Inject Mass Media Arrays", "Paste your multi-link addresses below (one absolute stream mapping per line layout):", (textBlock) => {
-                    if (!textBlock) return;
-                    const lines = textBlock.split('\n').map(l => l.trim()).filter(l => l.length > 0);
-                    let counter = 0;
-                    
-                    lines.forEach((line, idx) => {
-                        const autoTitle = `Bulk Asset Track #${state.relics.length + 1}`;
-                        const newId = String(Date.now() + idx);
-                        
-                        state.relics.push({
-                            id: newId,
-                            title: autoTitle,
-                            url: line,
-                            img: "",
-                            tags: ["bulk"]
-                        });
-                        counter++;
-                    });
-                    
-                    if(counter > 0) {
-                        saveStateToStorage();
+            if (btnEditMode) {
+                btnEditMode.addEventListener('click', (e) => {
+                    if (clearance !== 'admin') return;
+                    if (!state.isEditMode) {
+                        state.isEditMode = true;
+                        document.body.classList.add('edit-mode');
+                        e.target.classList.add('active');
                         renderArchive();
-                        alert(`Successfully imported [${counter}] stream tracking arrays inside network node registry.`);
+                    } else {
+                        state.isEditMode = false;
+                        document.body.classList.remove('edit-mode');
+                        e.target.classList.remove('active');
+                        renderArchive();
                     }
                 });
-            });
+            }
 
-            document.getElementById('btn-save').addEventListener('click', () => {
-                saveStateToStorage();
-                saveSidesToStorage();
-                alert("Archive structures safely saved.");
-            });
+            const addLinkBtn = document.getElementById('btn-add-link');
+            if (addLinkBtn) {
+                addLinkBtn.addEventListener('click', () => {
+                    if (clearance !== 'admin') return;
+                    openPromptModal("Upload Video Connection", "Enter descriptive track title configuration designation:", (title) => {
+                        if(!title) return;
+                        openPromptModal("Input Absolute Stream Path", "Provide valid embedded stream URL code destination index mapping:", (targetUrl) => {
+                            if(!targetUrl) return;
+                            openPromptModal("Assign Metadata Indexing Tags", "Provide unique tags separated by commas (Optional):", (rawTags) => {
+                                const processedTags = rawTags ? rawTags.split(',').map(t => t.trim()).filter(t => t !== "") : [];
+                                const newId = String(Date.now());
+                                
+                                state.relics.push({
+                                    id: newId, 
+                                    title: title, 
+                                    url: targetUrl, 
+                                    img: "", 
+                                    tags: processedTags
+                                });
+                                saveStateToStorage();
+                                renderArchive();
+                            });
+                        });
+                    });
+                });
+            }
 
-            document.getElementById('btn-load').addEventListener('click', () => {
-                const stored = localStorage.getItem('gothic_archive_formation_save');
-                if (stored) {
-                    state.relics = JSON.parse(stored);
-                    renderArchive();
-                }
-                const storedSides = localStorage.getItem('gothic_archive_side_images');
-                if (storedSides) {
-                    state.sideImages = JSON.parse(storedSides);
-                    renderSideImages();
-                }
-            });
+            const addBulkBtn = document.getElementById('btn-add-bulk');
+            if (addBulkBtn) {
+                addBulkBtn.addEventListener('click', () => {
+                    if (clearance !== 'admin') return;
+                    openBulkModal("Inject Mass Media Arrays", "Paste your multi-link addresses below (one absolute stream mapping per line layout):", (textBlock) => {
+                        if (!textBlock) return;
+                        const lines = textBlock.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+                        let counter = 0;
+                        
+                        lines.forEach((line, idx) => {
+                            const autoTitle = `Bulk Asset Track #${state.relics.length + 1}`;
+                            const newId = String(Date.now() + idx);
+                            
+                            state.relics.push({
+                                id: newId,
+                                title: autoTitle,
+                                url: line,
+                                img: "",
+                                tags: ["bulk"]
+                            });
+                            counter++;
+                        });
+                        
+                        if(counter > 0) {
+                            saveStateToStorage();
+                            renderArchive();
+                            alert(`Successfully imported [${counter}] stream tracking arrays inside network node registry.`);
+                        }
+                    });
+                });
+            }
+
+            const saveBtn = document.getElementById('btn-save');
+            if (saveBtn) {
+                saveBtn.addEventListener('click', () => {
+                    if (clearance !== 'admin') return;
+                    saveStateToStorage();
+                    saveSidesToStorage();
+                    alert("Archive structures safely saved.");
+                });
+            }
+
+            const loadBtn = document.getElementById('btn-load');
+            if (loadBtn) {
+                loadBtn.addEventListener('click', () => {
+                    const stored = localStorage.getItem('gothic_archive_formation_save');
+                    if (stored) {
+                        state.relics = JSON.parse(stored);
+                        renderArchive();
+                    }
+                    const storedSides = localStorage.getItem('gothic_archive_side_images');
+                    if (storedSides) {
+                        state.sideImages = JSON.parse(storedSides);
+                        renderSideImages();
+                    }
+                });
+            }
         }
 
         function executeMenuAction(action) {
@@ -1175,6 +1205,7 @@
                     playerTitlebar.textContent = `System Player Now Streaming: ${relic.title}`;
                     break;
                 case 'rename':
+                    if (clearance !== 'admin') return;
                     openPromptModal("Rename Element Index", `Modify name configuration mappings for [${relic.title}]:`, (newName) => {
                         if (newName) {
                             relic.title = newName;
@@ -1184,6 +1215,7 @@
                     }, relic.title);
                     break;
                 case 'edit-tags':
+                    if (clearance !== 'admin') return;
                     const existingTags = relic.tags ? relic.tags.join(', ') : "";
                     openPromptModal("Modify Segment Tag Arrays", `Assign metadata tags separated by commas for [${relic.title}]:`, (updatedTags) => {
                         if (updatedTags !== null) {
@@ -1194,16 +1226,19 @@
                     }, existingTags);
                     break;
                 case 'change-image':
+                    if (clearance !== 'admin') return;
                     deviceImagePicker.value = '';
                     deviceImagePicker.click();
                     break;
                 case 'snap-original':
+                    if (clearance !== 'admin') return;
                     delete relic.w;
                     delete relic.h;
                     saveStateToStorage();
                     renderArchive();
                     break;
                 case 'delete':
+                    if (clearance !== 'admin') return;
                     openConfirmModal("Purge Confirmation Verification", `Permanently dismantle tracking data for element path [${relic.title}]?`, () => {
                         state.relics = state.relics.filter(r => r.id !== relic.id);
                         saveStateToStorage();
@@ -1215,10 +1250,9 @@
 
         function openPromptModal(title, text, callback, defaultVal = "") {
             const container = document.getElementById('modal-body-content');
-            const isPasswordType = title === "Security Access Verification";
             container.innerHTML = `
                 <p style="font-size:11px; margin-bottom:10px; color:var(--text-dim); line-height:1.4;">${text}</p>
-                <input type="${isPasswordType ? 'password' : 'text'}" class="modal-input" id="modal-custom-field" value="${defaultVal}">
+                <input type="text" class="modal-input" id="modal-custom-field" value="${defaultVal}">
             `;
             document.getElementById('modal-title-text').textContent = title;
             
