@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>The Gothic Archive (Formation & Snap-to-Grid)</title>
+    <title>The Gothic Archive (Gallery Layout Edition)</title>
     <style>
         :root {
             --bg-color: #0d0d0d;
@@ -259,24 +259,27 @@
             box-shadow: 0 0 12px var(--accent-color);
         }
 
-        /* Infinite Scroll Canvas Environment Workspace */
+        /* Clean Auto-Flowing Workspace Scrollable Area */
         #viewport {
             position: absolute;
             top: 360px; 
             left: 0;
             width: 100%;
             height: calc(100% - 360px);
-            overflow: auto;
+            overflow-y: auto;
             background-color: #0d0d0d;
+            padding: 30px;
+            display: flex;
+            justify-content: center;
         }
 
-        /* Subtle Guide Grid for Edit Mode */
+        /* Subtle Guide Grid for Edit Mode Background Layout alignment */
         #grid-canvas {
             position: absolute;
             top: 0;
             left: 0;
-            width: 5000px;
-            height: 5000px;
+            width: 100%;
+            height: 100%;
             pointer-events: none;
             display: none;
             background-image: 
@@ -290,12 +293,15 @@
             display: block;
         }
 
+        /* Flexible Grid Matrix Area for Thumbnails appearing next to each other */
         #relics-container {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 5000px;
-            height: 5000px;
+            position: relative;
+            width: 100%;
+            max-width: 900px;
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+            gap: 20px;
+            align-content: start;
             z-index: 2;
         }
 
@@ -306,9 +312,8 @@
             display: inline-block !important;
         }
 
-        /* Absolute Free-Drag Relic Structure Box */
+        /* Flowing Relic Thumbnail Box Layout */
         .relic {
-            position: absolute;
             background: var(--panel-bg);
             border: 1px solid var(--border-color);
             border-radius: 4px;
@@ -317,16 +322,20 @@
             flex-direction: column;
             gap: 8px;
             box-shadow: 0 5px 15px rgba(0,0,0,0.5);
-            cursor: grab;
+            cursor: pointer;
             overflow: hidden;
-        }
-
-        .relic:active {
-            cursor: grabbing;
+            position: relative;
+            aspect-ratio: 1 / 1;
+            transition: transform 0.15s ease, border-color 0.15s ease;
         }
 
         body.edit-mode .relic {
             border-color: rgba(128, 0, 32, 0.4);
+            cursor: grab;
+        }
+
+        body.edit-mode .relic:active {
+            cursor: grabbing;
         }
 
         .relic-header {
@@ -376,7 +385,7 @@
             color: var(--text-dim);
         }
 
-        /* Tags Inline Core Layout Row */
+        /* Tags Matrix Row Layout */
         .relic-tags-row {
             display: flex;
             flex-wrap: wrap;
@@ -396,7 +405,7 @@
             text-transform: uppercase;
         }
 
-        /* Soft Scale Finger Control Tab Node */
+        /* Scale Finger Tab Node for Resizability */
         .resize-finger-anchor {
             position: absolute;
             bottom: 0;
@@ -414,7 +423,7 @@
             display: block;
         }
 
-        /* Context Popup Menu - Scrollable Elements */
+        /* Scrollable Popup Menu on Double Tap */
         #context-menu {
             position: fixed;
             background: #141414;
@@ -545,7 +554,6 @@
             <button class="btn" id="btn-edit-mode">Edit Mode</button>
             <button class="btn edit-only" id="btn-add-link">Add Video Link</button>
             <button class="btn edit-only" id="btn-add-bulk">Add Bulk Links</button>
-            <button class="btn edit-only" id="btn-recenter">Recenter Matrix</button>
             <button class="btn edit-only" id="btn-save">Save Archive</button>
             <button class="btn edit-only" id="btn-load">Load Archive</button>
         </div>
@@ -599,7 +607,6 @@
     </div>
 
     <script>
-        // State Configuration Data Setup (Preserving Spatial Proportions & Formations)
         const state = {
             isEditMode: false,
             activeTargetId: null,
@@ -610,8 +617,8 @@
         };
 
         const defaultSetup = [
-            { id: "1", title: "The Crow", url: "https://www.youtube.com/embed/dQw4w9WgXcQ", img: "https://img.youtube.com/vi/dQw4w9WgXcQ/hqdefault.jpg", x: 2200, y: 2200, w: 180, h: 180, tags: ["gothic", "classic"] },
-            { id: "2", title: "Gothic Tech Sound", url: "https://www.youtube.com/embed/dQw4w9WgXcQ", img: "", x: 2420, y: 2200, w: 180, h: 180, tags: ["industrial"] }
+            { id: "1", title: "The Crow", url: "https://www.youtube.com/embed/dQw4w9WgXcQ", img: "https://img.youtube.com/vi/dQw4w9WgXcQ/hqdefault.jpg", tags: ["gothic", "classic"] },
+            { id: "2", title: "Gothic Tech Sound", url: "https://www.youtube.com/embed/dQw4w9WgXcQ", img: "", tags: ["industrial"] }
         ];
 
         const fixedTopWrapper = document.getElementById('fixed-top-wrapper');
@@ -661,10 +668,6 @@
             setupInteractions();
             setupGlobalMenus();
             setupResizeEngine();
-
-            // Set spatial focus point coordinate matrix on launch
-            viewport.scrollLeft = 2000;
-            viewport.scrollTop = 2000;
         });
 
         function adjustViewportSpacing() {
@@ -705,7 +708,7 @@
             }
         }
 
-        // Infinite Absolute Canvas Rendering Core
+        // Auto-Flowing Matrix Gallery Filtering Core
         function renderArchive() {
             relicsContainer.innerHTML = '';
             const query = state.searchQuery.trim().toLowerCase();
@@ -724,12 +727,10 @@
             const node = document.createElement('div');
             node.className = 'relic';
             node.setAttribute('data-id', relic.id);
-            
-            // Assign Saved Spatial Coordinates and Absolute Proportions
-            node.style.left = relic.x + 'px';
-            node.style.top = relic.y + 'px';
-            node.style.width = relic.w + 'px';
-            node.style.height = relic.h + 'px';
+
+            // Optional custom override dimension handling if set via manual adjustment tools
+            if (relic.w) node.style.width = relic.w + 'px';
+            if (relic.h) node.style.height = relic.h + 'px';
 
             const header = document.createElement('div');
             header.className = 'relic-header';
@@ -760,7 +761,7 @@
 
             node.appendChild(body);
 
-            // Render Tags Element Row Lookups
+            // Render Tags Element Row Layout Map
             if (relic.tags && relic.tags.length > 0) {
                 const tagsRow = document.createElement('div');
                 tagsRow.className = 'relic-tags-row';
@@ -773,7 +774,7 @@
                 node.appendChild(tagsRow);
             }
 
-            // Finger scale anchor point injection
+            // Finger size anchor element mapping injection
             const resizeAnchor = document.createElement('div');
             resizeAnchor.className = 'resize-finger-anchor';
             node.appendChild(resizeAnchor);
@@ -834,14 +835,14 @@
         function setupInteractions() {
             let dragRelic = null;
             let resizeRelic = null;
-            let dragStartX, dragStartY, initialX, initialY, initialW, initialH;
+            let dragStartX, dragStartY, initialW, initialH;
 
             searchInput.addEventListener('input', (e) => {
                 state.searchQuery = e.target.value;
                 renderArchive();
             });
 
-            // Universal Unified Spatial Drag and Drop / Resize Engine Engine Hook Setup
+            // Grid Interaction Pointer Route Management System
             relicsContainer.addEventListener('mousedown', handlePointerDown);
             relicsContainer.addEventListener('touchstart', handlePointerDown, { passive: false });
 
@@ -857,15 +858,15 @@
                 const clientX = e.touches ? e.touches[0].clientX : e.clientX;
                 const clientY = e.touches ? e.touches[0].clientY : e.clientY;
 
-                // Handle Sub-Finger Scale Module Hook Trigger Points
+                // Handle Resizing Action Node Trigger Hooks
                 if (target.classList.contains('resize-finger-anchor') && state.isEditMode) {
                     e.preventDefault();
                     e.stopPropagation();
                     resizeRelic = relic;
                     dragStartX = clientX;
                     dragStartY = clientY;
-                    initialW = relic.w;
-                    initialH = relic.h;
+                    initialW = relic.w || relicEl.offsetWidth;
+                    initialH = relic.h || relicEl.offsetHeight;
 
                     document.addEventListener('mousemove', handlePointerMove);
                     document.addEventListener('mouseup', handlePointerUp);
@@ -874,7 +875,7 @@
                     return;
                 }
 
-                // Standard Double-Tap / Double-Click Core Router Logic Processing
+                // Double Tap / Double Click detection mechanism logic
                 const currentTime = new Date().getTime();
                 const tapLength = currentTime - state.lastTapTime;
                 
@@ -891,21 +892,18 @@
                 }
                 state.lastTapTime = currentTime;
 
-                // If in Edit Mode, trigger standard soft-snapping coordinate drag handling
+                // Drag handling context within Grid sorting framework
                 if (state.isEditMode) {
                     e.preventDefault();
                     dragRelic = relic;
                     dragStartX = clientX;
                     dragStartY = clientY;
-                    initialX = relic.x;
-                    initialY = relic.y;
 
                     document.addEventListener('mousemove', handlePointerMove);
                     document.addEventListener('mouseup', handlePointerUp);
                     document.addEventListener('touchmove', handlePointerMove, { passive: false });
                     document.addEventListener('touchend', handlePointerUp);
                 } else {
-                    // Quick-play track fallback loop trigger points
                     executeMenuAction('play-media');
                 }
             }
@@ -915,29 +913,18 @@
                 const clientY = e.touches ? e.touches[0].clientY : e.clientY;
 
                 if (dragRelic) {
+                    // Soft sorting position index visual adjustment framework
                     let dx = clientX - dragStartX;
-                    let dy = clientY - dragStartY;
-                    
-                    let targetX = initialX + dx;
-                    let targetY = initialY + dy;
-
-                    // Soft Grid Snapping (Aligning with grid size of 40px blocks)
-                    targetX = Math.round(targetX / 40) * 40;
-                    targetY = Math.round(targetY / 40) * 40;
-
-                    // Boundaries protection loops
-                    if (targetX < 0) targetX = 0;
-                    if (targetY < 0) targetY = 0;
-                    if (targetX > 4800) targetX = 4800;
-                    if (targetY > 4800) targetY = 4800;
-
-                    dragRelic.x = targetX;
-                    dragRelic.y = targetY;
-
-                    const el = document.querySelector(`.relic[data-id="${dragRelic.id}"]`);
-                    if (el) {
-                        el.style.left = targetX + 'px';
-                        el.style.top = targetY + 'px';
+                    if (Math.abs(dx) > 60) {
+                        const currentIndex = state.relics.findIndex(r => r.id === dragRelic.id);
+                        let targetIndex = currentIndex + (dx > 0 ? 1 : -1);
+                        if (targetIndex >= 0 && targetIndex < state.relics.length) {
+                            // Swap internal order arrays to reorder grid positions natively
+                            state.relics.splice(currentIndex, 1);
+                            state.relics.splice(targetIndex, 0, dragRelic);
+                            dragStartX = clientX;
+                            renderArchive();
+                        }
                     }
                 }
 
@@ -945,13 +932,14 @@
                     let dx = clientX - dragStartX;
                     let dy = clientY - dragStartY;
 
-                    let targetW = initialW + dx;
-                    let targetH = initialH + dy;
+                    // Apply soft snapping measurements to size transformations
+                    let targetW = Math.round((initialW + dx) / 40) * 40;
+                    let targetH = Math.round((initialH + dy) / 40) * 40;
 
-                    if (targetW < 100) targetW = 100;
-                    if (targetH < 100) targetH = 100;
-                    if (targetW > 800) targetW = 800;
-                    if (targetH > 800) targetH = 800;
+                    if (targetW < 120) targetW = 120;
+                    if (targetH < 120) targetH = 120;
+                    if (targetW > 500) targetW = 500;
+                    if (targetH > 500) targetH = 500;
 
                     resizeRelic.w = targetW;
                     resizeRelic.h = targetH;
@@ -976,7 +964,6 @@
                 document.removeEventListener('touchend', handlePointerUp);
             }
 
-            // Independent side image processing setup configurations
             sideLeftBox.addEventListener('click', () => {
                 if (state.isEditMode) sideLeftPicker.click();
             });
@@ -1065,13 +1052,7 @@
                 }
             });
 
-            document.getElementById('btn-recenter').addEventListener('click', () => {
-                // Focus camera coordinate map right on baseline generation array coordinates
-                viewport.scrollLeft = 2000;
-                viewport.scrollTop = 2000;
-            });
-
-            // Singular Dynamic Track Initialization Input
+            // Singular Tracking Add Mode Input Engine Interface Module
             document.getElementById('btn-add-link').addEventListener('click', () => {
                 openPromptModal("Upload Video Connection", "Enter descriptive track title configuration designation:", (title) => {
                     if(!title) return;
@@ -1079,21 +1060,13 @@
                         if(!targetUrl) return;
                         openPromptModal("Assign Metadata Indexing Tags", "Provide unique tags separated by commas (Optional):", (rawTags) => {
                             const processedTags = rawTags ? rawTags.split(',').map(t => t.trim()).filter(t => t !== "") : [];
-                            
-                            // Generate position centered around baseline map point
-                            const centerBaseX = viewport.scrollLeft + (viewport.offsetWidth / 2) - 90;
-                            const centerBaseY = viewport.scrollTop + (viewport.offsetHeight / 2) - 90;
-                            
                             const newId = String(Date.now());
+                            
                             state.relics.push({
                                 id: newId, 
                                 title: title, 
                                 url: targetUrl, 
                                 img: "", 
-                                x: Math.round(centerBaseX / 40) * 40, 
-                                y: Math.round(centerBaseY / 40) * 40, 
-                                w: 180, 
-                                h: 180,
                                 tags: processedTags
                             });
                             saveStateToStorage();
@@ -1103,15 +1076,12 @@
                 });
             });
 
-            // Bulk Input Form Parser Implementation Layer
+            // Bulk Parsing Overlay Import Interface System
             document.getElementById('btn-add-bulk').addEventListener('click', () => {
                 openBulkModal("Inject Mass Media Arrays", "Paste your multi-link addresses below (one absolute stream mapping per line layout):", (textBlock) => {
                     if (!textBlock) return;
                     const lines = textBlock.split('\n').map(l => l.trim()).filter(l => l.length > 0);
                     let counter = 0;
-                    
-                    let spawnX = viewport.scrollLeft + 40;
-                    let spawnY = viewport.scrollTop + 40;
                     
                     lines.forEach((line, idx) => {
                         const autoTitle = `Bulk Asset Track #${state.relics.length + 1}`;
@@ -1122,19 +1092,8 @@
                             title: autoTitle,
                             url: line,
                             img: "",
-                            x: Math.round(spawnX / 40) * 40,
-                            y: Math.round(spawnY / 40) * 40,
-                            w: 180,
-                            h: 180,
                             tags: ["bulk"]
                         });
-                        
-                        // Cascade spatial layout positioning to prevent direct absolute overlay conflicts
-                        spawnX += 60;
-                        spawnY += 60;
-                        if (spawnX > viewport.scrollLeft + 400) {
-                            spawnX = viewport.scrollLeft + 40;
-                        }
                         counter++;
                     });
                     
@@ -1200,8 +1159,8 @@
                     deviceImagePicker.click();
                     break;
                 case 'snap-original':
-                    relic.w = 180;
-                    relic.h = 180;
+                    delete relic.w;
+                    delete relic.h;
                     saveStateToStorage();
                     renderArchive();
                     break;
