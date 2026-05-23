@@ -351,6 +351,8 @@
 </head>
 <body>
 
+    <input type="file" id="device-image-picker" accept="image/*" style="display: none;">
+
     <div id="fixed-top-wrapper">
         <div id="control-bar">
             <button class="btn" id="btn-edit-mode">Edit Mode</button>
@@ -394,7 +396,7 @@
     </div>
 
     <script>
-        // State Configuration Data Setup
+        // State Configuration Data Setup (Using Definitive Sync Keys)
         const state = {
             isEditMode: false,
             activeTargetId: null,
@@ -402,9 +404,8 @@
             relics: []
         };
 
-        // Fallback default system items
         const defaultSetup = [
-            { id: "1", title: "The Crow", url: "https://www.youtube.com/embed/dQw4w9WgXcQ", img: "https://picsum.photos/id/1062/200/200" },
+            { id: "1", title: "The Crow", url: "https://www.youtube.com/embed/dQw4w9WgXcQ", img: "https://img.youtube.com/vi/dQw4w9WgXcQ/hqdefault.jpg" },
             { id: "2", title: "Gothic Tech Sound", url: "https://www.youtube.com/embed/dQw4w9WgXcQ", img: "" }
         ];
 
@@ -413,9 +414,10 @@
         const mediaScreen = document.getElementById('media-screen');
         const playerPlaceholder = document.getElementById('player-placeholder');
         const playerTitlebar = document.getElementById('player-titlebar');
+        const deviceImagePicker = document.getElementById('device-image-picker');
 
         window.addEventListener('DOMContentLoaded', () => {
-            const stored = localStorage.getItem('gothic_archive_gallery_save');
+            const stored = localStorage.getItem('gothic_archive_formation_save');
             if (stored) {
                 state.relics = JSON.parse(stored);
             } else {
@@ -425,6 +427,22 @@
             setupInteractions();
             setupGlobalMenus();
         });
+
+        // Helper function to extract preview image directly from target video track structures
+        function getAutoThumbnail(url) {
+            if (!url) return '';
+            // Match standard YouTube ID formats
+            const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
+            const match = url.match(regExp);
+            if (match && match[2].length === 11) {
+                return `https://img.youtube.com/vi/${match[2]}/hqdefault.jpg`;
+            }
+            return '';
+        }
+
+        function saveStateToStorage() {
+            localStorage.setItem('gothic_archive_formation_save', JSON.stringify(state.relics));
+        }
 
         // Horizontal Gallery Rendering Core
         function renderArchive() {
@@ -453,10 +471,12 @@
             const body = document.createElement('div');
             body.className = 'relic-body';
 
-            if (relic.img) {
+            const displayImg = relic.img || getAutoThumbnail(relic.url);
+
+            if (displayImg) {
                 const img = document.createElement('img');
                 img.className = 'relic-img';
-                img.src = relic.img;
+                img.src = displayImg;
                 body.appendChild(img);
             } else {
                 const fallback = document.createElement('div');
@@ -518,6 +538,23 @@
                     state.lastTapTime = currentTime;
                 }
             }, {passive: true});
+
+            // Handle device file upload conversion matrix pipeline
+            deviceImagePicker.addEventListener('change', (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+
+                const reader = new FileReader();
+                reader.onload = function(event) {
+                    const relic = state.relics.find(r => r.id === state.activeTargetId);
+                    if (relic) {
+                        relic.img = event.target.result;
+                        saveStateToStorage();
+                        renderArchive();
+                    }
+                };
+                reader.readAsDataURL(file);
+            });
         }
 
         function showContextMenu(mx, my) {
@@ -569,18 +606,19 @@
                         state.relics.push({
                             id: newId, title: title, url: targetUrl, img: ""
                         });
+                        saveStateToStorage();
                         renderArchive();
                     });
                 });
             });
 
             document.getElementById('btn-save').addEventListener('click', () => {
-                localStorage.setItem('gothic_archive_gallery_save', JSON.stringify(state.relics));
+                saveStateToStorage();
                 alert("Archive structures safely saved.");
             });
 
             document.getElementById('btn-load').addEventListener('click', () => {
-                const stored = localStorage.getItem('gothic_archive_gallery_save');
+                const stored = localStorage.getItem('gothic_archive_formation_save');
                 if (stored) {
                     state.relics = JSON.parse(stored);
                     renderArchive();
@@ -604,21 +642,20 @@
                     openPromptModal("Rename Element Index", `Modify name configuration mappings for [${relic.title}]:`, (newName) => {
                         if (newName) {
                             relic.title = newName;
+                            saveStateToStorage();
                             renderArchive();
                         }
                     }, relic.title);
                     break;
                 case 'change-image':
-                    openPromptModal("Modify Display Thumbnail Source", "Provide target graphic link localization mapping path:", (newUrl) => {
-                        if (newUrl !== null) {
-                            relic.img = newUrl;
-                            renderArchive();
-                        }
-                    }, relic.img || "");
+                    // Trigger the hardware device upload process array automatically
+                    deviceImagePicker.value = '';
+                    deviceImagePicker.click();
                     break;
                 case 'delete':
                     openConfirmModal("Purge Confirmation Verification", `Permanently dismantle tracking data for element path [${relic.title}]?`, () => {
                         state.relics = state.relics.filter(r => r.id !== relic.id);
+                        saveStateToStorage();
                         renderArchive();
                     });
                     break;
