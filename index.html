@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>The Gothic Archive (Gallery Edition)</title>
+    <title>The Gothic Archive (Formation & Snap-to-Grid)</title>
     <style>
         :root {
             --bg-color: #0d0d0d;
@@ -13,6 +13,7 @@
             --text-color: #d9d9d9;
             --text-dim: #737373;
             --border-color: #262626;
+            --grid-line: rgba(128, 0, 32, 0.08);
         }
 
         * {
@@ -59,11 +60,28 @@
             backdrop-filter: blur(10px);
             box-shadow: 0 10px 30px rgba(0,0,0,0.7);
             width: 95vw;
-            max-width: 800px;
+            max-width: 900px;
             margin-top: 15px;
             margin-bottom: 15px;
             overflow-x: auto;
             white-space: nowrap;
+        }
+
+        #search-input {
+            background: #0d0d0d;
+            border: 1px solid var(--border-color);
+            color: #fff;
+            padding: 6px 12px;
+            font-family: inherit;
+            font-size: 11px;
+            border-radius: 2px;
+            width: 140px;
+            text-transform: uppercase;
+        }
+
+        #search-input:focus {
+            outline: none;
+            border-color: var(--accent-color);
         }
 
         /* Upper Presentation Row - Holds Player & Flanking Side Images */
@@ -73,7 +91,7 @@
             gap: 15px;
             width: 95vw;
             max-width: 800px;
-            height: 240px; /* Standard starting height close to default YouTube 16:9 box bounds */
+            height: 240px; 
             margin-bottom: 5px;
             position: relative;
         }
@@ -178,7 +196,6 @@
             border-bottom-right-radius: 11px;
         }
 
-        /* Updated Overlay Rules to fit 16:9 dynamic view accurately */
         #player-placeholder {
             position: absolute;
             top: 25px;
@@ -242,27 +259,44 @@
             box-shadow: 0 0 12px var(--accent-color);
         }
 
-        /* Viewport Position Handled Dynamically by JavaScript Resize Observer Loop */
+        /* Infinite Scroll Canvas Environment Workspace */
         #viewport {
             position: absolute;
             top: 360px; 
             left: 0;
             width: 100%;
             height: calc(100% - 360px);
-            overflow-y: auto;
-            padding: 20px;
-            display: flex;
-            justify-content: center;
+            overflow: auto;
+            background-color: #0d0d0d;
         }
 
-        /* Horizontal Layout Grid Container */
-        #gallery-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-            gap: 20px;
-            width: 100%;
-            max-width: 850px;
-            align-content: start;
+        /* Subtle Guide Grid for Edit Mode */
+        #grid-canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 5000px;
+            height: 5000px;
+            pointer-events: none;
+            display: none;
+            background-image: 
+                linear-gradient(to right, var(--grid-line) 1px, transparent 1px),
+                linear-gradient(to bottom, var(--grid-line) 1px, transparent 1px);
+            background-size: 40px 40px;
+            z-index: 1;
+        }
+
+        body.edit-mode #grid-canvas {
+            display: block;
+        }
+
+        #relics-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 5000px;
+            height: 5000px;
+            z-index: 2;
         }
 
         .edit-only {
@@ -272,8 +306,9 @@
             display: inline-block !important;
         }
 
-        /* Pure Video Thumbnail Module Block styling */
+        /* Absolute Free-Drag Relic Structure Box */
         .relic {
+            position: absolute;
             background: var(--panel-bg);
             border: 1px solid var(--border-color);
             border-radius: 4px;
@@ -281,15 +316,17 @@
             display: flex;
             flex-direction: column;
             gap: 8px;
-            aspect-ratio: 1 / 1;
             box-shadow: 0 5px 15px rgba(0,0,0,0.5);
-            cursor: pointer;
-            position: relative;
-            transition: border-color 0.2s ease;
+            cursor: grab;
+            overflow: hidden;
         }
 
-        body.edit-mode .relic:hover {
-            border-color: var(--accent-color);
+        .relic:active {
+            cursor: grabbing;
+        }
+
+        body.edit-mode .relic {
+            border-color: rgba(128, 0, 32, 0.4);
         }
 
         .relic-header {
@@ -298,6 +335,7 @@
             align-items: center;
             border-bottom: 1px solid var(--border-color);
             padding-bottom: 6px;
+            pointer-events: none;
         }
 
         .relic-title {
@@ -320,6 +358,7 @@
             overflow: hidden;
             background: #0a0a0a;
             border-radius: 2px;
+            pointer-events: none;
         }
 
         .relic-img {
@@ -327,7 +366,6 @@
             height: 100%;
             object-fit: cover;
             border-radius: 2px;
-            pointer-events: none;
         }
 
         .relic-fallback-text {
@@ -336,6 +374,44 @@
             padding: 6px;
             text-transform: uppercase;
             color: var(--text-dim);
+        }
+
+        /* Tags Inline Core Layout Row */
+        .relic-tags-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 4px;
+            max-height: 35px;
+            overflow: hidden;
+            pointer-events: none;
+        }
+
+        .mini-tag {
+            background: #1f1f1f;
+            border: 1px solid var(--border-color);
+            color: var(--text-dim);
+            font-size: 8px;
+            padding: 1px 4px;
+            border-radius: 2px;
+            text-transform: uppercase;
+        }
+
+        /* Soft Scale Finger Control Tab Node */
+        .resize-finger-anchor {
+            position: absolute;
+            bottom: 0;
+            right: 0;
+            width: 18px;
+            height: 18px;
+            background: rgba(128, 0, 32, 0.6);
+            border-top-left-radius: 4px;
+            cursor: se-resize;
+            display: none;
+            z-index: 10;
+        }
+
+        body.edit-mode .resize-finger-anchor {
+            display: block;
         }
 
         /* Context Popup Menu - Scrollable Elements */
@@ -347,8 +423,8 @@
             z-index: 2000;
             display: none;
             border-radius: 3px;
-            width: 180px;
-            max-height: 180px;
+            width: 200px;
+            max-height: 260px;
             overflow-y: auto;
             -webkit-overflow-scrolling: touch;
         }
@@ -399,7 +475,7 @@
             border: 1px solid var(--border-color);
             padding: 25px;
             border-radius: 4px;
-            width: 320px;
+            width: 360px;
             box-shadow: 0 15px 40px rgba(0,0,0,0.8);
             display: flex;
             flex-direction: column;
@@ -431,6 +507,24 @@
             border-color: var(--accent-color);
         }
 
+        .modal-textarea {
+            background: #0d0d0d;
+            border: 1px solid var(--border-color);
+            color: #fff;
+            padding: 8px 12px;
+            font-family: inherit;
+            font-size: 11px;
+            border-radius: 2px;
+            width: 100%;
+            height: 120px;
+            resize: none;
+        }
+
+        .modal-textarea:focus {
+            outline: none;
+            border-color: var(--accent-color);
+        }
+
         .modal-actions {
             display: flex;
             justify-content: flex-end;
@@ -447,8 +541,11 @@
 
     <div id="fixed-top-wrapper">
         <div id="control-bar">
+            <input type="text" id="search-input" placeholder="SEARCH ARCHIVE...">
             <button class="btn" id="btn-edit-mode">Edit Mode</button>
             <button class="btn edit-only" id="btn-add-link">Add Video Link</button>
+            <button class="btn edit-only" id="btn-add-bulk">Add Bulk Links</button>
+            <button class="btn edit-only" id="btn-recenter">Recenter Matrix</button>
             <button class="btn edit-only" id="btn-save">Save Archive</button>
             <button class="btn edit-only" id="btn-load">Load Archive</button>
         </div>
@@ -477,13 +574,16 @@
     </div>
 
     <div id="viewport">
-        <div id="gallery-grid"></div>
+        <div id="grid-canvas"></div>
+        <div id="relics-container"></div>
     </div>
 
     <div id="context-menu">
         <div class="menu-item" data-action="play-media">Play Video</div>
         <div class="menu-item edit-only" data-action="rename">Rename</div>
+        <div class="menu-item edit-only" data-action="edit-tags">Edit Tags</div>
         <div class="menu-item edit-only" data-action="change-image">Change Thumbnail</div>
+        <div class="menu-item edit-only" data-action="snap-original">Snap to Original Shape</div>
         <div class="menu-item edit-only" data-action="delete">Delete</div>
     </div>
 
@@ -499,29 +599,31 @@
     </div>
 
     <script>
-        // State Configuration Data Setup (Using Definitive Sync Keys)
+        // State Configuration Data Setup (Preserving Spatial Proportions & Formations)
         const state = {
             isEditMode: false,
             activeTargetId: null,
             lastTapTime: 0,
+            searchQuery: "",
             relics: [],
             sideImages: { left: "", right: "" }
         };
 
         const defaultSetup = [
-            { id: "1", title: "The Crow", url: "https://www.youtube.com/embed/dQw4w9WgXcQ", img: "https://img.youtube.com/vi/dQw4w9WgXcQ/hqdefault.jpg" },
-            { id: "2", title: "Gothic Tech Sound", url: "https://www.youtube.com/embed/dQw4w9WgXcQ", img: "" }
+            { id: "1", title: "The Crow", url: "https://www.youtube.com/embed/dQw4w9WgXcQ", img: "https://img.youtube.com/vi/dQw4w9WgXcQ/hqdefault.jpg", x: 2200, y: 2200, w: 180, h: 180, tags: ["gothic", "classic"] },
+            { id: "2", title: "Gothic Tech Sound", url: "https://www.youtube.com/embed/dQw4w9WgXcQ", img: "", x: 2420, y: 2200, w: 180, h: 180, tags: ["industrial"] }
         ];
 
         const fixedTopWrapper = document.getElementById('fixed-top-wrapper');
         const presentationRow = document.getElementById('presentation-row');
         const resizeHandle = document.getElementById('resize-handle');
         const viewport = document.getElementById('viewport');
-        const galleryGrid = document.getElementById('gallery-grid');
+        const relicsContainer = document.getElementById('relics-container');
         const contextMenu = document.getElementById('context-menu');
         const mediaScreen = document.getElementById('media-screen');
         const playerPlaceholder = document.getElementById('player-placeholder');
         const playerTitlebar = document.getElementById('player-titlebar');
+        const searchInput = document.getElementById('search-input');
         
         const deviceImagePicker = document.getElementById('device-image-picker');
         const sideLeftBox = document.getElementById('side-left-box');
@@ -542,17 +644,14 @@
                 state.sideImages = JSON.parse(storedSides);
             }
 
-            // Restore saved sizes if available, otherwise set default 16:9 width/height balance
             const savedWidth = localStorage.getItem('gothic_archive_player_width');
             const savedHeight = localStorage.getItem('gothic_archive_player_height');
             if (savedWidth && savedHeight) {
                 presentationRow.style.width = savedWidth + 'px';
                 presentationRow.style.height = savedHeight + 'px';
             } else {
-                // Perfect standard proportions mapping
                 const defaultWidth = Math.min(window.innerWidth * 0.95, 800);
                 presentationRow.style.width = defaultWidth + 'px';
-                // Calculate standard 16:9 video frame space + flanking offset pads
                 presentationRow.style.height = Math.round((defaultWidth - 170) * (9 / 16)) + 'px';
             }
             
@@ -562,16 +661,18 @@
             setupInteractions();
             setupGlobalMenus();
             setupResizeEngine();
+
+            // Set spatial focus point coordinate matrix on launch
+            viewport.scrollLeft = 2000;
+            viewport.scrollTop = 2000;
         });
 
-        // Dynamic Viewport Alignment Loop Tracker
         function adjustViewportSpacing() {
             const topHeight = fixedTopWrapper.offsetHeight;
             viewport.style.top = topHeight + 'px';
             viewport.style.height = `calc(100% - ${topHeight}px)`;
         }
 
-        // Extract preview image directly from target video track structures
         function getAutoThumbnail(url) {
             if (!url) return '';
             const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
@@ -604,11 +705,18 @@
             }
         }
 
-        // Horizontal Gallery Rendering Core
+        // Infinite Absolute Canvas Rendering Core
         function renderArchive() {
-            galleryGrid.innerHTML = '';
+            relicsContainer.innerHTML = '';
+            const query = state.searchQuery.trim().toLowerCase();
+            
             state.relics.forEach(relic => {
-                galleryGrid.appendChild(createRelicElement(relic));
+                const matchesTitle = relic.title.toLowerCase().includes(query);
+                const matchesTags = relic.tags && relic.tags.some(t => t.toLowerCase().includes(query));
+                
+                if (query === "" || matchesTitle || matchesTags) {
+                    relicsContainer.appendChild(createRelicElement(relic));
+                }
             });
         }
 
@@ -616,6 +724,12 @@
             const node = document.createElement('div');
             node.className = 'relic';
             node.setAttribute('data-id', relic.id);
+            
+            // Assign Saved Spatial Coordinates and Absolute Proportions
+            node.style.left = relic.x + 'px';
+            node.style.top = relic.y + 'px';
+            node.style.width = relic.w + 'px';
+            node.style.height = relic.h + 'px';
 
             const header = document.createElement('div');
             header.className = 'relic-header';
@@ -645,10 +759,28 @@
             }
 
             node.appendChild(body);
+
+            // Render Tags Element Row Lookups
+            if (relic.tags && relic.tags.length > 0) {
+                const tagsRow = document.createElement('div');
+                tagsRow.className = 'relic-tags-row';
+                relic.tags.forEach(tag => {
+                    const tagSpan = document.createElement('span');
+                    tagSpan.className = 'mini-tag';
+                    tagSpan.textContent = tag;
+                    tagsRow.appendChild(tagSpan);
+                });
+                node.appendChild(tagsRow);
+            }
+
+            // Finger scale anchor point injection
+            const resizeAnchor = document.createElement('div');
+            resizeAnchor.className = 'resize-finger-anchor';
+            node.appendChild(resizeAnchor);
+
             return node;
         }
 
-        // Modular Resizable Track Engine
         function setupResizeEngine() {
             let startX, startY, startW, startH;
 
@@ -659,7 +791,6 @@
                 let newW = startW + (clientX - startX);
                 let newH = startH + (clientY - startY);
 
-                // Set boundaries to avoid clipping side graphics
                 if (newW < 320) newW = 320;
                 if (newW > window.innerWidth * 0.98) newW = window.innerWidth * 0.98;
                 if (newH < 120) newH = 120;
@@ -701,58 +832,151 @@
         }
 
         function setupInteractions() {
-            // Master Tap Router System (Single/Double tap plays video in View mode; Double tap edits in Edit Mode)
-            galleryGrid.addEventListener('click', (e) => {
-                const relicEl = e.target.closest('.relic');
+            let dragRelic = null;
+            let resizeRelic = null;
+            let dragStartX, dragStartY, initialX, initialY, initialW, initialH;
+
+            searchInput.addEventListener('input', (e) => {
+                state.searchQuery = e.target.value;
+                renderArchive();
+            });
+
+            // Universal Unified Spatial Drag and Drop / Resize Engine Engine Hook Setup
+            relicsContainer.addEventListener('mousedown', handlePointerDown);
+            relicsContainer.addEventListener('touchstart', handlePointerDown, { passive: false });
+
+            function handlePointerDown(e) {
+                const target = e.target;
+                const relicEl = target.closest('.relic');
                 if (!relicEl) return;
 
-                e.stopPropagation();
                 state.activeTargetId = relicEl.getAttribute('data-id');
+                const relic = state.relics.find(r => r.id === state.activeTargetId);
+                if (!relic) return;
+
+                const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+                const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+
+                // Handle Sub-Finger Scale Module Hook Trigger Points
+                if (target.classList.contains('resize-finger-anchor') && state.isEditMode) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    resizeRelic = relic;
+                    dragStartX = clientX;
+                    dragStartY = clientY;
+                    initialW = relic.w;
+                    initialH = relic.h;
+
+                    document.addEventListener('mousemove', handlePointerMove);
+                    document.addEventListener('mouseup', handlePointerUp);
+                    document.addEventListener('touchmove', handlePointerMove, { passive: false });
+                    document.addEventListener('touchend', handlePointerUp);
+                    return;
+                }
+
+                // Standard Double-Tap / Double-Click Core Router Logic Processing
                 const currentTime = new Date().getTime();
                 const tapLength = currentTime - state.lastTapTime;
                 
                 if (tapLength < 300 && tapLength > 0) {
+                    e.preventDefault();
+                    e.stopPropagation();
                     if (state.isEditMode) {
-                        showContextMenu(e.clientX, e.clientY);
+                        showContextMenu(clientX, clientY);
                     } else {
                         executeMenuAction('play-media');
                     }
-                } else {
-                    setTimeout(() => {
-                        if (new Date().getTime() - state.lastTapTime >= 300) {
-                            const relic = state.relics.find(r => r.id === state.activeTargetId);
-                            if (relic) {
-                                executeMenuAction('play-media');
-                            }
-                        }
-                    }, 300);
+                    state.lastTapTime = 0;
+                    return;
                 }
                 state.lastTapTime = currentTime;
-            });
 
-            // Touch support finger sequence router mapping
-            galleryGrid.addEventListener('touchstart', (e) => {
-                if(e.touches.length === 1) {
-                    const touch = e.touches[0];
-                    const relicEl = touch.target.closest('.relic');
-                    if (!relicEl) return;
+                // If in Edit Mode, trigger standard soft-snapping coordinate drag handling
+                if (state.isEditMode) {
+                    e.preventDefault();
+                    dragRelic = relic;
+                    dragStartX = clientX;
+                    dragStartY = clientY;
+                    initialX = relic.x;
+                    initialY = relic.y;
 
-                    state.activeTargetId = relicEl.getAttribute('data-id');
-                    const currentTime = new Date().getTime();
-                    const tapLength = currentTime - state.lastTapTime;
-
-                    if (tapLength < 300 && tapLength > 0) {
-                        if (state.isEditMode) {
-                            showContextMenu(touch.clientX, touch.clientY);
-                        } else {
-                            executeMenuAction('play-media');
-                        }
-                    }
-                    state.lastTapTime = currentTime;
+                    document.addEventListener('mousemove', handlePointerMove);
+                    document.addEventListener('mouseup', handlePointerUp);
+                    document.addEventListener('touchmove', handlePointerMove, { passive: false });
+                    document.addEventListener('touchend', handlePointerUp);
+                } else {
+                    // Quick-play track fallback loop trigger points
+                    executeMenuAction('play-media');
                 }
-            }, {passive: true});
+            }
 
-            // Handle independent side image box clicks in edit mode
+            function handlePointerMove(e) {
+                const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+                const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+
+                if (dragRelic) {
+                    let dx = clientX - dragStartX;
+                    let dy = clientY - dragStartY;
+                    
+                    let targetX = initialX + dx;
+                    let targetY = initialY + dy;
+
+                    // Soft Grid Snapping (Aligning with grid size of 40px blocks)
+                    targetX = Math.round(targetX / 40) * 40;
+                    targetY = Math.round(targetY / 40) * 40;
+
+                    // Boundaries protection loops
+                    if (targetX < 0) targetX = 0;
+                    if (targetY < 0) targetY = 0;
+                    if (targetX > 4800) targetX = 4800;
+                    if (targetY > 4800) targetY = 4800;
+
+                    dragRelic.x = targetX;
+                    dragRelic.y = targetY;
+
+                    const el = document.querySelector(`.relic[data-id="${dragRelic.id}"]`);
+                    if (el) {
+                        el.style.left = targetX + 'px';
+                        el.style.top = targetY + 'px';
+                    }
+                }
+
+                if (resizeRelic) {
+                    let dx = clientX - dragStartX;
+                    let dy = clientY - dragStartY;
+
+                    let targetW = initialW + dx;
+                    let targetH = initialH + dy;
+
+                    if (targetW < 100) targetW = 100;
+                    if (targetH < 100) targetH = 100;
+                    if (targetW > 800) targetW = 800;
+                    if (targetH > 800) targetH = 800;
+
+                    resizeRelic.w = targetW;
+                    resizeRelic.h = targetH;
+
+                    const el = document.querySelector(`.relic[data-id="${resizeRelic.id}"]`);
+                    if (el) {
+                        el.style.width = targetW + 'px';
+                        el.style.height = targetH + 'px';
+                    }
+                }
+            }
+
+            function handlePointerUp() {
+                if (dragRelic || resizeRelic) {
+                    saveStateToStorage();
+                }
+                dragRelic = null;
+                resizeRelic = null;
+                document.removeEventListener('mousemove', handlePointerMove);
+                document.removeEventListener('mouseup', handlePointerUp);
+                document.removeEventListener('touchmove', handlePointerMove);
+                document.removeEventListener('touchend', handlePointerUp);
+            }
+
+            // Independent side image processing setup configurations
             sideLeftBox.addEventListener('click', () => {
                 if (state.isEditMode) sideLeftPicker.click();
             });
@@ -761,7 +985,6 @@
                 if (state.isEditMode) sideRightPicker.click();
             });
 
-            // Conversion matrix pipelines for hardware uploads
             sideLeftPicker.addEventListener('change', (e) => {
                 const file = e.target.files[0];
                 if (!file) return;
@@ -842,18 +1065,84 @@
                 }
             });
 
+            document.getElementById('btn-recenter').addEventListener('click', () => {
+                // Focus camera coordinate map right on baseline generation array coordinates
+                viewport.scrollLeft = 2000;
+                viewport.scrollTop = 2000;
+            });
+
+            // Singular Dynamic Track Initialization Input
             document.getElementById('btn-add-link').addEventListener('click', () => {
                 openPromptModal("Upload Video Connection", "Enter descriptive track title configuration designation:", (title) => {
                     if(!title) return;
                     openPromptModal("Input Absolute Stream Path", "Provide valid embedded stream URL code destination index mapping:", (targetUrl) => {
                         if(!targetUrl) return;
-                        const newId = String(Date.now());
-                        state.relics.push({
-                            id: newId, title: title, url: targetUrl, img: ""
+                        openPromptModal("Assign Metadata Indexing Tags", "Provide unique tags separated by commas (Optional):", (rawTags) => {
+                            const processedTags = rawTags ? rawTags.split(',').map(t => t.trim()).filter(t => t !== "") : [];
+                            
+                            // Generate position centered around baseline map point
+                            const centerBaseX = viewport.scrollLeft + (viewport.offsetWidth / 2) - 90;
+                            const centerBaseY = viewport.scrollTop + (viewport.offsetHeight / 2) - 90;
+                            
+                            const newId = String(Date.now());
+                            state.relics.push({
+                                id: newId, 
+                                title: title, 
+                                url: targetUrl, 
+                                img: "", 
+                                x: Math.round(centerBaseX / 40) * 40, 
+                                y: Math.round(centerBaseY / 40) * 40, 
+                                w: 180, 
+                                h: 180,
+                                tags: processedTags
+                            });
+                            saveStateToStorage();
+                            renderArchive();
                         });
+                    });
+                });
+            });
+
+            // Bulk Input Form Parser Implementation Layer
+            document.getElementById('btn-add-bulk').addEventListener('click', () => {
+                openBulkModal("Inject Mass Media Arrays", "Paste your multi-link addresses below (one absolute stream mapping per line layout):", (textBlock) => {
+                    if (!textBlock) return;
+                    const lines = textBlock.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+                    let counter = 0;
+                    
+                    let spawnX = viewport.scrollLeft + 40;
+                    let spawnY = viewport.scrollTop + 40;
+                    
+                    lines.forEach((line, idx) => {
+                        const autoTitle = `Bulk Asset Track #${state.relics.length + 1}`;
+                        const newId = String(Date.now() + idx);
+                        
+                        state.relics.push({
+                            id: newId,
+                            title: autoTitle,
+                            url: line,
+                            img: "",
+                            x: Math.round(spawnX / 40) * 40,
+                            y: Math.round(spawnY / 40) * 40,
+                            w: 180,
+                            h: 180,
+                            tags: ["bulk"]
+                        });
+                        
+                        // Cascade spatial layout positioning to prevent direct absolute overlay conflicts
+                        spawnX += 60;
+                        spawnY += 60;
+                        if (spawnX > viewport.scrollLeft + 400) {
+                            spawnX = viewport.scrollLeft + 40;
+                        }
+                        counter++;
+                    });
+                    
+                    if(counter > 0) {
                         saveStateToStorage();
                         renderArchive();
-                    });
+                        alert(`Successfully imported [${counter}] stream tracking arrays inside network node registry.`);
+                    }
                 });
             });
 
@@ -896,9 +1185,25 @@
                         }
                     }, relic.title);
                     break;
+                case 'edit-tags':
+                    const existingTags = relic.tags ? relic.tags.join(', ') : "";
+                    openPromptModal("Modify Segment Tag Arrays", `Assign metadata tags separated by commas for [${relic.title}]:`, (updatedTags) => {
+                        if (updatedTags !== null) {
+                            relic.tags = updatedTags.split(',').map(t => t.trim()).filter(t => t !== "");
+                            saveStateToStorage();
+                            renderArchive();
+                        }
+                    }, existingTags);
+                    break;
                 case 'change-image':
                     deviceImagePicker.value = '';
                     deviceImagePicker.click();
+                    break;
+                case 'snap-original':
+                    relic.w = 180;
+                    relic.h = 180;
+                    saveStateToStorage();
+                    renderArchive();
                     break;
                 case 'delete':
                     openConfirmModal("Purge Confirmation Verification", `Permanently dismantle tracking data for element path [${relic.title}]?`, () => {
@@ -933,6 +1238,38 @@
 
             confirmBtn.onclick = () => {
                 const val = document.getElementById('modal-custom-field').value;
+                cleanup();
+                callback(val);
+            };
+
+            cancelBtn.onclick = () => {
+                cleanup();
+                callback(null);
+            };
+        }
+
+        function openBulkModal(title, text, callback) {
+            const container = document.getElementById('modal-body-content');
+            container.innerHTML = `
+                <p style="font-size:11px; margin-bottom:10px; color:var(--text-dim); line-height:1.4;">${text}</p>
+                <textarea class="modal-textarea" id="modal-bulk-field" placeholder="https://...\nhttps://..."></textarea>
+            `;
+            document.getElementById('modal-title-text').textContent = title;
+            
+            const modal = document.getElementById('archive-modal');
+            modal.classList.add('active');
+
+            const confirmBtn = document.getElementById('modal-confirm');
+            const cancelBtn = document.getElementById('modal-cancel');
+
+            const cleanup = () => {
+                modal.classList.remove('active');
+                confirmBtn.onclick = null;
+                cancelBtn.onclick = null;
+            };
+
+            confirmBtn.onclick = () => {
+                const val = document.getElementById('modal-bulk-field').value;
                 cleanup();
                 callback(val);
             };
