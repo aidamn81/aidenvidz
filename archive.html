@@ -96,10 +96,8 @@
         }
 
         document.getElementById('btn-toggle-mode').onclick = (e) => {
-            if (prompt("Enter Password:") === "1981") {
-                document.body.classList.toggle('edit-mode');
-                e.target.textContent = document.body.classList.contains('edit-mode') ? "Lock Mode" : "Edit Mode";
-            }
+            document.body.classList.toggle('edit-mode');
+            e.target.textContent = document.body.classList.contains('edit-mode') ? "Lock Mode" : "Edit Mode";
         };
 
         document.getElementById('btn-add').onclick = () => document.getElementById('modal-overlay').style.display = 'flex';
