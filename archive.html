@@ -21,13 +21,15 @@
 
         #fixed-top-wrapper { position: fixed; top: 0; left: 0; width: 100%; background: #0d0d0d; z-index: 1500; padding-top: env(safe-area-inset-top, 0px); border-bottom: 1px solid var(--border-color); display: flex; flex-direction: column; align-items: center; }
         #control-bar { background: rgba(20, 20, 20, 0.9); border: 1px solid var(--border-color); padding: 10px 15px; border-radius: 6px; display: flex; gap: 12px; align-items: center; width: 95vw; max-width: 900px; margin: 10px 0; overflow-x: auto; white-space: nowrap; }
-        
+        .btn { background: #1a1a1a; color: var(--text-color); border: 1px solid var(--border-color); padding: 8px 12px; cursor: pointer; font-family: inherit; font-size: 10px; text-transform: uppercase; border-radius: 4px; }
+        .btn.active { background: var(--accent-color); border-color: var(--accent-glow); }
+
         #master-tag-dock { width: 95vw; max-width: 900px; margin-bottom: 10px; display: flex; gap: 8px; overflow-x: auto; padding-bottom: 5px; }
         .dock-tag-item { background: #141414; border: 1px solid var(--border-color); color: var(--text-dim); padding: 6px 12px; font-size: 10px; cursor: pointer; border-radius: 4px; text-transform: uppercase; }
         .dock-tag-item.active-filter { background: var(--accent-color); color: #fff; border-color: var(--accent-glow); }
 
         #presentation-row { display: flex; align-items: stretch; gap: 12px; width: 95vw; max-width: 850px; height: 230px; margin-bottom: 12px; position: relative; }
-        .side-asset-box { width: 65px; background: #0a0a0a; border: 1px solid var(--border-color); border-radius: 8px; display: flex; align-items: center; justify-content: center; overflow: hidden; position: relative; flex-shrink: 0; }
+        .side-asset-box { width: 65px; background: #0a0a0a; border: 1px solid var(--border-color); border-radius: 8px; display: flex; align-items: center; justify-content: center; overflow: hidden; position: relative; flex-shrink: 0; cursor: pointer; }
         #player-container { flex: 1; background: #000; border: 1px solid var(--border-color); border-radius: 8px; overflow: hidden; display: flex; flex-direction: column; }
         #media-screen { flex: 1; width: 100%; height: 100%; border: none; }
         #resize-handle { position: absolute; bottom: -6px; right: -6px; width: 28px; height: 28px; background: #1a1a1a; border: 1px solid var(--border-color); border-radius: 6px; cursor: se-resize; z-index: 1600; display: flex; align-items: center; justify-content: center; font-size: 12px; }
@@ -38,23 +40,23 @@
         .relic { background: var(--panel-bg); border: 1px solid var(--border-color); border-radius: 6px; padding: 10px; cursor: pointer; aspect-ratio: 16/9; display: flex; flex-direction: column; gap: 8px; }
         .relic-img { width: 100%; height: 100%; object-fit: cover; border-radius: 4px; }
         .relic-title { font-size: 11px; font-weight: bold; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        body.edit-mode .relic { border-color: var(--accent-color); }
     </style>
 </head>
 <body>
 
     <div id="fixed-top-wrapper">
         <div id="control-bar">
-            <input type="text" id="search-input" placeholder="SEARCH...">
-            <button class="btn" id="btn-edit-mode">Edit</button>
+            <button class="btn" id="btn-edit-mode">Edit Mode</button>
             <button class="btn" id="btn-save">Save</button>
         </div>
         <div id="master-tag-dock"></div>
         <div id="presentation-row">
-            <div class="side-asset-box" id="side-left-box"></div>
+            <div class="side-asset-box" id="side-left-box">L</div>
             <div id="player-container">
                 <iframe id="media-screen" src=""></iframe>
             </div>
-            <div class="side-asset-box" id="side-right-box"></div>
+            <div class="side-asset-box" id="side-right-box">R</div>
             <div id="resize-handle">⇲</div>
         </div>
     </div>
@@ -67,7 +69,26 @@
         const state = {
             relics: JSON.parse(localStorage.getItem('gothic_archive_formation_save')) || [],
             selectedFilterTag: "ALL",
-            searchQuery: ""
+            isEditMode: false
+        };
+
+        const player = document.getElementById('presentation-row');
+        const handle = document.getElementById('resize-handle');
+
+        // Resize Logic
+        handle.onmousedown = (e) => {
+            document.onmousemove = (e) => {
+                player.style.width = e.clientX - player.offsetLeft + 'px';
+                player.style.height = e.clientY - player.offsetTop + 'px';
+            };
+            document.onmouseup = () => { document.onmousemove = null; };
+        };
+
+        // Edit Mode Toggle
+        document.getElementById('btn-edit-mode').onclick = (e) => {
+            state.isEditMode = !state.isEditMode;
+            document.body.classList.toggle('edit-mode', state.isEditMode);
+            e.target.classList.toggle('active', state.isEditMode);
         };
 
         function renderTagDock() {
@@ -95,21 +116,11 @@
                 if (matches) {
                     const div = document.createElement('div');
                     div.className = 'relic';
-                    div.innerHTML = `
-                        <div class="relic-title">${relic.title}</div>
-                        <div style="flex:1; overflow:hidden">
-                            <img class="relic-img" src="${relic.img || getAutoThumbnail(relic.url)}" onerror="this.style.display='none'">
-                        </div>
-                    `;
+                    div.innerHTML = `<div class="relic-title">${relic.title}</div><img class="relic-img" src="${relic.img || ''}">`;
                     div.onclick = () => { document.getElementById('media-screen').src = relic.url; };
                     container.appendChild(div);
                 }
             });
-        }
-
-        function getAutoThumbnail(url) {
-            const match = url.match(/(?:youtu\.be\/|youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=))([^"&?\/\s]{11})/);
-            return match ? `https://img.youtube.com/vi/${match[1]}/hqdefault.jpg` : '';
         }
 
         renderArchive();
