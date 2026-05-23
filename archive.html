@@ -5,10 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>The Gothic Archive</title>
     <style>
-        :root {
-            --bg-color: #0d0d0d; --panel-bg: #141414; --accent-color: #800020; 
-            --accent-glow: #ff0033; --text-color: #d9d9d9; --border-color: #262626;
-        }
+        :root { --bg-color: #0d0d0d; --panel-bg: #141414; --accent-color: #800020; --accent-glow: #ff0033; --text-color: #d9d9d9; --border-color: #262626; }
         * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
         body, html { width: 100%; height: 100%; overflow: hidden; background-color: var(--bg-color); font-family: 'Courier New', Courier, monospace; color: var(--text-color); position: fixed; }
 
@@ -23,7 +20,6 @@
         .relic-img { width: 100%; height: 80%; object-fit: cover; }
         .relic-title { font-size: 10px; margin-top: 5px; text-align: center; }
 
-        /* Context Menu */
         #context-menu { position: fixed; background: #1a1a1a; border: 1px solid var(--accent-color); z-index: 5000; display: none; width: 150px; }
         .menu-item { padding: 10px; border-bottom: 1px solid #333; font-size: 10px; text-transform: uppercase; cursor: pointer; }
         .menu-item:hover { background: var(--accent-color); }
@@ -38,7 +34,8 @@
     <div id="fixed-top-wrapper">
         <div id="control-bar">
             <button class="btn" id="btn-edit-mode">Edit Mode</button>
-            <button class="btn edit-only" id="btn-add-link">Add Link</button>
+            <button class="btn edit-only" id="btn-add">Add Link</button>
+            <button class="btn edit-only" id="btn-bulk">Add Bulk Links</button>
         </div>
         <div id="player-container"><iframe id="media-screen" src="" allow="autoplay; encrypted-media" playsinline></iframe></div>
     </div>
@@ -57,42 +54,53 @@
         let state = JSON.parse(localStorage.getItem('gothic_archive_formation_save')) || [];
         let activeIdx = null;
 
-        function check() { return prompt("Enter Admin Password:") === "1981"; }
         function save() { localStorage.setItem('gothic_archive_formation_save', JSON.stringify(state)); render(); }
-
+        
         function render() {
             const grid = document.getElementById('gallery-grid');
             grid.innerHTML = '';
             state.forEach((r, i) => {
                 const d = document.createElement('div');
                 d.className = 'relic';
-                d.innerHTML = `<img class="relic-img" src="${r.img || ''}"><div class="relic-title">${r.title}</div>`;
-                
-                let lastTap = 0;
+                d.innerHTML = `<img class="relic-img" src="${r.img || getThumb(r.url)}"><div class="relic-title">${r.title || 'Untitled'}</div>`;
+                let last = 0;
                 d.onclick = (e) => {
-                    const now = Date.now();
-                    if (now - lastTap < 300) {
-                        if (document.body.classList.contains('edit-mode')) {
-                            activeIdx = i;
-                            const m = document.getElementById('context-menu');
-                            m.style.display = 'block';
-                            m.style.left = e.clientX + 'px';
-                            m.style.top = e.clientY + 'px';
-                        }
-                    } else {
-                        document.getElementById('media-screen').src = r.url;
-                    }
-                    lastTap = now;
+                    if (Date.now() - last < 300 && document.body.classList.contains('edit-mode')) {
+                        activeIdx = i;
+                        const m = document.getElementById('context-menu');
+                        m.style.display = 'block'; m.style.left = e.clientX + 'px'; m.style.top = e.clientY + 'px';
+                    } else if (Date.now() - last >= 300) { document.getElementById('media-screen').src = r.url; }
+                    last = Date.now();
                 };
                 grid.appendChild(d);
             });
         }
 
+        function getThumb(url) {
+            const m = url.match(/(?:youtu\.be\/|v\/|embed\/|watch\?v=)([^"&?\/\s]{11})/);
+            return m ? `https://img.youtube.com/vi/${m[1]}/hqdefault.jpg` : '';
+        }
+
+        document.getElementById('btn-add').onclick = () => {
+            const t = prompt("Title (Optional)"), u = prompt("URL"), tg = prompt("Tags (Optional)");
+            if (u) { state.push({title: t||"Untitled", url: u, tags: tg||"", img: ""}); save(); }
+        };
+
+        document.getElementById('btn-bulk').onclick = () => {
+            const input = prompt("Paste pCloud links (separated by spaces):");
+            if (input) {
+                input.split(/\s+/).forEach(u => {
+                    if (u.trim()) state.push({title: "New Item", url: u.trim(), tags: "", img: ""});
+                });
+                save();
+            }
+        };
+
         function exec(act) {
             const r = state[activeIdx];
             if (act === 'rename') r.title = prompt("New Name:", r.title);
             if (act === 'tags') r.tags = prompt("New Tags:", r.tags || "");
-            if (act === 'delete') if (confirm("Delete " + r.title + "?")) state.splice(activeIdx, 1);
+            if (act === 'delete' && confirm("Delete " + r.title + "?")) state.splice(activeIdx, 1);
             document.getElementById('context-menu').style.display = 'none';
             save();
         }
@@ -104,12 +112,10 @@
         }
 
         document.getElementById('btn-edit-mode').onclick = (e) => {
-            if (check()) { document.body.classList.toggle('edit-mode'); e.target.classList.toggle('active'); }
-        };
-
-        document.getElementById('btn-add-link').onclick = () => {
-            const t = prompt("Title"), u = prompt("URL");
-            if (t && u) { state.push({title:t, url:u, img:""}); save(); }
+            if (prompt("Enter Admin Password:") === "1981") {
+                document.body.classList.toggle('edit-mode');
+                e.target.classList.toggle('active');
+            }
         };
 
         render();
