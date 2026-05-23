@@ -33,12 +33,23 @@
             color: var(--text-color);
         }
 
-        /* Fixed Navigation / Control Bar */
-        #control-bar {
+        /* Fixed Upper Interface Wrapper for Layout Synchronization */
+        #fixed-top-wrapper {
             position: fixed;
-            top: 20px;
-            left: 50%;
-            transform: translateX(-50%);
+            top: 0;
+            left: 0;
+            width: 100%;
+            background: #0d0d0d;
+            z-index: 1500;
+            padding-bottom: 10px;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        /* Fixed Navigation / Control Bar on Top of Video Player */
+        #control-bar {
             background: rgba(20, 20, 20, 0.85);
             border: 1px solid var(--border-color);
             padding: 10px 20px;
@@ -46,12 +57,72 @@
             display: flex;
             gap: 15px;
             align-items: center;
-            z-index: 1000;
             backdrop-filter: blur(10px);
             box-shadow: 0 10px 30px rgba(0,0,0,0.7);
-            max-width: 90vw;
+            width: 95vw;
+            max-width: 800px;
+            margin-top: 15px;
+            margin-bottom: 15px;
             overflow-x: auto;
             white-space: nowrap;
+        }
+
+        /* Master Media Stream Presentation Player Screen Framework */
+        #player-container {
+            width: 95vw;
+            max-width: 800px;
+            height: 40vh;
+            background: #000;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            box-shadow: 0 10px 35px rgba(0,0,0,0.9);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            position: relative;
+        }
+
+        body.edit-mode #player-container {
+            border-color: var(--accent-color);
+        }
+
+        #media-screen {
+            flex: 1;
+            width: 100%;
+            height: 100%;
+            border: none;
+            background: #000;
+        }
+
+        #player-placeholder {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: #0a0a0a;
+            color: var(--text-dim);
+            font-size: 11px;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            gap: 10px;
+            pointer-events: none;
+            z-index: 5;
+        }
+
+        #player-titlebar {
+            background: #111;
+            border-bottom: 1px solid var(--border-color);
+            padding: 6px 12px;
+            font-size: 11px;
+            letter-spacing: 0.5px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
 
         .btn {
@@ -89,13 +160,13 @@
             text-align: center;
         }
 
-        /* Viewport and Canvas */
+        /* Dynamic Field Viewport Adjusted Below Player Wrapper Stack */
         #viewport {
             position: absolute;
-            top: 0;
+            top: calc(90px + 40vh);
             left: 0;
             width: 100%;
-            height: 100%;
+            height: calc(100% - (90px + 40vh));
             overflow: auto;
             cursor: grab;
         }
@@ -176,6 +247,10 @@
             cursor: move;
         }
 
+        body:not(.edit-mode) .relic-header {
+            cursor: pointer;
+        }
+
         .relic-title {
             font-size: 12px;
             font-weight: bold;
@@ -183,7 +258,7 @@
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
-            max-width: 110px;
+            max-width: calc(100% - 16px);
         }
 
         .relic-menu-trigger {
@@ -204,6 +279,9 @@
             align-items: center;
             position: relative;
             overflow: hidden;
+            background: #0a0a0a;
+            border-radius: 2px;
+            cursor: pointer;
         }
 
         .relic-img {
@@ -214,27 +292,12 @@
             pointer-events: none;
         }
 
-        .relic-link {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            text-decoration: none;
-            color: var(--text-color);
+        .relic-fallback-text {
             font-size: 11px;
             text-align: center;
-            background: rgba(13, 13, 13, 0.4);
-            transition: background 0.2s;
-        }
-
-        .relic-link:hover {
-            background: rgba(13, 13, 13, 0.1);
-            color: #fff;
-            text-shadow: 0 0 5px #fff;
+            padding: 6px;
+            text-transform: uppercase;
+            color: var(--text-dim);
         }
 
         /* Resize Handle */
@@ -360,33 +423,42 @@
 </head>
 <body>
 
-    <!-- Top Fixed Control system -->
-    <div id="control-bar">
-        <button class="btn" id="btn-edit-mode">Edit Mode</button>
-        <button class="btn edit-only" id="btn-add-link">Add Link</button>
-        <button class="btn edit-only" id="btn-add-folder">Add Folder</button>
-        <button class="btn edit-only" id="btn-recentering">Recenter View</button>
-        <button class="btn" id="btn-save">Save Archive</button>
-        <button class="btn" id="btn-load">Load Archive</button>
-        <span id="scale-display">100%</span>
+    <div id="fixed-top-wrapper">
+        <div id="control-bar">
+            <button class="btn" id="btn-edit-mode">Edit Mode</button>
+            <button class="btn edit-only" id="btn-add-link">Add Video Link</button>
+            <button class="btn edit-only" id="btn-add-folder">Add Folder</button>
+            <button class="btn edit-only" id="btn-recentering">Recenter View</button>
+            <button class="btn" id="btn-save">Save Archive</button>
+            <button class="btn" id="btn-load">Load Archive</button>
+            <span id="scale-display">100%</span>
+        </div>
+
+        <div id="player-container">
+            <div id="player-titlebar">System Player: Idle</div>
+            <div style="position: relative; flex: 1; width: 100%; height: 100%;">
+                <div id="player-placeholder">
+                    <span>☠ No Active Video Streaming ☠</span>
+                    <span style="font-size: 10px; color: #555;">Select any video thumbnail element below to load stream tracks</span>
+                </div>
+                <iframe id="media-screen" src="" allow="autoplay; encrypted-media" allowfullscreen></iframe>
+            </div>
+        </div>
     </div>
 
-    <!-- Scrollable Infinite Field Viewport -->
     <div id="viewport">
         <div id="canvas"></div>
     </div>
 
-    <!-- Shared Scrollable Context Menu -->
     <div id="context-menu">
-        <div class="menu-item" data-action="open-tab">Open in New Tab</div>
-        <div class="menu-item" data-action="rename">Rename</div>
-        <div class="menu-item edit-only" data-action="change-image">Change Image</div>
-        <div class="menu-item" data-action="snap-shape">Resize to Original</div>
-        <div class="menu-item" data-action="move-folder">Move to Folder</div>
-        <div class="menu-item" data-action="delete">Delete</div>
+        <div class="menu-item" data-action="play-media">Play Video</div>
+        <div class="menu-item edit-only" data-action="rename">Rename</div>
+        <div class="menu-item edit-only" data-action="change-image">Change Thumbnail</div>
+        <div class="menu-item edit-only" data-action="snap-shape">Resize to Original</div>
+        <div class="menu-item edit-only" data-action="move-folder">Move to Folder</div>
+        <div class="menu-item edit-only" data-action="delete">Delete</div>
     </div>
 
-    <!-- Reusable Modal Window Infrastructure -->
     <div class="modal-overlay" id="archive-modal">
         <div class="modal-box">
             <div class="modal-title" id="modal-title-text">Prompt</div>
@@ -399,7 +471,7 @@
     </div>
 
     <script>
-        // State Configuration Architecture
+        // State Configuration Architecture Map Modules Data Setup
         const state = {
             isEditMode: false,
             scale: 1,
@@ -416,20 +488,33 @@
             initialHeight: 0,
             activeTargetId: null,
             gridSnapSize: 20,
-            relics: [
-                { id: "1", title: "The Crow", type: "link", url: "https://www.imdb.com", img: "https://picsum.photos/id/1062/200/200", x: 200, y: 200, w: 160, h: 160, origW: 160, origH: 160, folder: null },
-                { id: "2", title: "Gothic Tech", type: "folder", x: 440, y: 200, w: 180, h: 180, origW: 180, origH: 180, folder: null },
-                { id: "3", title: "Sub-Item Alpha", type: "link", url: "https://github.com", img: "", x: 20, y: 40, w: 140, h: 140, origW: 140, origH: 140, folder: "2" }
-            ]
+            longPressTimer: null,
+            relics: []
         };
+
+        // Static hardcoded fallback initialization blocks used if no database registry is saved
+        const defaultSetup = [
+            { id: "1", title: "The Crow", type: "link", url: "https://www.youtube.com/embed/dQw4w9WgXcQ", img: "https://picsum.photos/id/1062/200/200", x: 40, y: 40, w: 160, h: 160, origW: 160, origH: 160, folder: null },
+            { id: "2", title: "Gothic Tech", type: "folder", x: 260, y: 40, w: 180, h: 180, origW: 180, origH: 180, folder: null },
+            { id: "3", title: "Sub-Item Alpha", type: "link", url: "https://www.youtube.com/embed/dQw4w9WgXcQ", img: "", x: 20, y: 40, w: 140, h: 140, origW: 140, origH: 140, folder: "2" }
+        ];
 
         const viewport = document.getElementById('viewport');
         const canvas = document.getElementById('canvas');
         const contextMenu = document.getElementById('context-menu');
         const scaleDisplay = document.getElementById('scale-display');
+        const mediaScreen = document.getElementById('media-screen');
+        const playerPlaceholder = document.getElementById('player-placeholder');
+        const playerTitlebar = document.getElementById('player-titlebar');
 
-        // Initial launch systems setup
+        // Initialization systems trigger routing
         window.addEventListener('DOMContentLoaded', () => {
+            const stored = localStorage.getItem('gothic_archive_formation_save');
+            if (stored) {
+                state.relics = JSON.parse(stored);
+            } else {
+                state.relics = JSON.parse(JSON.stringify(defaultSetup));
+            }
             recenterWorkspace();
             renderArchive();
             setupInteractions();
@@ -437,11 +522,8 @@
         });
 
         function recenterWorkspace() {
-            // Formation style centering calculations relative to screen dimensions
-            const vWidth = viewport.clientWidth;
-            const vHeight = viewport.clientHeight;
-            state.panX = (vWidth / 2) - 300;
-            state.panY = (vHeight / 2) - 300;
+            state.panX = 40;
+            state.panY = 40;
             state.scale = 1;
             updateTransform();
         }
@@ -451,18 +533,18 @@
             scaleDisplay.textContent = `${Math.round(state.scale * 100)}%`;
         }
 
-        // Infinite Scroll & Render Engine Core
+        // Infinite Scroll Field Rendering Engine Core
         function renderArchive() {
             canvas.innerHTML = '';
             
-            // Filter elements cleanly across outer parent frameworks
+            // Generate root level framework items map
             state.relics.forEach(relic => {
                 if (relic.folder === null) {
                     canvas.appendChild(createRelicElement(relic));
                 }
             });
 
-            // Map subelements safely within internal folder layers
+            // Map inner elements clean within folders mapping matrices
             state.relics.forEach(relic => {
                 if (relic.folder !== null) {
                     const parentFolder = document.querySelector(`[data-id="${relic.folder}"] .relic-body`);
@@ -510,13 +592,18 @@
                     img.className = 'relic-img';
                     img.src = relic.img;
                     body.appendChild(img);
+                } else {
+                    const fallback = document.createElement('div');
+                    fallback.className = 'relic-fallback-text';
+                    fallback.textContent = relic.title;
+                    body.appendChild(fallback);
                 }
-                const link = document.createElement('a');
-                link.className = 'relic-link';
-                link.href = state.isEditMode ? '#' : relic.url;
-                if (!state.isEditMode) link.target = '_blank';
-                link.textContent = relic.img ? '' : relic.title;
-                body.appendChild(link);
+            } else if (relic.type === 'folder') {
+                const folderLabel = document.createElement('div');
+                folderLabel.className = 'relic-fallback-text';
+                folderLabel.style.color = 'var(--accent-color)';
+                folderLabel.textContent = "[ Directory Folder ]";
+                body.appendChild(folderLabel);
             }
 
             node.appendChild(body);
@@ -528,7 +615,7 @@
             return node;
         }
 
-        // Drag, Drop, Zoom & Soft Snap to Grid Infrastructure
+        // Event Handling and Multi-Touch Matrix Routing
         function setupInteractions() {
             viewport.addEventListener('mousedown', (e) => {
                 if (e.target === viewport || e.target === canvas) {
@@ -554,7 +641,6 @@
                     let rawX = (e.clientX - state.dragOffsetX) / state.scale;
                     let rawY = (e.clientY - state.dragOffsetY) / state.scale;
                     
-                    // Soft snap layout calculator matrix
                     let snappedX = Math.round(rawX / state.gridSnapSize) * state.gridSnapSize;
                     let snappedY = Math.round(rawY / state.gridSnapSize) * state.gridSnapSize;
 
@@ -573,6 +659,7 @@
             });
 
             window.addEventListener('mouseup', () => {
+                clearLongPress();
                 if (state.draggedElement) {
                     const relic = state.relics.find(r => r.id === state.draggedElement.getAttribute('data-id'));
                     if (relic) {
@@ -593,7 +680,7 @@
                 state.isPanning = false;
             });
 
-            // Universal Click Delegation Routers
+            // Handle Interaction Clicks, Context Configurations, and Dynamic Triggers
             canvas.addEventListener('mousedown', (e) => {
                 const trigger = e.target.closest('.relic-menu-trigger');
                 const handle = e.target.closest('.resize-handle');
@@ -616,22 +703,49 @@
                     return;
                 }
 
-                if (relicEl && state.isEditMode && e.target.closest('.relic-header')) {
+                if (relicEl) {
                     e.stopPropagation();
-                    state.draggedElement = relicEl;
-                    relicEl.classList.add('dragging');
-                    const rect = relicEl.getBoundingClientRect();
-                    state.dragOffsetX = e.clientX - rect.left;
-                    state.dragOffsetY = e.clientY - rect.top;
+                    state.activeTargetId = relicEl.getAttribute('data-id');
+                    
+                    // Trigger tracking configurations layout mapping for long tap thumbnail processing adjustments
+                    startLongPress(e.clientX, e.clientY);
+
+                    if (state.isEditMode && e.target.closest('.relic-header')) {
+                        state.draggedElement = relicEl;
+                        relicEl.classList.add('dragging');
+                        const rect = relicEl.getBoundingClientRect();
+                        state.dragOffsetX = e.clientX - rect.left;
+                        state.dragOffsetY = e.clientY - rect.top;
+                    }
                 }
             });
 
-            // Touch finger gesture mappings
+            canvas.addEventListener('click', (e) => {
+                const trigger = e.target.closest('.relic-menu-trigger');
+                const handle = e.target.closest('.resize-handle');
+                const relicEl = e.target.closest('.relic');
+
+                if (!trigger && !handle && relicEl) {
+                    // Regular viewing mode tap plays video directly inside system iframe screen
+                    const relic = state.relics.find(r => r.id === relicEl.getAttribute('data-id'));
+                    if (relic && relic.type === 'link') {
+                        e.stopPropagation();
+                        executeMenuAction('play-media');
+                    }
+                }
+            });
+
+            // Touch support finger gesture mapping parameters
             canvas.addEventListener('touchstart', (e) => {
                 if(e.touches.length === 1) {
                     const touch = e.touches[0];
                     const handle = touch.target.closest('.resize-handle');
                     const relicEl = touch.target.closest('.relic');
+
+                    if (relicEl) {
+                        state.activeTargetId = relicEl.getAttribute('data-id');
+                        startLongPress(touch.clientX, touch.clientY);
+                    }
 
                     if (handle && relicEl && state.isEditMode) {
                         state.resizingElement = relicEl;
@@ -642,6 +756,34 @@
                     }
                 }
             }, {passive: true});
+
+            canvas.addEventListener('touchend', () => {
+                clearLongPress();
+            });
+            canvas.addEventListener('touchmove', () => {
+                clearLongPress();
+            });
+        }
+
+        // Long Press Timing Mechanisms Context Configuration Mapping
+        function startLongPress(mx, my) {
+            clearLongPress();
+            state.longPressTimer = setTimeout(() => {
+                // If edit mode is initialized, long press brings up the thumbnail modification modal dialogue
+                if (state.isEditMode) {
+                    executeMenuAction('change-image');
+                } else {
+                    // Non-authorized viewers receive regular contextual stream setup options
+                    showContextMenu(mx, my);
+                }
+            }, 700); // 700 millisecond precision threshold hold mapping parameter matrix
+        }
+
+        function clearLongPress() {
+            if (state.longPressTimer) {
+                clearTimeout(state.longPressTimer);
+                state.longPressTimer = null;
+            }
         }
 
         function showContextMenu(mx, my) {
@@ -650,7 +792,7 @@
             contextMenu.style.display = 'block';
         }
 
-        // Global Command Handlers Infrastructure Map
+        // Global Command Handlers Infrastructure Map Pipelines
         function setupGlobalMenus() {
             document.addEventListener('click', (e) => {
                 if (!e.target.closest('#context-menu') && !e.target.closest('.relic-menu-trigger')) {
@@ -667,15 +809,15 @@
 
             document.getElementById('btn-edit-mode').addEventListener('click', (e) => {
                 if (!state.isEditMode) {
-                    // Prompt for password access configuration matrix
-                    openPromptModal("Security Access Verification", "Enter security key to initialize terminal alteration mapping:", (password) => {
+                    // Security verification entry logic barrier block protection matrix
+                    openPromptModal("Security Access Verification", "Enter secure pass code key alignment data:", (password) => {
                         if (password === "1981") {
                             state.isEditMode = true;
                             document.body.classList.add('edit-mode');
                             e.target.classList.add('active');
                             renderArchive();
                         } else if (password !== null) {
-                            alert("Access Denied: Encrypted authorization token mismatched.");
+                            alert("Access Denied: Terminal encryption signature validation mismatched.");
                         }
                     }, "");
                 } else {
@@ -689,14 +831,14 @@
             document.getElementById('btn-recentering').addEventListener('click', recenterWorkspace);
 
             document.getElementById('btn-add-link').addEventListener('click', () => {
-                openPromptModal("Add Connection Link", "Enter connection node title name:", (title) => {
+                openPromptModal("Upload Video Connection", "Enter descriptive track title configuration designation:", (title) => {
                     if(!title) return;
-                    openPromptModal("Input Target URL", "Provide target navigation string absolute path:", (targetUrl) => {
+                    openPromptModal("Input Absolute Stream Path", "Provide valid embedded stream URL code destination index mapping (e.g. YouTube Embed path URL):", (targetUrl) => {
                         if(!targetUrl) return;
                         const newId = String(Date.now());
                         state.relics.push({
                             id: newId, title: title, type: "link", url: targetUrl, img: "",
-                            x: 160, y: 160, w: 140, h: 140, origW: 140, origH: 140, folder: null
+                            x: 60, y: 60, w: 140, h: 140, origW: 140, origH: 140, folder: null
                         });
                         renderArchive();
                     });
@@ -704,12 +846,12 @@
             });
 
             document.getElementById('btn-add-folder').addEventListener('click', () => {
-                openPromptModal("Create Structural Directory", "Enter folder node directory tag name:", (title) => {
+                openPromptModal("Create Dynamic Directory", "Specify folder structural categorization sorting index string:", (title) => {
                     if(!title) return;
                     const newId = String(Date.now());
                     state.relics.push({
                         id: newId, title: title, type: "folder",
-                        x: 200, y: 200, w: 180, h: 180, origW: 180, origH: 180, folder: null
+                        x: 80, y: 80, w: 180, h: 180, origW: 180, origH: 180, folder: null
                     });
                     renderArchive();
                 });
@@ -717,7 +859,7 @@
 
             document.getElementById('btn-save').addEventListener('click', () => {
                 localStorage.setItem('gothic_archive_formation_save', JSON.stringify(state.relics));
-                alert("Archive map structure safely compiled inside localized index blocks.");
+                alert("Archive structures safely parsed and saved within local indices.");
             });
 
             document.getElementById('btn-load').addEventListener('click', () => {
@@ -736,11 +878,15 @@
             if (!relic) return;
 
             switch(action) {
-                case 'open-tab':
-                    if (relic.type === 'link') window.open(relic.url, '_blank');
+                case 'play-media':
+                    if (relic.type === 'link') {
+                        playerPlaceholder.style.display = 'none';
+                        mediaScreen.src = relic.url;
+                        playerTitlebar.textContent = `System Player Now Streaming: ${relic.title}`;
+                    }
                     break;
                 case 'rename':
-                    openPromptModal("Rename Element Index", `Modify name string configurations for [${relic.title}]:`, (newName) => {
+                    openPromptModal("Rename Element Index", `Modify name configuration mappings for [${relic.title}]:`, (newName) => {
                         if (newName) {
                             relic.title = newName;
                             renderArchive();
@@ -748,8 +894,7 @@
                     }, relic.title);
                     break;
                 case 'change-image':
-                    if (!state.isEditMode) return;
-                    openPromptModal("Modify Display Thumbnail Source", "Provide absolute system path link localization:", (newUrl) => {
+                    openPromptModal("Modify Display Thumbnail Source", "Provide target graphic index link asset localization mapping absolute path:", (newUrl) => {
                         if (newUrl !== null) {
                             relic.img = newUrl;
                             renderArchive();
@@ -764,12 +909,12 @@
                 case 'move-folder':
                     const targets = state.relics.filter(r => r.type === 'folder' && r.id !== relic.id);
                     if(targets.length === 0) {
-                        alert("No alternative navigation directory targets currently configured.");
+                        alert("No alternative directory sorting maps configured yet inside database registries.");
                         return;
                     }
-                    let promptMsg = "Available operational locations:\nID : Name\n0 : [Root Framework Matrix Base]\n";
+                    let promptMsg = "Available operational directory pathways:\nID : Name\n0 : [Root Framework Layout Grid Base]\n";
                     targets.forEach(t => promptMsg += `${t.id} : ${t.title}\n`);
-                    openPromptModal("Move Element Location Layer", promptMsg + "\nSpecify target directory index ID identifier:", (targetFolderId) => {
+                    openPromptModal("Move Element Location Layer", promptMsg + "\nSpecify target operational index locator ID data tag:", (targetFolderId) => {
                         if(targetFolderId === "0") {
                             relic.folder = null;
                         } else if(state.relics.some(r => r.id === targetFolderId && r.type === 'folder')) {
@@ -779,7 +924,7 @@
                     });
                     break;
                 case 'delete':
-                    openConfirmModal("Purge Confirmation Verification", `Permanently dismantle element track [${relic.title}] from workspace indices?`, () => {
+                    openConfirmModal("Purge Confirmation Verification", `Permanently dismantle tracking data for element path [${relic.title}] from memory layers?`, () => {
                         state.relics = state.relics.filter(r => r.id !== relic.id);
                         state.relics.forEach(r => { if(r.folder === relic.id) r.folder = null; });
                         renderArchive();
@@ -788,10 +933,9 @@
             }
         }
 
-        // Overlay Overlay Modal Framework Window Implementations
+        // Custom Overlay Modal Frame Window Infrastructure Setup Logic Implementation
         function openPromptModal(title, text, callback, defaultVal = "") {
             const container = document.getElementById('modal-body-content');
-            // Check if this is the security entry block to mask password characters securely
             const isPasswordType = title === "Security Access Verification";
             container.innerHTML = `
                 <p style="font-size:11px; margin-bottom:10px; color:var(--text-dim); line-height:1.4;">${text}</p>
