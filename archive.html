@@ -3,88 +3,41 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>The Gothic Archive (Formation & Snap-to-Grid)</title>
+    <title>The Gothic Archive (Responsive Absolute Edition)</title>
     <style>
         :root {
-            --bg-color: #0d0d0d;
-            --accent-color: #800020;
-            --grid-line: rgba(128, 0, 32, 0.08);
-            --border-color: #262626;
+            --bg-color: #050505;
+            --grid-line: rgba(128, 0, 32, 0.1);
         }
-
-        body, html {
-            width: 100%;
-            height: 100%;
-            margin: 0;
-            background-color: var(--bg-color);
-            overflow: hidden;
-            font-family: 'Courier New', Courier, monospace;
-            color: #d9d9d9;
-        }
-
-        /* Viewport Container */
-        #viewport {
-            position: relative;
-            width: 100vw;
-            height: 100vh;
-            overflow: auto;
-        }
-
-        /* Subtle Guide Grid (Only visible in Edit Mode) */
+        body, html { width: 100%; height: 100%; margin: 0; background: var(--bg-color); overflow: hidden; font-family: sans-serif; }
+        
+        #viewport { width: 100vw; height: 100vh; overflow: auto; position: relative; }
+        
+        /* Guide Grid */
         #grid-canvas {
-            position: absolute;
-            top: 0; left: 0; width: 200%; height: 200%;
-            pointer-events: none;
-            display: none;
-            background-image: 
-                linear-gradient(to right, var(--grid-line) 1px, transparent 1px),
-                linear-gradient(to bottom, var(--grid-line) 1px, transparent 1px);
+            position: absolute; top: 0; left: 0; width: 200vw; height: 200vh;
+            pointer-events: none; display: none;
+            background-image: linear-gradient(to right, var(--grid-line) 1px, transparent 1px),
+                              linear-gradient(to bottom, var(--grid-line) 1px, transparent 1px);
             background-size: 40px 40px;
-            z-index: 1;
         }
-
         body.edit-mode #grid-canvas { display: block; }
 
-        .relic {
-            position: absolute;
-            width: 180px;
-            height: 100px;
-            background: #141414;
-            border: 1px solid var(--border-color);
-            cursor: grab;
-            transition: border 0.2s;
-            z-index: 2;
-        }
+        /* Relic Mechanics */
+        .relic { position: absolute; width: 180px; height: 100px; background: #111; border: 1px solid #333; cursor: move; }
+        body.edit-mode .relic { border-color: #800020; }
 
-        body.edit-mode .relic { border-color: var(--accent-color); }
-
-        /* UI Controls */
-        #ui-bar {
-            position: fixed;
-            bottom: 20px;
-            left: 20px;
-            z-index: 1000;
-            display: flex;
-            gap: 10px;
-        }
-
-        button {
-            padding: 10px;
-            background: #1a1a1a;
-            color: #fff;
-            border: 1px solid #333;
-            cursor: pointer;
-            text-transform: uppercase;
-            font-family: inherit;
-            font-size: 10px;
-        }
+        /* Menu */
+        #menu-bar { position: fixed; bottom: 20px; left: 20px; z-index: 1000; display: flex; gap: 10px; }
+        button { padding: 8px 12px; background: #1a1a1a; color: #fff; border: 1px solid #333; cursor: pointer; }
     </style>
 </head>
-<body class="edit-mode"> <div id="grid-canvas"></div>
-    <div id="viewport">
-        </div>
+<body class="edit-mode">
+    
+    <div id="grid-canvas"></div>
+    <div id="viewport"></div>
 
-    <div id="ui-bar">
+    <div id="menu-bar">
         <button id="toggle-edit">Edit Mode</button>
         <button id="resize-original">Resize to Original</button>
     </div>
@@ -93,33 +46,23 @@
         const viewport = document.getElementById('viewport');
         const toggleEdit = document.getElementById('toggle-edit');
 
-        // Toggle Edit Mode
-        toggleEdit.onclick = () => {
-            document.body.classList.toggle('edit-mode');
-        };
+        // Edit Mode
+        toggleEdit.onclick = () => document.body.classList.toggle('edit-mode');
 
-        // Drag and Drop with Snap-to-Grid (40px grid)
-        let isDragging = false;
-        let activeElement = null;
-
+        // Drag/Snap Logic
+        let active = null;
         viewport.onmousedown = (e) => {
             if (!document.body.classList.contains('edit-mode')) return;
-            activeElement = e.target.closest('.relic');
-            if (activeElement) isDragging = true;
+            active = e.target.closest('.relic');
         };
 
         document.onmousemove = (e) => {
-            if (!isDragging || !activeElement) return;
-            
-            // Snap to grid calculation
-            let x = Math.round(e.clientX / 40) * 40;
-            let y = Math.round(e.clientY / 40) * 40;
-            
-            activeElement.style.left = x + 'px';
-            activeElement.style.top = y + 'px';
+            if (!active) return;
+            active.style.left = Math.round(e.clientX / 40) * 40 + 'px';
+            active.style.top = Math.round(e.clientY / 40) * 40 + 'px';
         };
 
-        document.onmouseup = () => { isDragging = false; };
+        document.onmouseup = () => active = null;
     </script>
 </body>
 </html>
