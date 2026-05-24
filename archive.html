@@ -16,17 +16,18 @@
         
         #gallery-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 15px; padding: 15px; }
         .relic { border: 1px solid var(--border); padding: 5px; cursor: pointer; position: relative; background: #141414; }
-        .relic video { width: 100%; aspect-ratio: 16/9; object-fit: cover; background: #000; pointer-events: none; }
+        
+        /* Thumbnail fix: Using standard video tag with preload */
+        .relic video { width: 100%; aspect-ratio: 16/9; object-fit: cover; background: #000; }
         .relic div { font-size: 10px; margin-top: 5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding: 0 5px; }
         
         .edit-ui { display: none; margin-top: 5px; border-top: 1px solid var(--border); padding-top: 5px; }
         body.edit-mode .edit-ui { display: flex; flex-wrap: wrap; gap: 5px; }
-        body.edit-mode .edit-ui button { font-size: 8px; flex: 1; }
     </style>
 </head>
 <body>
 
-    <div id="player-wrapper"><iframe id="media-player" src=""></iframe></div>
+    <div id="player-wrapper"><iframe id="media-player" src="" allow="autoplay; fullscreen"></iframe></div>
     <div id="controls"><button class="btn" onclick="toggleEdit()">Toggle Edit Mode</button></div>
     
     <div id="gallery-grid">Loading Archive...</div>
@@ -40,9 +41,7 @@
                 const res = await fetch('data.json');
                 state = await res.json();
                 render();
-            } catch (e) {
-                document.getElementById('gallery-grid').innerHTML = "Error loading data.json";
-            }
+            } catch (e) { document.getElementById('gallery-grid').innerHTML = "Error loading data.json"; }
         }
 
         function render() {
@@ -52,9 +51,10 @@
                 const d = document.createElement('div');
                 d.className = 'relic';
                 d.onclick = () => handleTap(r.url);
+                // Added preload="metadata" to help the browser show a frame without trying to play the whole video
                 d.innerHTML = `
-                    <video muted loop onmouseover="this.play()" onmouseout="this.pause(); this.currentTime=0;">
-                        <source src="${r.url}" type="video/mp4">
+                    <video preload="metadata" muted>
+                        <source src="${r.url}#t=1" type="video/mp4">
                     </video>
                     <div>${r.title}</div>
                     <div class="edit-ui">
@@ -70,8 +70,9 @@
 
         function handleTap(url) {
             if (isEditMode) return;
-            if (confirm("Play in top player? (Cancel to open in new tab)")) {
-                document.getElementById('media-player').src = url;
+            if (confirm("Play in top player?")) {
+                const player = document.getElementById('media-player');
+                player.src = url;
             } else {
                 window.open(url, '_blank');
             }
@@ -88,10 +89,7 @@
         }
 
         function del(i) {
-            if (confirm("Confirm delete? This only affects the current session.")) { 
-                state.splice(i, 1); 
-                render(); 
-            }
+            if (confirm("Confirm delete?")) { state.splice(i, 1); render(); }
         }
 
         init();
