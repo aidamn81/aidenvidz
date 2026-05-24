@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>The Gothic Archive</title>
+    <title>The Twinks Archive</title>
     <style>
         :root { --bg-color: #0d0d0d; --panel-bg: #141414; --accent-color: #800020; --text-color: #d9d9d9; --border-color: #262626; }
         * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
@@ -27,8 +27,7 @@
         #context-menu { position: fixed; background: #1a1a1a; border: 1px solid var(--accent-color); z-index: 5000; display: none; width: 150px; }
         .menu-item { padding: 10px; border-bottom: 1px solid #333; font-size: 10px; text-transform: uppercase; cursor: pointer; }
         
-        .btn { background: #1a1a1a; color: #fff; border: 1px solid var(--border-color); padding: 8px 12px; cursor: pointer; font-size: 11px; text-transform: uppercase; }
-        /* Force display of edit-only buttons when body has edit-mode class */
+        .btn { background: #1a1a1a; color: #fff; border: 1px solid var(--border-color); padding: 8px 12px; cursor: pointer; font-size: 11px; text-transform: uppercase; text-decoration: none; display: inline-block; }
         body.edit-mode .edit-only { display: inline-block !important; }
         .edit-only { display: none !important; }
     </style>
@@ -38,6 +37,7 @@
     <div id="fixed-top-wrapper">
         <div id="control-bar">
             <button class="btn" id="btn-toggle-mode">Edit Mode</button>
+            <a href="archive.html" class="btn">Back to Archive</a>
             <button class="btn edit-only" id="btn-add">Add Link</button>
             <button class="btn edit-only" id="btn-bulk">Bulk Upload</button>
         </div>
@@ -65,12 +65,12 @@
     <input type="file" id="img-upload" style="display:none" onchange="handleImg(event)">
 
     <script>
-        let state = JSON.parse(localStorage.getItem('gothic_archive_formation_save')) || [];
+        // Unique storage key for this specific page
+        let state = JSON.parse(localStorage.getItem('gothic_archive_twinks_save')) || [];
         let activeIdx = null;
 
-        function save() { localStorage.setItem('gothic_archive_formation_save', JSON.stringify(state)); render(); }
+        function save() { localStorage.setItem('gothic_archive_twinks_save', JSON.stringify(state)); render(); }
         
-        // Improved image source handling
         function getThumb(url) {
             const m = url.match(/(?:youtu\.be\/|v\/|embed\/|watch\?v=)([^"&?\/\s]{11})/);
             return m ? `https://img.youtube.com/vi/${m[1]}/hqdefault.jpg` : '';
