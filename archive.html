@@ -8,12 +8,11 @@
         :root { --bg: #0d0d0d; --accent: #800020; --border: #333; }
         body { background: var(--bg); color: #d9d9d9; font-family: monospace; margin: 0; padding-top: 200px; }
         
+        /* Resizable Player Wrapper */
         #player-wrapper { position: fixed; top: 0; width: 100%; height: 180px; background: #000; z-index: 1000; resize: vertical; overflow: auto; min-height: 100px; max-height: 80vh; border-bottom: 2px solid var(--accent); }
         #media-player { width: 100%; height: 100%; background: #000; }
         
-        /* Edit trigger is invisible but clickable in the top-right corner */
-        #edit-trigger { position: fixed; top: 0; right: 0; width: 30px; height: 30px; z-index: 2000; cursor: pointer; }
-        #controls { padding: 10px; display: none; gap: 10px; position: fixed; top: 180px; width: 100%; background: var(--bg); z-index: 999; }
+        #header-controls { padding: 10px; display: flex; gap: 10px; position: fixed; top: 180px; width: 100%; background: var(--bg); z-index: 999; }
         .btn { background: #1a1a1a; color: #fff; border: 1px solid var(--border); padding: 5px 10px; cursor: pointer; font-size: 10px; text-transform: uppercase; }
         
         #gallery-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 15px; padding: 15px; }
@@ -24,17 +23,18 @@
         
         .edit-ui { display: none; margin-top: 5px; border-top: 1px solid var(--border); padding-top: 5px; }
         body.edit-mode .edit-ui { display: flex; flex-wrap: wrap; gap: 5px; }
-        body.edit-mode #controls { display: flex; }
     </style>
 </head>
 <body>
 
-    <div id="edit-trigger" onclick="checkPassword()"></div>
     <div id="player-wrapper">
         <video id="media-player" controls playsinline></video>
     </div>
     
-    <div id="controls"><button class="btn" onclick="toggleEdit()">Toggle Edit Mode</button></div>
+    <div id="header-controls">
+        <button class="btn" onclick="checkPassword()">Admin Access</button>
+        <button id="edit-toggle" class="btn" style="display:none;" onclick="toggleEdit()">Toggle Edit Mode</button>
+    </div>
     
     <div id="gallery-grid">Loading Archive...</div>
 
@@ -52,14 +52,20 @@
         }
 
         function checkPassword() {
-            if (isAuthorized) { toggleEdit(); return; }
-            const pass = prompt("Enter Edit Password:");
+            if (isAuthorized) return;
+            const pass = prompt("Enter Admin Password:");
             if (pass === "1981") {
                 isAuthorized = true;
-                toggleEdit();
+                document.getElementById('edit-toggle').style.display = 'block';
+                alert("Admin Access Granted");
             } else {
                 alert("Access Denied");
             }
+        }
+
+        function toggleEdit() {
+            isEditMode = !isEditMode;
+            document.body.classList.toggle('edit-mode');
         }
 
         function render() {
@@ -94,11 +100,6 @@
             } else {
                 window.open(url, '_blank');
             }
-        }
-
-        function toggleEdit() {
-            isEditMode = !isEditMode;
-            document.body.classList.toggle('edit-mode');
         }
 
         function edit(i, key) {
