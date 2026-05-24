@@ -43,13 +43,12 @@
     </div>
     
     <div id="header-controls">
-        <button id="login-btns" class="btn" onclick="checkAuth('guest')">Guest Login</button>
-        <button id="admin-btn" class="btn" onclick="checkAuth('admin')">Admin Access</button>
+        <button id="admin-btn" class="btn" onclick="checkAdmin()">Admin Login</button>
         <button id="edit-toggle" class="btn" style="display:none;" onclick="toggleEdit()">Toggle Edit Mode</button>
         <button id="logout-btn" class="btn" style="display:none;" onclick="logout()">Logout</button>
     </div>
     
-    <div id="gallery-grid">Please Login to view Archive...</div>
+    <div id="gallery-grid"></div>
 
     <script>
         let state = [];
@@ -67,29 +66,23 @@
             try {
                 const res = await fetch('data.json');
                 state = await res.json();
+                render();
             } catch (e) { document.getElementById('gallery-grid').innerHTML = "Error loading data."; }
         }
 
-        function checkAuth(type) {
-            const pass = prompt(`Enter ${type === 'admin' ? 'Admin' : 'Guest'} Password:`);
-            if (type === 'admin' && pass === "1981") {
+        function checkAdmin() {
+            const pass = prompt("Enter Admin Password:");
+            if (pass === "1981") {
                 document.getElementById('edit-toggle').style.display = 'block';
                 document.getElementById('logout-btn').style.display = 'block';
-                document.getElementById('login-btns').style.display = 'none';
                 document.getElementById('admin-btn').style.display = 'none';
-                render();
-            } else if (type === 'guest' && pass === "Martin") {
-                document.getElementById('logout-btn').style.display = 'block';
-                document.getElementById('login-btns').style.display = 'none';
-                document.getElementById('admin-btn').style.display = 'none';
-                render();
             } else {
                 alert("Access Denied");
             }
         }
 
         function logout() {
-            location.reload(); // Manually clear state by reloading, as you requested manual logout
+            location.reload();
         }
 
         function toggleEdit() {
