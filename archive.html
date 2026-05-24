@@ -73,6 +73,14 @@
     <input type="file" id="img-upload" style="display:none" accept="image/*" onchange="handleImg(event)">
 
     <script>
+        // Check if localStorage works
+        try {
+            localStorage.setItem('test', 'test');
+            localStorage.removeItem('test');
+        } catch(e) {
+            alert('Storage is disabled. Please check Safari Settings > Safari > Advanced > Website Data or disable Private Browsing.');
+        }
+
         let state = JSON.parse(localStorage.getItem('gothic_archive_formation_save')) || [];
         let activeIdx = null;
         let currentFilter = '';
@@ -121,15 +129,17 @@
                         document.getElementById('media-screen').src = r.url;
                         const tagContainer = document.getElementById('tags-display');
                         tagContainer.innerHTML = 'Tags: ';
-                        r.tags.split(',').forEach(t => {
-                            if(t.trim()){
-                                const span = document.createElement('span');
-                                span.className = 'tag-btn';
-                                span.textContent = t.trim();
-                                span.onclick = (ev) => { ev.stopPropagation(); filterTags(t.trim()); };
-                                tagContainer.appendChild(span);
-                            }
-                        });
+                        if(r.tags) {
+                            r.tags.split(',').forEach(t => {
+                                if(t.trim()){
+                                    const span = document.createElement('span');
+                                    span.className = 'tag-btn';
+                                    span.textContent = t.trim();
+                                    span.onclick = (ev) => { ev.stopPropagation(); filterTags(t.trim()); };
+                                    tagContainer.appendChild(span);
+                                }
+                            });
+                        }
                     }
                     lastTap = now;
                 };
