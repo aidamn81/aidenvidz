@@ -8,28 +8,17 @@
         :root { --bg: #0d0d0d; --accent: #800020; --border: #333; }
         body { background: var(--bg); color: #d9d9d9; font-family: monospace; margin: 0; padding-top: 200px; }
         
-        /* Fixed Resizable Container */
         #player-wrapper { 
             position: fixed; top: 0; left: 0; width: 100%; height: 200px; 
-            background: #000; z-index: 1000; 
-            /* This enables the resize functionality */
-            resize: vertical; 
-            overflow: auto; 
-            min-height: 100px; 
-            max-height: 80vh; 
+            background: #000; z-index: 1000; min-height: 100px; max-height: 80vh;
             border-bottom: 8px solid var(--accent);
-            padding-bottom: 5px;
         }
         
-        /* This makes the drag-handle easier to find */
-        #player-wrapper::after {
-            content: '≡';
-            position: absolute;
-            bottom: -5px;
-            right: 10px;
-            color: var(--accent);
-            font-size: 20px;
-            pointer-events: none;
+        /* The draggable handle */
+        #drag-handle { 
+            width: 100%; height: 20px; background: var(--accent); 
+            position: absolute; bottom: -20px; cursor: ns-resize; 
+            display: flex; align-items: center; justify-content: center; font-size: 12px;
         }
         
         #media-player { width: 100%; height: 100%; background: #000; }
@@ -51,6 +40,7 @@
 
     <div id="player-wrapper">
         <video id="media-player" controls playsinline></video>
+        <div id="drag-handle">|| DRAG TO RESIZE ||</div>
     </div>
     
     <div id="header-controls">
@@ -64,6 +54,17 @@
     <script>
         let state = [];
         let isEditMode = false;
+        const wrapper = document.getElementById('player-wrapper');
+        const handle = document.getElementById('drag-handle');
+
+        // Drag Logic
+        let isDragging = false;
+        handle.onmousedown = (e) => { isDragging = true; };
+        handle.ontouchstart = (e) => { isDragging = true; };
+        document.onmousemove = (e) => { if(isDragging) wrapper.style.height = e.clientY + 'px'; };
+        document.ontouchmove = (e) => { if(isDragging) wrapper.style.height = e.touches[0].clientY + 'px'; };
+        document.onmouseup = () => { isDragging = false; };
+        document.ontouchend = () => { isDragging = false; };
 
         async function init() {
             try {
@@ -96,7 +97,6 @@
                 const d = document.createElement('div');
                 d.className = 'relic';
                 d.onclick = () => { if(!isEditMode) handleViewer(r.url); };
-                
                 d.innerHTML = `
                     <div class="thumb">${r.img ? `<img src="${r.img}">` : '▶'}</div>
                     <div>${r.title}</div>
