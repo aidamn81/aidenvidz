@@ -73,14 +73,7 @@
     <input type="file" id="img-upload" style="display:none" accept="image/*" onchange="handleImg(event)">
 
     <script>
-        // Check if localStorage works
-        try {
-            localStorage.setItem('test', 'test');
-            localStorage.removeItem('test');
-        } catch(e) {
-            alert('Storage is disabled. Please check Safari Settings > Safari > Advanced > Website Data or disable Private Browsing.');
-        }
-
+        // Force initialization
         let state = JSON.parse(localStorage.getItem('gothic_archive_formation_save')) || [];
         let activeIdx = null;
         let currentFilter = '';
@@ -88,11 +81,6 @@
         function save() { 
             localStorage.setItem('gothic_archive_formation_save', JSON.stringify(state)); 
             render(); 
-        }
-        
-        function getThumb(url) {
-            const m = url.match(/(?:youtu\.be\/|v\/|embed\/|watch\?v=)([^"&?\/\s]{11})/);
-            return m ? `https://img.youtube.com/vi/${m[1]}/hqdefault.jpg` : '';
         }
 
         function filterTags(tag) {
@@ -106,17 +94,16 @@
             grid.innerHTML = '';
             
             const filteredState = currentFilter 
-                ? state.filter(r => r.tags.split(',').map(t => t.trim()).includes(currentFilter))
+                ? state.filter(r => r.tags && r.tags.split(',').map(t => t.trim()).includes(currentFilter))
                 : state;
 
             filteredState.forEach((r, i) => {
                 const d = document.createElement('div');
                 d.className = 'relic';
-                const imgSrc = r.img || getThumb(r.url);
-                d.innerHTML = `
-                    <img class="relic-img" src="${imgSrc || 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII='}">
-                    <div class="relic-title">${r.title || 'Untitled'}</div>
-                `;
+                // Using base64 placeholder if no image
+                const imgSrc = r.img || (r.url.includes('youtu') ? `https://img.youtube.com/vi/${r.url.split('v=')[1]?.split('&')[0]}/hqdefault.jpg` : 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=');
+                
+                d.innerHTML = `<img class="relic-img" src="${imgSrc}"><div class="relic-title">${r.title || 'Untitled'}</div>`;
                 
                 let lastTap = 0;
                 d.onclick = (e) => {
@@ -172,14 +159,6 @@
             }
         };
 
-        document.getElementById('btn-bulk').onclick = () => {
-            const input = prompt("Paste links (space separated):");
-            if (input) {
-                input.split(/\s+/).forEach(u => { if(u.trim()) state.push({title:"New Link", url:u.trim(), tags:"", img:""}); });
-                save();
-            }
-        };
-
         function exec(act) {
             const r = state[activeIdx];
             if (act === 'rename') r.title = prompt("New Name:", r.title);
@@ -196,6 +175,7 @@
             reader.readAsDataURL(e.target.files[0]);
         }
 
+        // Run
         render();
     </script>
 </body>
