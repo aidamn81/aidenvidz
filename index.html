@@ -8,14 +8,29 @@
         :root { --bg: #0d0d0d; --accent: #800020; --border: #333; }
         body { background: var(--bg); color: #d9d9d9; font-family: monospace; margin: 0; padding-top: 200px; }
         
-        /* Draggable Resizable Player */
+        /* Fixed Resizable Container */
         #player-wrapper { 
-            position: fixed; top: 0; width: 100%; height: 200px; background: #000; z-index: 1000; 
-            resize: vertical; overflow: auto; min-height: 100px; max-height: 80vh; 
-            border-bottom: 5px solid var(--accent); padding-bottom: 5px;
+            position: fixed; top: 0; left: 0; width: 100%; height: 200px; 
+            background: #000; z-index: 1000; 
+            /* This enables the resize functionality */
+            resize: vertical; 
+            overflow: auto; 
+            min-height: 100px; 
+            max-height: 80vh; 
+            border-bottom: 8px solid var(--accent);
+            padding-bottom: 5px;
         }
-        /* Custom resize handle visual */
-        #player-wrapper::-webkit-resizer { background: var(--accent); }
+        
+        /* This makes the drag-handle easier to find */
+        #player-wrapper::after {
+            content: '≡';
+            position: absolute;
+            bottom: -5px;
+            right: 10px;
+            color: var(--accent);
+            font-size: 20px;
+            pointer-events: none;
+        }
         
         #media-player { width: 100%; height: 100%; background: #000; }
         
