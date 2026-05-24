@@ -6,24 +6,23 @@
     <title>The Gothic Archive</title>
     <style>
         :root { --bg: #0d0d0d; --accent: #800020; --border: #333; }
-        body { background: var(--bg); color: #d9d9d9; font-family: monospace; margin: 0; padding-top: 200px; }
+        body { background: var(--bg); color: #d9d9d9; font-family: monospace; margin: 0; padding-top: 220px; }
         
         #player-wrapper { 
             position: fixed; top: 0; left: 0; width: 100%; height: 200px; 
             background: #000; z-index: 1000; min-height: 100px; max-height: 80vh;
-            border-bottom: 8px solid var(--accent);
+            border-bottom: 8px solid var(--accent); touch-action: none;
         }
         
-        /* The draggable handle */
         #drag-handle { 
             width: 100%; height: 20px; background: var(--accent); 
             position: absolute; bottom: -20px; cursor: ns-resize; 
-            display: flex; align-items: center; justify-content: center; font-size: 12px;
+            display: flex; align-items: center; justify-content: center; font-size: 10px;
         }
         
         #media-player { width: 100%; height: 100%; background: #000; }
         
-        #header-controls { padding: 10px; display: flex; gap: 10px; position: fixed; top: 200px; width: 100%; background: var(--bg); z-index: 999; }
+        #header-controls { padding: 10px; display: flex; gap: 10px; position: fixed; top: 220px; width: 100%; background: var(--bg); z-index: 999; }
         .btn { background: #1a1a1a; color: #fff; border: 1px solid var(--border); padding: 5px 10px; cursor: pointer; font-size: 10px; text-transform: uppercase; }
         
         #gallery-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 15px; padding: 15px; }
@@ -44,9 +43,10 @@
     </div>
     
     <div id="header-controls">
-        <button class="btn" onclick="checkAuth('guest')">Guest Login</button>
-        <button class="btn" onclick="checkAuth('admin')">Admin Access</button>
+        <button id="login-btns" class="btn" onclick="checkAuth('guest')">Guest Login</button>
+        <button id="admin-btn" class="btn" onclick="checkAuth('admin')">Admin Access</button>
         <button id="edit-toggle" class="btn" style="display:none;" onclick="toggleEdit()">Toggle Edit Mode</button>
+        <button id="logout-btn" class="btn" style="display:none;" onclick="logout()">Logout</button>
     </div>
     
     <div id="gallery-grid">Please Login to view Archive...</div>
@@ -57,14 +57,11 @@
         const wrapper = document.getElementById('player-wrapper');
         const handle = document.getElementById('drag-handle');
 
-        // Drag Logic
-        let isDragging = false;
-        handle.onmousedown = (e) => { isDragging = true; };
-        handle.ontouchstart = (e) => { isDragging = true; };
-        document.onmousemove = (e) => { if(isDragging) wrapper.style.height = e.clientY + 'px'; };
-        document.ontouchmove = (e) => { if(isDragging) wrapper.style.height = e.touches[0].clientY + 'px'; };
-        document.onmouseup = () => { isDragging = false; };
-        document.ontouchend = () => { isDragging = false; };
+        handle.addEventListener('touchstart', (e) => { e.preventDefault(); }, {passive: false});
+        handle.addEventListener('touchmove', (e) => { 
+            e.preventDefault(); 
+            wrapper.style.height = e.touches[0].clientY + 'px'; 
+        }, {passive: false});
 
         async function init() {
             try {
@@ -77,12 +74,22 @@
             const pass = prompt(`Enter ${type === 'admin' ? 'Admin' : 'Guest'} Password:`);
             if (type === 'admin' && pass === "1981") {
                 document.getElementById('edit-toggle').style.display = 'block';
+                document.getElementById('logout-btn').style.display = 'block';
+                document.getElementById('login-btns').style.display = 'none';
+                document.getElementById('admin-btn').style.display = 'none';
                 render();
             } else if (type === 'guest' && pass === "Martin") {
+                document.getElementById('logout-btn').style.display = 'block';
+                document.getElementById('login-btns').style.display = 'none';
+                document.getElementById('admin-btn').style.display = 'none';
                 render();
             } else {
                 alert("Access Denied");
             }
+        }
+
+        function logout() {
+            location.reload(); // Manually clear state by reloading, as you requested manual logout
         }
 
         function toggleEdit() {
