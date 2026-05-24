@@ -43,7 +43,6 @@
             <button class="btn" id="btn-toggle-mode">Edit Mode</button>
             <a href="twinks.html" class="btn">Twinks</a>
             <a href="latin.html" class="btn">Latin</a>
-            <a href="white.html" class="btn">White</a>
             <button class="btn edit-only" id="btn-add">Add Link</button>
         </div>
         <div id="player-container"><iframe id="media-screen" src="" allow="autoplay; encrypted-media" playsinline></iframe></div>
@@ -57,7 +56,7 @@
         <div class="modal-content">
             <input type="text" id="in-name" class="input-row" placeholder="Title">
             <input type="text" id="in-url" class="input-row" placeholder="Video URL">
-            <input type="text" id="in-img" class="input-row" placeholder="Thumbnail URL">
+            <input type="text" id="in-img" class="input-row" placeholder="Thumbnail URL (Leave blank for Auto)">
             <input type="text" id="in-tags" class="input-row" placeholder="Tags">
             <button class="btn" id="save-btn" style="width:100%">Save</button>
         </div>
@@ -70,31 +69,28 @@
     </div>
 
     <script>
-        // Restored original data key
         let state = JSON.parse(localStorage.getItem('gothic_archive_formation_save')) || [];
         let activeIdx = null;
         let currentFilter = '';
 
-        function save() { 
-            localStorage.setItem('gothic_archive_formation_save', JSON.stringify(state)); 
-            render(); 
+        function getAutoThumb(url) {
+            const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
+            const match = url.match(regExp);
+            return (match && match[2].length === 11) ? `https://img.youtube.com/vi/${match[2]}/hqdefault.jpg` : '';
         }
 
-        function filterTags(tag) {
-            currentFilter = tag;
-            document.getElementById('show-all').style.display = tag ? 'block' : 'none';
-            render();
-        }
+        function save() { localStorage.setItem('gothic_archive_formation_save', JSON.stringify(state)); render(); }
+
+        function filterTags(tag) { currentFilter = tag; document.getElementById('show-all').style.display = tag ? 'block' : 'none'; render(); }
 
         function render() {
             const grid = document.getElementById('gallery-grid');
             grid.innerHTML = '';
-            const filteredState = currentFilter ? state.filter(r => (r.tags||'').includes(currentFilter)) : state;
-
-            filteredState.forEach((r, i) => {
+            (currentFilter ? state.filter(r => (r.tags||'').includes(currentFilter)) : state).forEach((r, i) => {
                 const d = document.createElement('div');
                 d.className = 'relic';
-                d.innerHTML = `<img class="relic-img" src="${r.img || ''}"><div class="relic-title">${r.title || 'Untitled'}</div>`;
+                const thumb = r.img || getAutoThumb(r.url);
+                d.innerHTML = `<img class="relic-img" src="${thumb}"><div class="relic-title">${r.title || 'Untitled'}</div>`;
                 
                 let lastTap = 0;
                 d.onclick = (e) => {
@@ -104,8 +100,7 @@
                         m.style.display = 'block'; m.style.left = e.clientX + 'px'; m.style.top = e.clientY + 'px';
                     } else {
                         document.getElementById('media-screen').src = r.url;
-                        const td = document.getElementById('tags-display');
-                        td.innerHTML = 'Tags: ' + (r.tags || '').split(',').map(t => t.trim() ? `<span class="tag-btn" onclick="filterTags('${t.trim()}')">${t.trim()}</span>` : '').join('');
+                        document.getElementById('tags-display').innerHTML = 'Tags: ' + (r.tags || '').split(',').map(t => t.trim() ? `<span class="tag-btn" onclick="filterTags('${t.trim()}')">${t.trim()}</span>` : '').join('');
                     }
                     lastTap = Date.now();
                 };
