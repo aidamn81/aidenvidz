@@ -27,8 +27,7 @@
         #context-menu { position: fixed; background: #1a1a1a; border: 1px solid var(--accent-color); z-index: 5000; display: none; width: 150px; }
         .menu-item { padding: 10px; border-bottom: 1px solid #333; font-size: 10px; text-transform: uppercase; cursor: pointer; }
         
-        .btn { background: #1a1a1a; color: #fff; border: 1px solid var(--border-color); padding: 8px 12px; cursor: pointer; font-size: 11px; text-transform: uppercase; }
-        /* Force display of edit-only buttons when body has edit-mode class */
+        .btn { background: #1a1a1a; color: #fff; border: 1px solid var(--border-color); padding: 8px 12px; cursor: pointer; font-size: 11px; text-transform: uppercase; text-decoration: none; display: inline-block; }
         body.edit-mode .edit-only { display: inline-block !important; }
         .edit-only { display: none !important; }
     </style>
@@ -38,6 +37,7 @@
     <div id="fixed-top-wrapper">
         <div id="control-bar">
             <button class="btn" id="btn-toggle-mode">Edit Mode</button>
+            <a href="twinks.html" class="btn">Twinks</a>
             <button class="btn edit-only" id="btn-add">Add Link</button>
             <button class="btn edit-only" id="btn-bulk">Bulk Upload</button>
         </div>
@@ -70,7 +70,6 @@
 
         function save() { localStorage.setItem('gothic_archive_formation_save', JSON.stringify(state)); render(); }
         
-        // Improved image source handling
         function getThumb(url) {
             const m = url.match(/(?:youtu\.be\/|v\/|embed\/|watch\?v=)([^"&?\/\s]{11})/);
             return m ? `https://img.youtube.com/vi/${m[1]}/hqdefault.jpg` : '';
@@ -144,7 +143,7 @@
         function handleImg(e) {
             const reader = new FileReader();
             reader.onload = (ev) => { state[activeIdx].img = ev.target.result; save(); };
-            reader.readAsDataURL(e.target.files[0]);
+            reader.readAsText(e.target.files[0]);
         }
 
         render();
