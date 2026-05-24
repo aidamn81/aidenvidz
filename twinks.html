@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>The Gothic Archive</title>
+    <style>
+        :root { --bg-color: #0d0d0d; --panel-bg: #141414; --accent-color: #800020; --text-color: #d9d9d9; --border-color: #262626; }
+        * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+        body, html { width: 100%; height: 100%; overflow: hidden; background-color: var(--bg-color); font-family: 'Courier New', Courier, monospace; color: var(--text-color); position: fixed; }
+
+        #fixed-top-wrapper { position: absolute; top: 0; left: 0; width: 100%; z-index: 1500; padding: 10px; border-bottom: 1px solid var(--border-color); display: flex; flex-direction: column; align-items: center; background: #0d0d0d; }
+        #control-bar { display: flex; gap: 10px; width: 100%; max-width: 800px; overflow-x: auto; padding: 10px; }
+        #player-container { flex: 1; background: #000; border: 1px solid var(--border-color); border-radius: 8px; overflow: hidden; position: relative; height: 180px; width: 100%; max-width: 800px; }
+        #media-screen { width: 100%; height: 100%; border: none; }
+
+        #viewport { position: absolute; top: 250px; left: 0; width: 100%; height: calc(100% - 250px); overflow-y: auto; -webkit-overflow-scrolling: touch; padding: 20px; }
+        #gallery-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 15px; width: 100%; max-width: 850px; margin: 0 auto; }
+        .relic { background: var(--panel-bg); border: 1px solid var(--border-color); padding: 8px; aspect-ratio: 1/1; cursor: pointer; display: flex; flex-direction: column; }
+        .relic-img { width: 100%; height: 80%; object-fit: cover; background: #262626; }
+        .relic-title { font-size: 10px; margin-top: 5px; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+        #modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 3000; display: none; align-items: center; justify-content: center; }
+        .modal-content { background: #1a1a1a; padding: 20px; width: 320px; border: 1px solid var(--accent-color); }
+        .input-row { width: 100%; margin-bottom: 10px; background: #000; color: #fff; border: 1px solid #333; padding: 8px; }
+        
+        #context-menu { position: fixed; background: #1a1a1a; border: 1px solid var(--accent-color); z-index: 5000; display: none; width: 150px; }
+        .menu-item { padding: 10px; border-bottom: 1px solid #333; font-size: 10px; text-transform: uppercase; cursor: pointer; }
+        
+        .btn { background: #1a1a1a; color: #fff; border: 1px solid var(--border-color); padding: 8px 12px; cursor: pointer; font-size: 11px; text-transform: uppercase; }
+        /* Force display of edit-only buttons when body has edit-mode class */
+        body.edit-mode .edit-only { display: inline-block !important; }
+        .edit-only { display: none !important; }
+    </style>
+</head>
+<body>
+
+    <div id="fixed-top-wrapper">
+        <div id="control-bar">
+            <button class="btn" id="btn-toggle-mode">Edit Mode</button>
+            <button class="btn edit-only" id="btn-add">Add Link</button>
+            <button class="btn edit-only" id="btn-bulk">Bulk Upload</button>
+        </div>
+        <div id="player-container"><iframe id="media-screen" src="" allow="autoplay; encrypted-media" playsinline></iframe></div>
+    </div>
+
+    <div id="viewport"><div id="gallery-grid"></div></div>
+
+    <div id="modal-overlay">
+        <div class="modal-content">
+            <input type="text" id="in-name" class="input-row" placeholder="Title">
+            <input type="text" id="in-url" class="input-row" placeholder="URL">
+            <input type="text" id="in-tags" class="input-row" placeholder="Tags">
+            <input type="file" id="in-img" class="input-row" accept="image/*">
+            <button class="btn" id="save-btn" style="width:100%">Save</button>
+        </div>
+    </div>
+
+    <div id="context-menu">
+        <div class="menu-item" onclick="exec('rename')">Rename</div>
+        <div class="menu-item" onclick="exec('tags')">Change Tags</div>
+        <div class="menu-item" onclick="document.getElementById('img-upload').click()">Upload Cover</div>
+        <div class="menu-item" onclick="exec('delete')">Delete</div>
+    </div>
+    <input type="file" id="img-upload" style="display:none" onchange="handleImg(event)">
+
+    <script>
+        let state = JSON.parse(localStorage.getItem('gothic_archive_formation_save')) || [];
+        let activeIdx = null;
+
+        function save() { localStorage.setItem('gothic_archive_formation_save', JSON.stringify(state)); render(); }
+        
+        // Improved image source handling
+        function getThumb(url) {
+            const m = url.match(/(?:youtu\.be\/|v\/|embed\/|watch\?v=)([^"&?\/\s]{11})/);
+            return m ? `https://img.youtube.com/vi/${m[1]}/hqdefault.jpg` : '';
+        }
+
+        function render() {
+            const grid = document.getElementById('gallery-grid');
+            grid.innerHTML = '';
+            state.forEach((r, i) => {
+                const d = document.createElement('div');
+                d.className = 'relic';
+                const imgSrc = r.img || getThumb(r.url);
+                d.innerHTML = `
+                    <img class="relic-img" src="${imgSrc || 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII='}">
+                    <div class="relic-title">${r.title || 'Untitled'}</div>
+                `;
+                d.onclick = (e) => {
+                    if (document.body.classList.contains('edit-mode')) {
+                        activeIdx = i;
+                        const m = document.getElementById('context-menu');
+                        m.style.display = 'block'; m.style.left = e.clientX + 'px'; m.style.top = e.clientY + 'px';
+                    } else {
+                        document.getElementById('media-screen').src = r.url;
+                    }
+                };
+                grid.appendChild(d);
+            });
+        }
+
+        document.getElementById('btn-toggle-mode').onclick = (e) => {
+            if (!document.body.classList.contains('edit-mode')) {
+                if (prompt("Enter Password:") !== "1981") return;
+            }
+            document.body.classList.toggle('edit-mode');
+            e.target.textContent = document.body.classList.contains('edit-mode') ? "Lock Mode" : "Edit Mode";
+        };
+
+        document.getElementById('btn-add').onclick = () => document.getElementById('modal-overlay').style.display = 'flex';
+        document.getElementById('save-btn').onclick = () => {
+            const file = document.getElementById('in-img').files[0];
+            const add = (data) => {
+                state.push({title: document.getElementById('in-name').value, url: document.getElementById('in-url').value, tags: document.getElementById('in-tags').value, img: data});
+                save(); document.getElementById('modal-overlay').style.display = 'none';
+            };
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (e) => add(e.target.result);
+                reader.readAsDataURL(file);
+            } else {
+                add("");
+            }
+        };
+
+        document.getElementById('btn-bulk').onclick = () => {
+            const input = prompt("Paste links (space separated):");
+            if (input) {
+                input.split(/\s+/).forEach(u => { if(u.trim()) state.push({title:"New Link", url:u.trim(), tags:"", img:""}); });
+                save();
+            }
+        };
+
+        function exec(act) {
+            const r = state[activeIdx];
+            if (act === 'rename') r.title = prompt("New Name:", r.title);
+            if (act === 'tags') r.tags = prompt("New Tags:", r.tags);
+            if (act === 'delete' && confirm("Delete?")) state.splice(activeIdx, 1);
+            document.getElementById('context-menu').style.display = 'none';
+            save();
+        }
+
+        function handleImg(e) {
+            const reader = new FileReader();
+            reader.onload = (ev) => { state[activeIdx].img = ev.target.result; save(); };
+            reader.readAsDataURL(e.target.files[0]);
+        }
+
+        render();
+    </script>
+</body>
+</html>
