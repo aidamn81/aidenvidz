@@ -8,11 +8,22 @@
         :root { --bg: #0d0d0d; --accent: #800020; --border: #333; }
         body { background: var(--bg); color: #d9d9d9; font-family: monospace; margin: 0; padding-top: 200px; }
         
-        /* Resizable Player Wrapper */
-        #player-wrapper { position: fixed; top: 0; width: 100%; height: 180px; background: #000; z-index: 1000; resize: vertical; overflow: auto; min-height: 100px; max-height: 80vh; border-bottom: 2px solid var(--accent); }
+        #player-wrapper { 
+            position: fixed; top: 0; left: 0; width: 100%; height: 200px; 
+            background: #000; z-index: 1000; min-height: 100px; max-height: 80vh;
+            border-bottom: 8px solid var(--accent);
+        }
+        
+        /* The draggable handle */
+        #drag-handle { 
+            width: 100%; height: 20px; background: var(--accent); 
+            position: absolute; bottom: -20px; cursor: ns-resize; 
+            display: flex; align-items: center; justify-content: center; font-size: 12px;
+        }
+        
         #media-player { width: 100%; height: 100%; background: #000; }
         
-        #header-controls { padding: 10px; display: flex; gap: 10px; position: fixed; top: 180px; width: 100%; background: var(--bg); z-index: 999; }
+        #header-controls { padding: 10px; display: flex; gap: 10px; position: fixed; top: 200px; width: 100%; background: var(--bg); z-index: 999; }
         .btn { background: #1a1a1a; color: #fff; border: 1px solid var(--border); padding: 5px 10px; cursor: pointer; font-size: 10px; text-transform: uppercase; }
         
         #gallery-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 15px; padding: 15px; }
@@ -29,35 +40,46 @@
 
     <div id="player-wrapper">
         <video id="media-player" controls playsinline></video>
+        <div id="drag-handle">|| DRAG TO RESIZE ||</div>
     </div>
     
     <div id="header-controls">
-        <button class="btn" onclick="checkPassword()">Admin Access</button>
+        <button class="btn" onclick="checkAuth('guest')">Guest Login</button>
+        <button class="btn" onclick="checkAuth('admin')">Admin Access</button>
         <button id="edit-toggle" class="btn" style="display:none;" onclick="toggleEdit()">Toggle Edit Mode</button>
     </div>
     
-    <div id="gallery-grid">Loading Archive...</div>
+    <div id="gallery-grid">Please Login to view Archive...</div>
 
     <script>
         let state = [];
         let isEditMode = false;
-        let isAuthorized = false;
+        const wrapper = document.getElementById('player-wrapper');
+        const handle = document.getElementById('drag-handle');
+
+        // Drag Logic
+        let isDragging = false;
+        handle.onmousedown = (e) => { isDragging = true; };
+        handle.ontouchstart = (e) => { isDragging = true; };
+        document.onmousemove = (e) => { if(isDragging) wrapper.style.height = e.clientY + 'px'; };
+        document.ontouchmove = (e) => { if(isDragging) wrapper.style.height = e.touches[0].clientY + 'px'; };
+        document.onmouseup = () => { isDragging = false; };
+        document.ontouchend = () => { isDragging = false; };
 
         async function init() {
             try {
                 const res = await fetch('data.json');
                 state = await res.json();
-                render();
             } catch (e) { document.getElementById('gallery-grid').innerHTML = "Error loading data."; }
         }
 
-        function checkPassword() {
-            if (isAuthorized) return;
-            const pass = prompt("Enter Admin Password:");
-            if (pass === "1981") {
-                isAuthorized = true;
+        function checkAuth(type) {
+            const pass = prompt(`Enter ${type === 'admin' ? 'Admin' : 'Guest'} Password:`);
+            if (type === 'admin' && pass === "1981") {
                 document.getElementById('edit-toggle').style.display = 'block';
-                alert("Admin Access Granted");
+                render();
+            } else if (type === 'guest' && pass === "Martin") {
+                render();
             } else {
                 alert("Access Denied");
             }
@@ -75,7 +97,6 @@
                 const d = document.createElement('div');
                 d.className = 'relic';
                 d.onclick = () => { if(!isEditMode) handleViewer(r.url); };
-                
                 d.innerHTML = `
                     <div class="thumb">${r.img ? `<img src="${r.img}">` : '▶'}</div>
                     <div>${r.title}</div>
@@ -91,8 +112,7 @@
         }
 
         function handleViewer(url) {
-            const choice = confirm("Play in top player? (Cancel to open in new tab)");
-            if (choice) {
+            if (confirm("Play in top player? (Cancel to open in new tab)")) {
                 const player = document.getElementById('media-player');
                 player.src = url;
                 player.load();
