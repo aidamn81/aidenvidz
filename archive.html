@@ -14,9 +14,11 @@
         #player-container { flex: 1; background: #000; border: 1px solid var(--border-color); border-radius: 8px; overflow: hidden; position: relative; height: 180px; width: 100%; max-width: 800px; }
         #media-screen { width: 100%; height: 100%; border: none; }
         
-        #tags-display { width: 100%; max-width: 800px; padding: 5px 0; font-size: 10px; color: var(--accent-color); text-align: center; }
+        #tags-display { width: 100%; max-width: 800px; padding: 8px 0; font-size: 11px; text-align: center; }
+        .tag-btn { cursor: pointer; color: var(--accent-color); margin: 0 4px; text-decoration: underline; }
+        #show-all { cursor: pointer; color: #fff; margin-top: 5px; display: none; font-size: 10px; text-transform: uppercase; }
 
-        #viewport { position: absolute; top: 270px; left: 0; width: 100%; height: calc(100% - 270px); overflow-y: auto; -webkit-overflow-scrolling: touch; padding: 20px; }
+        #viewport { position: absolute; top: 280px; left: 0; width: 100%; height: calc(100% - 280px); overflow-y: auto; -webkit-overflow-scrolling: touch; padding: 20px; }
         #gallery-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 15px; width: 100%; max-width: 850px; margin: 0 auto; }
         .relic { background: var(--panel-bg); border: 1px solid var(--border-color); padding: 8px; aspect-ratio: 1/1; cursor: pointer; display: flex; flex-direction: column; }
         .relic-img { width: 100%; height: 80%; object-fit: cover; background: #262626; }
@@ -47,6 +49,7 @@
         </div>
         <div id="player-container"><iframe id="media-screen" src="" allow="autoplay; encrypted-media" playsinline></iframe></div>
         <div id="tags-display">Select a video to view tags</div>
+        <div id="show-all" onclick="filterTags('')">Show All</div>
     </div>
 
     <div id="viewport"><div id="gallery-grid"></div></div>
@@ -72,6 +75,7 @@
     <script>
         let state = JSON.parse(localStorage.getItem('gothic_archive_formation_save')) || [];
         let activeIdx = null;
+        let currentFilter = '';
 
         function save() { localStorage.setItem('gothic_archive_formation_save', JSON.stringify(state)); render(); }
         
@@ -80,10 +84,21 @@
             return m ? `https://img.youtube.com/vi/${m[1]}/hqdefault.jpg` : '';
         }
 
+        function filterTags(tag) {
+            currentFilter = tag;
+            document.getElementById('show-all').style.display = tag ? 'block' : 'none';
+            render();
+        }
+
         function render() {
             const grid = document.getElementById('gallery-grid');
             grid.innerHTML = '';
-            state.forEach((r, i) => {
+            
+            const filteredState = currentFilter 
+                ? state.filter(r => r.tags.split(',').map(t => t.trim()).includes(currentFilter))
+                : state;
+
+            filteredState.forEach((r, i) => {
                 const d = document.createElement('div');
                 d.className = 'relic';
                 const imgSrc = r.img || getThumb(r.url);
@@ -92,16 +107,21 @@
                     <div class="relic-title">${r.title || 'Untitled'}</div>
                 `;
                 d.onclick = (e) => {
-                    const now = Date.now();
-                    // Double tap for context menu if in Edit Mode
                     if (document.body.classList.contains('edit-mode') && e.detail === 2) {
                         activeIdx = i;
                         const m = document.getElementById('context-menu');
                         m.style.display = 'block'; m.style.left = e.clientX + 'px'; m.style.top = e.clientY + 'px';
                     } else {
-                        // Play video and show tags
                         document.getElementById('media-screen').src = r.url;
-                        document.getElementById('tags-display').textContent = r.tags || "No tags";
+                        const tagContainer = document.getElementById('tags-display');
+                        tagContainer.innerHTML = 'Tags: ';
+                        r.tags.split(',').forEach(t => {
+                            const span = document.createElement('span');
+                            span.className = 'tag-btn';
+                            span.textContent = t.trim();
+                            span.onclick = (e) => { e.stopPropagation(); filterTags(t.trim()); };
+                            tagContainer.appendChild(span);
+                        });
                     }
                 };
                 grid.appendChild(d);
