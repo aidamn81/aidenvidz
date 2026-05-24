@@ -70,12 +70,18 @@
 
         function save() { localStorage.setItem('gothic_archive_formation_save', JSON.stringify(state)); render(); }
         
+        function getThumb(url) {
+            const m = url.match(/(?:youtu\.be\/|v\/|embed\/|watch\?v=)([^"&?\/\s]{11})/);
+            return m ? `https://img.youtube.com/vi/${m[1]}/hqdefault.jpg` : '';
+        }
+
         function render() {
             const grid = document.getElementById('gallery-grid');
             grid.innerHTML = '';
             state.forEach((r, i) => {
                 const d = document.createElement('div');
                 d.className = 'relic';
+                // Always show thumbnail (either uploaded or derived)
                 d.innerHTML = `<img class="relic-img" src="${r.img || getThumb(r.url)}"><div class="relic-title">${r.title || 'Untitled'}</div>`;
                 let last = 0;
                 d.onclick = (e) => {
@@ -88,11 +94,6 @@
                 };
                 grid.appendChild(d);
             });
-        }
-
-        function getThumb(url) {
-            const m = url.match(/(?:youtu\.be\/|v\/|embed\/|watch\?v=)([^"&?\/\s]{11})/);
-            return m ? `https://img.youtube.com/vi/${m[1]}/hqdefault.jpg` : '';
         }
 
         document.getElementById('btn-toggle-mode').onclick = (e) => {
