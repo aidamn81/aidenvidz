@@ -9,16 +9,15 @@
         body { background: var(--bg); color: #d9d9d9; font-family: monospace; margin: 0; padding-top: 200px; }
         
         #player-wrapper { position: fixed; top: 0; width: 100%; height: 180px; background: #000; z-index: 1000; resize: vertical; overflow: auto; min-height: 100px; max-height: 80vh; border-bottom: 2px solid var(--accent); }
-        #media-player { width: 100%; height: 100%; border: none; }
+        /* Changed to a native video player to avoid iframe cross-origin blocks */
+        #media-player { width: 100%; height: 100%; }
         
         #controls { padding: 10px; display: flex; gap: 10px; position: fixed; top: 180px; width: 100%; background: var(--bg); z-index: 999; }
         .btn { background: #1a1a1a; color: #fff; border: 1px solid var(--border); padding: 5px 10px; cursor: pointer; font-size: 10px; text-transform: uppercase; }
         
         #gallery-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 15px; padding: 15px; }
         .relic { border: 1px solid var(--border); padding: 5px; cursor: pointer; position: relative; background: #141414; }
-        
-        /* Thumbnail fix: Using standard video tag with preload */
-        .relic video { width: 100%; aspect-ratio: 16/9; object-fit: cover; background: #000; }
+        .relic video { width: 100%; aspect-ratio: 16/9; object-fit: cover; background: #000; pointer-events: none; }
         .relic div { font-size: 10px; margin-top: 5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding: 0 5px; }
         
         .edit-ui { display: none; margin-top: 5px; border-top: 1px solid var(--border); padding-top: 5px; }
@@ -27,7 +26,12 @@
 </head>
 <body>
 
-    <div id="player-wrapper"><iframe id="media-player" src="" allow="autoplay; fullscreen"></iframe></div>
+    <div id="player-wrapper">
+        <video id="media-player" controls playsinline>
+            <source src="" type="video/mp4">
+        </video>
+    </div>
+    
     <div id="controls"><button class="btn" onclick="toggleEdit()">Toggle Edit Mode</button></div>
     
     <div id="gallery-grid">Loading Archive...</div>
@@ -51,10 +55,9 @@
                 const d = document.createElement('div');
                 d.className = 'relic';
                 d.onclick = () => handleTap(r.url);
-                // Added preload="metadata" to help the browser show a frame without trying to play the whole video
                 d.innerHTML = `
-                    <video preload="metadata" muted>
-                        <source src="${r.url}#t=1" type="video/mp4">
+                    <video muted>
+                        <source src="${r.url}#t=0.5" type="video/mp4">
                     </video>
                     <div>${r.title}</div>
                     <div class="edit-ui">
@@ -72,7 +75,10 @@
             if (isEditMode) return;
             if (confirm("Play in top player?")) {
                 const player = document.getElementById('media-player');
-                player.src = url;
+                const source = player.querySelector('source');
+                source.src = url;
+                player.load(); // Force the browser to refresh the video source
+                player.play();
             } else {
                 window.open(url, '_blank');
             }
