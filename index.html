@@ -5,19 +5,24 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>The Gothic Archive | Login</title>
     <style>
-        body { background: #000; color: #d9d9d9; font-family: monospace; margin: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; }
+        body { background: #000; color: #d9d9d9; font-family: monospace; margin: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; }
         
-        /* Header Image Placeholder */
-        #header-img { width: 100%; max-width: 800px; height: auto; margin-bottom: 40px; border-bottom: 1px solid #333; }
+        /* Updated to handle your 2000x1600 image size */
+        #header-img { 
+            width: 100%; 
+            max-width: 600px; /* Limits the width so it doesn't look too tall */
+            height: auto; 
+            margin-bottom: 30px; 
+        }
         
         .login-box { border: 1px solid #333; padding: 40px; background: #0d0d0d; text-align: center; width: 80%; max-width: 300px; }
-        .btn { display: block; width: 100%; padding: 10px; margin: 10px 0; background: #1a1a1a; color: #fff; border: 1px solid #333; cursor: pointer; text-transform: uppercase; font-size: 12px; }
-        .btn:hover { background: #800020; }
+        .btn { display: block; width: 100%; padding: 12px; margin: 10px 0; background: #1a1a1a; color: #fff; border: 1px solid #333; cursor: pointer; text-transform: uppercase; font-size: 12px; }
+        .btn:hover { background: #800020; border-color: #800020; }
     </style>
 </head>
 <body>
 
-    <img id="header-img" src="your-header-image.jpg" alt="Archive Header">
+    <img id="header-img" src="desicover.PNG" alt="Archive Header">
 
     <div class="login-box">
         <button class="btn" onclick="login('guest')">Guest Login</button>
@@ -28,7 +33,7 @@
         function login(type) {
             const pass = prompt("Enter Password:");
             if (type === 'admin' && pass === "1981") {
-                window.location.href = "archive.html"; // Redirect to your archive
+                window.location.href = "archive.html";
             } else if (type === 'guest' && pass === "Martin") {
                 window.location.href = "archive.html";
             } else {
