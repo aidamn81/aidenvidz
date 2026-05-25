@@ -2,143 +2,138 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>The Gothic Archive</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Gothic Archive (Formation & Snap-to-Grid)</title>
     <style>
-        :root { --bg: #0d0d0d; --accent: #800020; --border: #333; }
-        body { background: var(--bg); color: #d9d9d9; font-family: monospace; margin: 0; padding-top: 220px; }
-        
-        #player-wrapper { 
-            position: fixed; top: 0; left: 0; width: 100%; height: 200px; 
-            background: #000; z-index: 1000; min-height: 100px; max-height: 80vh;
-            border-bottom: 8px solid var(--accent); touch-action: none;
+        :root {
+            --bg-color: #0f0f0f;
+            --panel-color: #1a1a1a;
+            --text-color: #e0e0e0;
+            --accent: #8b0000;
+            --grid-size: 20px;
         }
-        
-        #drag-handle { 
-            width: 100%; height: 20px; background: var(--accent); 
-            position: absolute; bottom: -20px; cursor: ns-resize; 
-            display: flex; align-items: center; justify-content: center; font-size: 10px;
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            overflow: hidden;
         }
-        
-        #media-player { width: 100%; height: 100%; background: #000; }
-        
-        #header-controls { padding: 10px; display: flex; gap: 10px; position: fixed; top: 220px; width: 100%; background: var(--bg); z-index: 999; flex-wrap: wrap; }
-        .btn { background: #1a1a1a; color: #fff; border: 1px solid var(--border); padding: 5px 10px; cursor: pointer; font-size: 10px; text-transform: uppercase; }
-        
-        #gallery-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 15px; padding: 15px; }
-        .relic { border: 1px solid var(--border); padding: 5px; cursor: pointer; position: relative; background: #141414; }
-        .thumb { width: 100%; aspect-ratio: 16/9; background: #000; display: flex; align-items: center; justify-content: center; overflow: hidden; }
-        .thumb img { width: 100%; height: 100%; object-fit: cover; }
-        .relic div { font-size: 10px; margin-top: 5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding: 0 5px; }
-        
-        .edit-ui { display: none; margin-top: 5px; border-top: 1px solid var(--border); padding-top: 5px; }
-        body.edit-mode .edit-ui { display: flex; flex-wrap: wrap; gap: 5px; }
+
+        #toolbar {
+            background: var(--panel-color);
+            padding: 10px;
+            display: flex;
+            gap: 10px;
+            border-bottom: 2px solid var(--accent);
+        }
+
+        /* Tag Section */
+        #tag-container {
+            padding: 10px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            background: #111;
+        }
+        .tag {
+            background: #333;
+            padding: 5px 12px;
+            border-radius: 15px;
+            cursor: pointer;
+            font-size: 0.9em;
+        }
+        .tag:hover { background: var(--accent); }
+
+        #archive-area {
+            width: 100vw;
+            height: calc(100vh - 120px);
+            position: relative;
+            background-image: radial-gradient(#333 1px, transparent 1px);
+            background-size: var(--grid-size) var(--grid-size);
+            overflow: auto;
+        }
+
+        /* Edit Mode Grid Guide */
+        .edit-mode #archive-area { background-image: radial-gradient(#444 1px, transparent 1px); }
+
+        .relic {
+            position: absolute;
+            width: 200px;
+            background: var(--panel-color);
+            border: 1px solid #444;
+            cursor: grab;
+            padding: 5px;
+            transition: transform 0.1s;
+        }
+
+        .relic img {
+            width: 100%;
+            height: auto; /* Full image display */
+            display: block;
+            object-fit: contain;
+        }
+
+        .relic-menu {
+            display: none;
+            font-size: 12px;
+            padding-top: 5px;
+        }
+        .edit-mode .relic-menu { display: block; }
     </style>
 </head>
 <body>
 
-    <div id="player-wrapper">
-        <video id="media-player" controls playsinline></video>
-        <div id="drag-handle">|| DRAG TO RESIZE ||</div>
+    <div id="toolbar">
+        <button onclick="toggleEditMode()">Edit Mode</button>
+        <button>Load</button>
+        <button>Save</button>
     </div>
-    
-    <div id="header-controls">
-        <button id="admin-btn" class="btn" onclick="checkAdmin()">Admin Login</button>
-        <button id="edit-toggle" class="btn" style="display:none;" onclick="toggleEdit()">Toggle Edit Mode</button>
-        <button id="save-btn" class="btn" style="display:none;" onclick="saveJson()">Save & Export Data</button>
-        <button id="logout-btn" class="btn" style="display:none;" onclick="logout()">Logout</button>
+
+    <div id="tag-container">
+        <div class="tag">desi</div>
+        <div class="tag">hairy</div>
+        <div class="tag">solo</div>
+        <div class="tag">sex</div>
+        <div class="tag">indian</div>
+        <div class="tag">arab</div>
+        <div class="tag">white</div>
+        <div class="tag">twink</div>
+        <div class="tag">cute</div>
+        <div class="tag">HD</div>
     </div>
-    
-    <div id="gallery-grid">Loading...</div>
+
+    <div id="archive-area">
+        </div>
 
     <script>
-        let state = [];
-        let isEditMode = false;
-        const wrapper = document.getElementById('player-wrapper');
-        const handle = document.getElementById('drag-handle');
-
-        handle.addEventListener('touchstart', (e) => { e.preventDefault(); }, {passive: false});
-        handle.addEventListener('touchmove', (e) => { 
-            e.preventDefault(); 
-            wrapper.style.height = e.touches[0].clientY + 'px'; 
-        }, {passive: false});
-
-        async function init() {
-            try {
-                const res = await fetch('data.json');
-                state = await res.json();
-                render();
-            } catch (e) { document.getElementById('gallery-grid').innerHTML = "Error loading data."; }
-        }
-
-        function checkAdmin() {
-            const pass = prompt("Enter Admin Password:");
-            if (pass === "1981") {
-                document.getElementById('edit-toggle').style.display = 'block';
-                document.getElementById('save-btn').style.display = 'block';
-                document.getElementById('logout-btn').style.display = 'block';
-                document.getElementById('admin-btn').style.display = 'none';
-            } else {
-                alert("Access Denied");
-            }
-        }
-
-        function saveJson() {
-            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(state, null, 2));
-            const dlAnchorElem = document.createElement('a');
-            dlAnchorElem.setAttribute("href", dataStr);
-            dlAnchorElem.setAttribute("download", "data.json");
-            dlAnchorElem.click();
-            alert("data.json downloaded. Please upload this to your server to sync all devices.");
-        }
-
-        function logout() { location.reload(); }
-        function toggleEdit() {
-            isEditMode = !isEditMode;
+        function toggleEditMode() {
             document.body.classList.toggle('edit-mode');
         }
 
-        function render() {
-            const grid = document.getElementById('gallery-grid');
-            grid.innerHTML = '';
-            state.forEach((r, i) => {
-                const d = document.createElement('div');
-                d.className = 'relic';
-                d.onclick = () => { if(!isEditMode) handleViewer(r.url); };
-                d.innerHTML = `
-                    <div class="thumb">${r.img ? `<img src="${r.img}">` : '▶'}</div>
-                    <div>${r.title}</div>
-                    <div class="edit-ui">
-                        <button onclick="event.stopPropagation(); edit(${i}, 'title')">Rename</button>
-                        <button onclick="event.stopPropagation(); edit(${i}, 'img')">Cover</button>
-                        <button onclick="event.stopPropagation(); del(${i})">Delete</button>
-                    </div>
-                `;
-                grid.appendChild(d);
-            });
+        // Snap-to-grid math
+        const gridSize = 20;
+        function snap(val) {
+            return Math.round(val / gridSize) * gridSize;
         }
 
-        function handleViewer(url) {
-            if (confirm("Play in top player? (Cancel to open in new tab)")) {
-                const player = document.getElementById('media-player');
-                player.src = url;
-                player.load();
-                player.play();
-            } else {
-                window.open(url, '_blank');
+        // Basic Drag & Drop Logic
+        let dragged = null;
+        document.addEventListener('mousedown', (e) => {
+            if(e.target.closest('.relic')) {
+                dragged = e.target.closest('.relic');
             }
-        }
+        });
 
-        function edit(i, key) {
-            const val = prompt(`Change ${key}:`, state[i][key] || '');
-            if (val !== null) { state[i][key] = val; render(); }
-        }
+        document.addEventListener('mousemove', (e) => {
+            if(dragged && document.body.classList.contains('edit-mode')) {
+                dragged.style.left = snap(e.clientX - 100) + 'px';
+                dragged.style.top = snap(e.clientY - 100) + 'px';
+            }
+        });
 
-        function del(i) {
-            if (confirm("Delete this item?")) { state.splice(i, 1); render(); }
-        }
-
-        init();
+        document.addEventListener('mouseup', () => dragged = null);
     </script>
 </body>
 </html>
