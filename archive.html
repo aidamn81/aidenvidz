@@ -22,7 +22,7 @@
         
         #media-player { width: 100%; height: 100%; background: #000; }
         
-        #header-controls { padding: 10px; display: flex; gap: 10px; position: fixed; top: 220px; width: 100%; background: var(--bg); z-index: 999; }
+        #header-controls { padding: 10px; display: flex; gap: 10px; position: fixed; top: 220px; width: 100%; background: var(--bg); z-index: 999; flex-wrap: wrap; }
         .btn { background: #1a1a1a; color: #fff; border: 1px solid var(--border); padding: 5px 10px; cursor: pointer; font-size: 10px; text-transform: uppercase; }
         
         #gallery-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 15px; padding: 15px; }
@@ -45,6 +45,7 @@
     <div id="header-controls">
         <button id="admin-btn" class="btn" onclick="checkAdmin()">Admin Login</button>
         <button id="edit-toggle" class="btn" style="display:none;" onclick="toggleEdit()">Toggle Edit Mode</button>
+        <button id="save-btn" class="btn" style="display:none;" onclick="saveJson()">Save & Export Data</button>
         <button id="logout-btn" class="btn" style="display:none;" onclick="logout()">Logout</button>
     </div>
     
@@ -63,38 +64,32 @@
         }, {passive: false});
 
         async function init() {
-            // Priority: LocalStorage -> data.json
-            const savedData = localStorage.getItem('archiveData');
-            if (savedData) {
-                console.log("Loading from saved cache...");
-                state = JSON.parse(savedData);
+            try {
+                const res = await fetch('data.json');
+                state = await res.json();
                 render();
-            } else {
-                console.log("Fetching fresh data.json...");
-                try {
-                    const res = await fetch('data.json');
-                    state = await res.json();
-                    localStorage.setItem('archiveData', JSON.stringify(state)); // Save to cache immediately
-                    render();
-                } catch (e) { document.getElementById('gallery-grid').innerHTML = "Error loading data."; }
-            }
-        }
-
-        function saveData() {
-            localStorage.setItem('archiveData', JSON.stringify(state));
-            console.log("Changes saved to device.");
-            render();
+            } catch (e) { document.getElementById('gallery-grid').innerHTML = "Error loading data."; }
         }
 
         function checkAdmin() {
             const pass = prompt("Enter Admin Password:");
             if (pass === "1981") {
                 document.getElementById('edit-toggle').style.display = 'block';
+                document.getElementById('save-btn').style.display = 'block';
                 document.getElementById('logout-btn').style.display = 'block';
                 document.getElementById('admin-btn').style.display = 'none';
             } else {
                 alert("Access Denied");
             }
+        }
+
+        function saveJson() {
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(state, null, 2));
+            const dlAnchorElem = document.createElement('a');
+            dlAnchorElem.setAttribute("href", dataStr);
+            dlAnchorElem.setAttribute("download", "data.json");
+            dlAnchorElem.click();
+            alert("data.json downloaded. Please upload this to your server to sync all devices.");
         }
 
         function logout() { location.reload(); }
@@ -116,7 +111,6 @@
                     <div class="edit-ui">
                         <button onclick="event.stopPropagation(); edit(${i}, 'title')">Rename</button>
                         <button onclick="event.stopPropagation(); edit(${i}, 'img')">Cover</button>
-                        <button onclick="event.stopPropagation(); edit(${i}, 'tags')">Tags</button>
                         <button onclick="event.stopPropagation(); del(${i})">Delete</button>
                     </div>
                 `;
@@ -137,11 +131,11 @@
 
         function edit(i, key) {
             const val = prompt(`Change ${key}:`, state[i][key] || '');
-            if (val !== null) { state[i][key] = val; saveData(); }
+            if (val !== null) { state[i][key] = val; render(); }
         }
 
         function del(i) {
-            if (confirm("Delete this item?")) { state.splice(i, 1); saveData(); }
+            if (confirm("Delete this item?")) { state.splice(i, 1); render(); }
         }
 
         init();
