@@ -6,31 +6,36 @@
     <title>The Gothic Archive</title>
     <style>
         :root { --bg: #0d0d0d; --accent: #800020; --border: #333; }
-        body { background: var(--bg); color: #d9d9d9; font-family: monospace; margin: 0; padding-top: 220px; }
+        body { background: var(--bg); color: #d9d9d9; font-family: monospace; margin: 0; padding-top: 260px; }
         
         #player-wrapper { 
             position: fixed; top: 0; left: 0; width: 100%; height: 200px; 
-            background: #000; z-index: 1000; border-bottom: 8px solid var(--accent); touch-action: none;
+            background: #000; z-index: 1000; min-height: 100px; max-height: 80vh;
+            border-bottom: 8px solid var(--accent); touch-action: none;
         }
+        
         #drag-handle { 
             width: 100%; height: 20px; background: var(--accent); 
             position: absolute; bottom: -20px; cursor: ns-resize; 
             display: flex; align-items: center; justify-content: center; font-size: 10px;
         }
+        
         #media-player { width: 100%; height: 100%; background: #000; }
         
-        #header-controls { padding: 10px; display: flex; gap: 10px; position: fixed; top: 220px; width: 100%; background: var(--bg); z-index: 999; flex-wrap: wrap; }
+        #header-controls { padding: 10px; display: flex; gap: 10px; position: fixed; top: 200px; width: 100%; background: var(--bg); z-index: 999; flex-wrap: wrap; }
         
-        #tag-nav { padding: 5px 15px; display: flex; gap: 10px; flex-wrap: wrap; background: #1a1a1a; border-bottom: 1px solid var(--border); }
-        .tag-btn { cursor: pointer; color: #888; font-size: 10px; text-transform: uppercase; }
-        .tag-btn:hover { color: var(--accent); }
-
+        /* Surgical Tag CSS */
+        #tag-container { padding: 5px 15px; position: fixed; top: 230px; width: 100%; background: var(--bg); z-index: 998; display: flex; gap: 5px; overflow-x: auto; }
+        .tag-pill { border: 1px solid var(--border); padding: 3px 8px; cursor: pointer; font-size: 10px; text-transform: uppercase; }
+        .tag-pill.active { background: var(--accent); color: white; border-color: var(--accent); }
+        
         .btn { background: #1a1a1a; color: #fff; border: 1px solid var(--border); padding: 5px 10px; cursor: pointer; font-size: 10px; text-transform: uppercase; }
         
-        #gallery-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 15px; padding: 15px; }
+        #gallery-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 15px; padding: 15px; }
         .relic { border: 1px solid var(--border); padding: 5px; cursor: pointer; position: relative; background: #141414; }
-        .thumb { width: 100%; background: #000; display: flex; align-items: center; justify-content: center; overflow: hidden; }
-        .thumb img { width: 100%; height: auto; object-fit: contain; }
+        .thumb { width: 100%; aspect-ratio: 16/9; background: #000; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+        .thumb img { width: 100%; height: 100%; object-fit: cover; }
+        .relic div { font-size: 10px; margin-top: 5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding: 0 5px; }
         
         .edit-ui { display: none; margin-top: 5px; border-top: 1px solid var(--border); padding-top: 5px; }
         body.edit-mode .edit-ui { display: flex; flex-wrap: wrap; gap: 5px; }
@@ -50,67 +55,107 @@
         <button id="logout-btn" class="btn" style="display:none;" onclick="logout()">Logout</button>
     </div>
 
-    <div id="tag-nav">
-        <span>Tags:</span>
-        <div class="tag-btn">desi</div><div class="tag-btn">hairy</div><div class="tag-btn">solo</div>
-        <div class="tag-btn">sex</div><div class="tag-btn">indian</div><div class="tag-btn">arab</div>
-        <div class="tag-btn">white</div><div class="tag-btn">twink</div><div class="tag-btn">cute</div>
-        <div class="tag-btn">HD</div>
-    </div>
+    <div id="tag-container"></div>
     
     <div id="gallery-grid">Loading...</div>
 
     <script>
         let state = [];
         let isEditMode = false;
-        
+        let selectedTags = new Set();
         const wrapper = document.getElementById('player-wrapper');
         const handle = document.getElementById('drag-handle');
-        handle.addEventListener('touchmove', (e) => { e.preventDefault(); wrapper.style.height = e.touches[0].clientY + 'px'; }, {passive: false});
+
+        handle.addEventListener('touchstart', (e) => { e.preventDefault(); }, {passive: false});
+        handle.addEventListener('touchmove', (e) => { 
+            e.preventDefault(); 
+            wrapper.style.height = e.touches[0].clientY + 'px'; 
+        }, {passive: false});
 
         async function init() {
             try {
-                const res = await fetch('data.json');
+                const res = await fetch('data.json?t=' + Date.now());
                 state = await res.json();
                 render();
             } catch (e) { document.getElementById('gallery-grid').innerHTML = "Error loading data."; }
         }
 
-        function toggleEdit() { isEditMode = !isEditMode; document.body.classList.toggle('edit-mode'); }
-        
+        function checkAdmin() {
+            if (prompt("Enter Admin Password:") === "1981") {
+                document.getElementById('edit-toggle').style.display = 'block';
+                document.getElementById('save-btn').style.display = 'block';
+                document.getElementById('logout-btn').style.display = 'block';
+                document.getElementById('admin-btn').style.display = 'none';
+            } else { alert("Access Denied"); }
+        }
+
+        function toggleTag(tag) {
+            if (selectedTags.has(tag)) selectedTags.delete(tag);
+            else selectedTags.add(tag);
+            render();
+        }
+
         function render() {
+            // Render Tags
+            const allTags = [...new Set(state.flatMap(r => r.tags ? r.tags.split(',') : []))].sort();
+            const tagContainer = document.getElementById('tag-container');
+            tagContainer.innerHTML = '';
+            allTags.forEach(t => {
+                const span = document.createElement('span');
+                span.className = `tag-pill ${selectedTags.has(t) ? 'active' : ''}`;
+                span.innerText = t;
+                span.onclick = () => toggleTag(t);
+                tagContainer.appendChild(span);
+            });
+
+            // Render Grid
             const grid = document.getElementById('gallery-grid');
             grid.innerHTML = '';
             state.forEach((r, i) => {
+                const rTags = r.tags ? r.tags.split(',') : [];
+                const isVisible = selectedTags.size === 0 || [...selectedTags].every(t => rTags.includes(t));
+                if (!isVisible) return;
+
                 const d = document.createElement('div');
                 d.className = 'relic';
-                // Changed: Removed the "if(!isEditMode)" check so clicking the relic plays video in both modes
-                d.onclick = () => { handleViewer(r.url); };
+                d.onclick = () => { if(!isEditMode) handleViewer(r.url); };
                 d.innerHTML = `
                     <div class="thumb">${r.img ? `<img src="${r.img}">` : '▶'}</div>
-                    <div style="font-size:10px; margin-top:5px;">${r.title || 'Untitled'}</div>
-                    <div style="font-size:9px; color:#666;">Tags: ${r.tags || 'none'}</div>
-                    <div class="edit-ui" onclick="event.stopPropagation()">
-                        <button onclick="edit(${i}, 'title')">Rename</button>
-                        <button onclick="edit(${i}, 'img')">Cover</button>
-                        <button onclick="edit(${i}, 'tags')">Tags</button>
-                        <button onclick="del(${i})">Delete</button>
+                    <div>${r.title}</div>
+                    <div class="edit-ui">
+                        <button onclick="event.stopPropagation(); edit(${i}, 'title')">Rename</button>
+                        <button onclick="event.stopPropagation(); edit(${i}, 'img')">Cover</button>
+                        <button onclick="event.stopPropagation(); edit(${i}, 'tags')">Tags</button>
+                        <button onclick="event.stopPropagation(); del(${i})">Delete</button>
                     </div>
                 `;
                 grid.appendChild(d);
             });
         }
 
+        function saveJson() {
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(state, null, 2));
+            const dl = document.createElement('a');
+            dl.setAttribute("href", dataStr);
+            dl.setAttribute("download", "data.json");
+            dl.click();
+        }
+
+        function logout() { location.reload(); }
+        function toggleEdit() { isEditMode = !isEditMode; document.body.classList.toggle('edit-mode'); }
+        function handleViewer(url) {
+            if (confirm("Play in top player?")) {
+                const p = document.getElementById('media-player');
+                p.src = url; p.load(); p.play();
+            } else { window.open(url, '_blank'); }
+        }
         function edit(i, key) {
             const val = prompt(`Change ${key}:`, state[i][key] || '');
             if (val !== null) { state[i][key] = val; render(); }
         }
-
-        function checkAdmin() { const pass = prompt("Enter Admin Password:"); if (pass === "1981") { document.getElementById('edit-toggle').style.display = 'block'; document.getElementById('save-btn').style.display = 'block'; document.getElementById('logout-btn').style.display = 'block'; document.getElementById('admin-btn').style.display = 'none'; } else { alert("Access Denied"); } }
-        function saveJson() { const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(state, null, 2)); const dlAnchorElem = document.createElement('a'); dlAnchorElem.setAttribute("href", dataStr); dlAnchorElem.setAttribute("download", "data.json"); dlAnchorElem.click(); }
-        function logout() { location.reload(); }
-        function handleViewer(url) { if (confirm("Play in top player?")) { const player = document.getElementById('media-player'); player.src = url; player.load(); player.play(); } else { window.open(url, '_blank'); } }
-        function del(i) { if (confirm("Delete this item?")) { state.splice(i, 1); render(); } }
+        function del(i) {
+            if (confirm("Delete?")) { state.splice(i, 1); render(); }
+        }
 
         init();
     </script>
