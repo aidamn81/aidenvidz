@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>The Gothic Archive (Formation & Snap-to-Grid)</title>
+    <title>The Gothic Archive (Restored & Updated)</title>
     <style>
         :root {
             --bg-color: #0f0f0f;
@@ -16,9 +16,12 @@
         body {
             background-color: var(--bg-color);
             color: var(--text-color);
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-family: 'Segoe UI', sans-serif;
             margin: 0;
             overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
         }
 
         #toolbar {
@@ -27,60 +30,68 @@
             display: flex;
             gap: 10px;
             border-bottom: 2px solid var(--accent);
+            z-index: 100;
         }
 
-        /* Tag Section */
         #tag-container {
             padding: 10px;
             display: flex;
             flex-wrap: wrap;
             gap: 8px;
             background: #111;
+            border-bottom: 1px solid #333;
         }
+
         .tag {
             background: #333;
             padding: 5px 12px;
             border-radius: 15px;
             cursor: pointer;
             font-size: 0.9em;
+            transition: background 0.2s;
         }
+
         .tag:hover { background: var(--accent); }
 
         #archive-area {
-            width: 100vw;
-            height: calc(100vh - 120px);
+            flex-grow: 1;
             position: relative;
             background-image: radial-gradient(#333 1px, transparent 1px);
             background-size: var(--grid-size) var(--grid-size);
             overflow: auto;
+            transform-origin: 0 0;
         }
 
-        /* Edit Mode Grid Guide */
         .edit-mode #archive-area { background-image: radial-gradient(#444 1px, transparent 1px); }
 
         .relic {
             position: absolute;
-            width: 200px;
+            width: 250px; /* Increased size */
             background: var(--panel-color);
             border: 1px solid #444;
-            cursor: grab;
             padding: 5px;
-            transition: transform 0.1s;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.5);
         }
 
         .relic img {
             width: 100%;
-            height: auto; /* Full image display */
+            height: auto;
             display: block;
-            object-fit: contain;
+            object-fit: contain; /* Ensures full image visibility */
         }
 
         .relic-menu {
             display: none;
-            font-size: 12px;
-            padding-top: 5px;
+            font-size: 11px;
+            margin-top: 5px;
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 4px;
         }
-        .edit-mode .relic-menu { display: block; }
+
+        .edit-mode .relic-menu { display: grid; }
+        
+        button { cursor: pointer; }
     </style>
 </head>
 <body>
@@ -89,6 +100,9 @@
         <button onclick="toggleEditMode()">Edit Mode</button>
         <button>Load</button>
         <button>Save</button>
+        <button>Zoom In</button>
+        <button>Zoom Out</button>
+        <button>Resize to Original</button>
     </div>
 
     <div id="tag-container">
@@ -105,31 +119,46 @@
     </div>
 
     <div id="archive-area">
+        <div class="relic" style="left: 50px; top: 50px;">
+            <img src="placeholder.jpg" alt="Relic">
+            <div class="relic-menu">
+                <button>Resize</button>
+                <button>Snap</button>
+                <button>Replace</button>
+                <button>Rename</button>
+                <button>Move</button>
+                <button onclick="deleteRelic(this)">Delete</button>
+            </div>
         </div>
+    </div>
 
     <script>
         function toggleEditMode() {
             document.body.classList.toggle('edit-mode');
         }
 
-        // Snap-to-grid math
-        const gridSize = 20;
-        function snap(val) {
-            return Math.round(val / gridSize) * gridSize;
+        function deleteRelic(btn) {
+            if(confirm('Are you sure you want to delete this?')) {
+                btn.closest('.relic').remove();
+            }
         }
 
-        // Basic Drag & Drop Logic
+        // Snap-to-grid math
+        const gridSize = 20;
+        function snap(val) { return Math.round(val / gridSize) * gridSize; }
+
+        // Drag Logic
         let dragged = null;
         document.addEventListener('mousedown', (e) => {
-            if(e.target.closest('.relic')) {
+            if(document.body.classList.contains('edit-mode') && e.target.closest('.relic')) {
                 dragged = e.target.closest('.relic');
             }
         });
 
         document.addEventListener('mousemove', (e) => {
-            if(dragged && document.body.classList.contains('edit-mode')) {
+            if(dragged) {
                 dragged.style.left = snap(e.clientX - 100) + 'px';
-                dragged.style.top = snap(e.clientY - 100) + 'px';
+                dragged.style.top = snap(e.clientY - 120) + 'px';
             }
         });
 
