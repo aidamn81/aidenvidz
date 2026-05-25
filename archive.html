@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>The Gothic Archive (Tagging Enabled)</title>
+    <title>The Gothic Archive (Formation & Snap-to-Grid)</title>
     <style>
         :root {
             --bg-color: #0f0f0f;
@@ -16,7 +16,7 @@
         body {
             background-color: var(--bg-color);
             color: var(--text-color);
-            font-family: 'Segoe UI', sans-serif;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             margin: 0;
             overflow: hidden;
             display: flex;
@@ -48,9 +48,7 @@
             border-radius: 15px;
             cursor: pointer;
             font-size: 0.9em;
-            transition: background 0.2s;
         }
-
         .tag:hover { background: var(--accent); }
 
         #archive-area {
@@ -69,6 +67,7 @@
             width: 250px;
             background: var(--panel-color);
             border: 1px solid #444;
+            cursor: grab;
             padding: 5px;
             box-shadow: 0 4px 6px rgba(0,0,0,0.5);
         }
@@ -80,33 +79,21 @@
             object-fit: contain;
         }
 
-        .tag-display {
-            font-size: 10px;
-            color: #aaa;
-            margin-top: 5px;
-            font-style: italic;
-        }
-
-        .tag-input {
-            display: none;
-            width: 100%;
-            background: #222;
-            color: white;
-            border: 1px solid #444;
-            margin-top: 5px;
-            box-sizing: border-box;
-        }
+        .tag-display { font-size: 10px; color: #888; margin: 5px 0; font-style: italic; }
+        .tag-input { display: none; width: 100%; margin-top: 5px; background: #222; color: #fff; border: 1px solid #444; }
 
         .relic-menu {
             display: none;
             font-size: 11px;
-            margin-top: 5px;
+            padding-top: 5px;
             grid-template-columns: repeat(2, 1fr);
             gap: 4px;
         }
 
-        .edit-mode .relic-menu, 
-        .edit-mode .tag-input { display: grid; }
+        .edit-mode .relic-menu, .edit-mode .tag-input { display: grid; }
+
+        button { cursor: pointer; background: #333; color: white; border: none; padding: 5px 10px; }
+        button:hover { background: var(--accent); }
     </style>
 </head>
 <body>
@@ -155,8 +142,7 @@
         }
 
         function updateTags(input) {
-            const display = input.nextElementSibling;
-            display.innerText = "Tags: " + input.value;
+            input.nextElementSibling.innerText = "Tags: " + input.value;
         }
 
         function deleteRelic(btn) {
