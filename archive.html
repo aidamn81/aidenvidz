@@ -48,7 +48,7 @@
         <button id="logout-btn" class="btn" style="display:none;" onclick="logout()">Logout</button>
     </div>
     
-    <div id="gallery-grid"></div>
+    <div id="gallery-grid">Loading...</div>
 
     <script>
         let state = [];
@@ -63,11 +63,27 @@
         }, {passive: false});
 
         async function init() {
-            try {
-                const res = await fetch('data.json');
-                state = await res.json();
+            // Priority: LocalStorage -> data.json
+            const savedData = localStorage.getItem('archiveData');
+            if (savedData) {
+                console.log("Loading from saved cache...");
+                state = JSON.parse(savedData);
                 render();
-            } catch (e) { document.getElementById('gallery-grid').innerHTML = "Error loading data."; }
+            } else {
+                console.log("Fetching fresh data.json...");
+                try {
+                    const res = await fetch('data.json');
+                    state = await res.json();
+                    localStorage.setItem('archiveData', JSON.stringify(state)); // Save to cache immediately
+                    render();
+                } catch (e) { document.getElementById('gallery-grid').innerHTML = "Error loading data."; }
+            }
+        }
+
+        function saveData() {
+            localStorage.setItem('archiveData', JSON.stringify(state));
+            console.log("Changes saved to device.");
+            render();
         }
 
         function checkAdmin() {
@@ -81,10 +97,7 @@
             }
         }
 
-        function logout() {
-            location.reload();
-        }
-
+        function logout() { location.reload(); }
         function toggleEdit() {
             isEditMode = !isEditMode;
             document.body.classList.toggle('edit-mode');
@@ -124,11 +137,11 @@
 
         function edit(i, key) {
             const val = prompt(`Change ${key}:`, state[i][key] || '');
-            if (val !== null) { state[i][key] = val; render(); }
+            if (val !== null) { state[i][key] = val; saveData(); }
         }
 
         function del(i) {
-            if (confirm("Delete this item?")) { state.splice(i, 1); render(); }
+            if (confirm("Delete this item?")) { state.splice(i, 1); saveData(); }
         }
 
         init();
