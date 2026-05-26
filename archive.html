@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>HAIRY BOYS AND MORE </title>
+    <title>The Gothic Archive</title>
     <style>
         :root { --bg: #0d0d0d; --accent: #800020; --border: #333; }
         body { background: var(--bg); color: #d9d9d9; font-family: monospace; margin: 0; padding-top: 280px; }
@@ -24,7 +24,6 @@
         
         #header-controls { padding: 10px; display: flex; gap: 10px; position: fixed; top: 200px; width: 100%; background: var(--bg); z-index: 999; flex-wrap: wrap; }
         
-        /* Fixed Tag Container positioning */
         #tag-container { 
             padding: 10px 15px; position: fixed; top: 235px; width: 100%; 
             background: var(--bg); z-index: 998; display: flex; flex-wrap: wrap; gap: 8px; 
@@ -32,6 +31,12 @@
         }
         .tag-pill { border: 1px solid var(--border); padding: 5px 10px; cursor: pointer; font-size: 11px; text-transform: uppercase; border-radius: 4px; }
         .tag-pill.active { background: var(--accent); color: white; border-color: var(--accent); }
+        
+        /* Edit Mode Add Panel */
+        #add-panel { display: none; padding: 20px; border-bottom: 1px solid var(--border); background: #1a1a1a; }
+        body.edit-mode #add-panel { display: block; }
+        .input-group { margin-bottom: 10px; }
+        input, textarea { width: 100%; background: #000; border: 1px solid var(--border); color: #fff; padding: 5px; }
         
         .btn { background: #1a1a1a; color: #fff; border: 1px solid var(--border); padding: 5px 10px; cursor: pointer; font-size: 10px; text-transform: uppercase; }
         
@@ -60,6 +65,20 @@
     </div>
 
     <div id="tag-container"></div>
+
+    <div id="add-panel">
+        <div class="input-group">
+            <input type="text" id="new-title" placeholder="Title (Optional)">
+            <input type="text" id="new-url" placeholder="Video URL">
+            <input type="text" id="new-img" placeholder="Cover Image Direct Link (Optional)">
+            <input type="text" id="new-tags" placeholder="Tags (comma separated)">
+            <button class="btn" onclick="addItem()">Add Single Link</button>
+        </div>
+        <div class="input-group">
+            <textarea id="bulk-urls" placeholder="Bulk Add: Paste one URL per line"></textarea>
+            <button class="btn" onclick="addBulk()">Add Bulk Links</button>
+        </div>
+    </div>
     
     <div id="gallery-grid">Loading...</div>
 
@@ -70,11 +89,11 @@
         const wrapper = document.getElementById('player-wrapper');
         const handle = document.getElementById('drag-handle');
 
+        // Drag/Resize Logic
         handle.addEventListener('touchstart', (e) => { e.preventDefault(); }, {passive: false});
         handle.addEventListener('touchmove', (e) => { 
             e.preventDefault(); 
             wrapper.style.height = e.touches[0].clientY + 'px'; 
-            // Adjust padding dynamically if player is resized very large
             document.body.style.paddingTop = (e.touches[0].clientY + 80) + 'px';
         }, {passive: false});
 
@@ -95,6 +114,25 @@
             } else { alert("Access Denied"); }
         }
 
+        function addItem() {
+            const newItem = {
+                title: document.getElementById('new-title').value || "New Item",
+                url: document.getElementById('new-url').value,
+                img: document.getElementById('new-img').value,
+                tags: document.getElementById('new-tags').value
+            };
+            state.push(newItem);
+            render();
+        }
+
+        function addBulk() {
+            const lines = document.getElementById('bulk-urls').value.split('\n');
+            lines.forEach(url => {
+                if(url.trim()) state.push({ title: "Imported Link", url: url.trim(), img: "", tags: "" });
+            });
+            render();
+        }
+
         function toggleTag(tag) {
             if (selectedTags.has(tag)) selectedTags.delete(tag);
             else selectedTags.add(tag);
@@ -112,10 +150,6 @@
                 span.onclick = () => toggleTag(t);
                 tagContainer.appendChild(span);
             });
-
-            // Adjust main padding dynamically based on tag container height
-            const tagHeight = tagContainer.offsetHeight;
-            document.body.style.paddingTop = (235 + tagHeight) + 'px';
 
             const grid = document.getElementById('gallery-grid');
             grid.innerHTML = '';
@@ -151,18 +185,16 @@
 
         function logout() { location.reload(); }
         function toggleEdit() { isEditMode = !isEditMode; document.body.classList.toggle('edit-mode'); }
-        
         function handleViewer(url) {
             const p = document.getElementById('media-player');
             p.src = url; p.load(); p.play();
         }
-
         function edit(i, key) {
             const val = prompt(`Change ${key}:`, state[i][key] || '');
             if (val !== null) { state[i][key] = val; render(); }
         }
         function del(i) {
-            if (confirm("Delete?")) { state.splice(i, 1); render(); }
+            if (confirm("Delete this relic?")) { state.splice(i, 1); render(); }
         }
 
         init();
