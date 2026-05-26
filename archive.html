@@ -33,10 +33,10 @@
         .tag-pill.active { background: var(--accent); color: white; border-color: var(--accent); }
         
         /* Edit Mode Add Panel */
-        #add-panel { display: none; padding: 20px; border-bottom: 1px solid var(--border); background: #1a1a1a; }
+        #add-panel { display: none; padding: 10px; border-bottom: 1px solid var(--border); background: #1a1a1a; margin-top: 60px; }
         body.edit-mode #add-panel { display: block; }
         .input-group { margin-bottom: 10px; }
-        input, textarea { width: 100%; background: #000; border: 1px solid var(--border); color: #fff; padding: 5px; }
+        input, textarea { width: 100%; background: #000; border: 1px solid var(--border); color: #fff; padding: 5px; box-sizing: border-box; }
         
         .btn { background: #1a1a1a; color: #fff; border: 1px solid var(--border); padding: 5px 10px; cursor: pointer; font-size: 10px; text-transform: uppercase; }
         
@@ -89,13 +89,11 @@
         const wrapper = document.getElementById('player-wrapper');
         const handle = document.getElementById('drag-handle');
 
-        // Drag/Resize Logic
-        handle.addEventListener('touchstart', (e) => { e.preventDefault(); }, {passive: false});
+        handle.addEventListener('touchstart', (e) => { }, {passive: true});
         handle.addEventListener('touchmove', (e) => { 
-            e.preventDefault(); 
             wrapper.style.height = e.touches[0].clientY + 'px'; 
-            document.body.style.paddingTop = (e.touches[0].clientY + 80) + 'px';
-        }, {passive: false});
+            document.body.style.paddingTop = (e.touches[0].clientY + 120) + 'px';
+        }, {passive: true});
 
         async function init() {
             try {
@@ -115,21 +113,23 @@
         }
 
         function addItem() {
-            const newItem = {
+            state.push({
                 title: document.getElementById('new-title').value || "New Item",
                 url: document.getElementById('new-url').value,
                 img: document.getElementById('new-img').value,
                 tags: document.getElementById('new-tags').value
-            };
-            state.push(newItem);
+            });
+            document.getElementById('new-title').value = '';
+            document.getElementById('new-url').value = '';
+            document.getElementById('new-img').value = '';
+            document.getElementById('new-tags').value = '';
             render();
         }
 
         function addBulk() {
-            const lines = document.getElementById('bulk-urls').value.split('\n');
-            lines.forEach(url => {
-                if(url.trim()) state.push({ title: "Imported Link", url: url.trim(), img: "", tags: "" });
-            });
+            const urls = document.getElementById('bulk-urls').value.split('\n');
+            urls.forEach(u => { if(u.trim()) state.push({ title: "New Item", url: u.trim(), img: "", tags: "" }); });
+            document.getElementById('bulk-urls').value = '';
             render();
         }
 
@@ -155,7 +155,7 @@
             grid.innerHTML = '';
             state.forEach((r, i) => {
                 const rTags = r.tags ? r.tags.split(',') : [];
-                const isVisible = selectedTags.size === 0 || [...selectedTags].every(t => rTags.includes(t));
+                const isVisible = selectedTags.size === 0 || [...selectedTags].every(t => rTags.includes(t.trim()));
                 if (!isVisible) return;
 
                 const d = document.createElement('div');
