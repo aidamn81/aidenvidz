@@ -6,13 +6,12 @@
     <title>The Gothic Archive</title>
     <style>
         :root { --bg: #0d0d0d; --accent: #800020; --border: #333; }
-        body { background: var(--bg); color: #d9d9d9; font-family: monospace; margin: 0; padding-top: 280px; }
+        body { background: var(--bg); color: #d9d9d9; font-family: monospace; margin: 0; padding-top: 220px; }
         
         #player-wrapper { 
             position: fixed; top: 0; left: 0; width: 100%; height: 200px; 
             background: #000; z-index: 1000; border-bottom: 8px solid var(--accent); touch-action: none;
         }
-        
         #drag-handle { 
             width: 100%; height: 20px; background: var(--accent); 
             position: absolute; bottom: -20px; cursor: ns-resize; 
@@ -23,20 +22,12 @@
         
         #header-controls { padding: 10px; display: flex; gap: 10px; position: fixed; top: 200px; width: 100%; background: var(--bg); z-index: 999; }
         
-        #tag-container { 
-            padding: 10px 15px; position: fixed; top: 240px; width: 100%; 
-            background: var(--bg); z-index: 998; display: flex; flex-wrap: wrap; gap: 8px; border-bottom: 1px solid var(--border);
-        }
-        
-        .tag-pill { border: 1px solid var(--border); padding: 5px 10px; cursor: pointer; font-size: 11px; text-transform: uppercase; border-radius: 4px; }
-        .tag-pill.active { background: var(--accent); color: white; border-color: var(--accent); }
-        
-        /* Modal Popup Styling */
-        #modal-overlay { 
+        /* Modal Popup Styles */
+        .modal-overlay { 
             display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
-            background: rgba(0,0,0,0.85); z-index: 2000; align-items: center; justify-content: center; 
+            background: rgba(0,0,0,0.9); z-index: 3000; align-items: center; justify-content: center; 
         }
-        #modal-content { background: #1a1a1a; padding: 20px; border: 1px solid var(--accent); width: 80%; max-width: 400px; position: relative; }
+        .modal-content { background: #1a1a1a; padding: 20px; border: 1px solid var(--accent); width: 80%; max-width: 400px; position: relative; }
         .close-btn { position: absolute; top: 5px; right: 10px; cursor: pointer; font-size: 20px; }
         
         .btn { background: #000; color: #fff; border: 1px solid var(--border); padding: 8px; cursor: pointer; font-size: 10px; text-transform: uppercase; }
@@ -58,23 +49,29 @@
     
     <div id="header-controls">
         <button id="admin-btn" class="btn" onclick="checkAdmin()">Admin Login</button>
-        <button id="add-toggle" class="btn" style="display:none;" onclick="toggleModal(true)">Add New Link</button>
-        <button id="save-btn" class="btn" style="display:none;" onclick="saveJson()">Save & Export JSON</button>
-        <button id="logout-btn" class="btn" style="display:none;" onclick="location.reload()">Logout</button>
+        <button id="add-toggle" class="btn" style="display:none;" onclick="toggleModal('add-modal')">Add Link</button>
+        <button id="tag-toggle" class="btn" onclick="toggleModal('tag-modal')">Filter Tags</button>
+        <button id="save-btn" class="btn" style="display:none;" onclick="saveJson()">Save JSON</button>
     </div>
 
-    <div id="tag-container"></div>
-
-    <div id="modal-overlay">
-        <div id="modal-content">
-            <span class="close-btn" onclick="toggleModal(false)">&times;</span>
-            <h3 style="margin-top:0">Add New Media</h3>
-            <input type="text" id="new-title" placeholder="Title" style="width:100%; margin-bottom:5px;">
-            <input type="text" id="new-url" placeholder="Direct or Embed URL" style="width:100%; margin-bottom:5px;">
-            <input type="text" id="new-img" placeholder="Cover Image URL" style="width:100%; margin-bottom:5px;">
-            <input type="text" id="new-tags" placeholder="Tags (comma separated)" style="width:100%; margin-bottom:10px;">
+    <div id="add-modal" class="modal-overlay">
+        <div class="modal-content">
+            <span class="close-btn" onclick="toggleModal('add-modal')">&times;</span>
+            <h3>Add Media</h3>
+            <input type="text" id="new-title" placeholder="Title" style="width:90%; margin-bottom:5px;">
+            <input type="text" id="new-url" placeholder="Direct or Embed URL" style="width:90%; margin-bottom:5px;">
+            <input type="text" id="new-img" placeholder="Cover Image URL" style="width:90%; margin-bottom:5px;">
+            <input type="text" id="new-tags" placeholder="Tags (comma separated)" style="width:90%; margin-bottom:10px;">
             <button class="btn" onclick="addItem()">Save Link</button>
-            <p id="save-confirm" style="color:green; display:none; font-size:10px;">Saved successfully!</p>
+            <p id="save-confirm" style="color:green; display:none;">Saved successfully!</p>
+        </div>
+    </div>
+
+    <div id="tag-modal" class="modal-overlay">
+        <div class="modal-content">
+            <span class="close-btn" onclick="toggleModal('tag-modal')">&times;</span>
+            <h3>Filter by Tags</h3>
+            <div id="tag-list"></div>
         </div>
     </div>
     
@@ -85,6 +82,11 @@
         let isEditMode = false;
         let selectedTags = new Set();
         const wrapper = document.getElementById('player-wrapper');
+        const handle = document.getElementById('drag-handle');
+
+        handle.addEventListener('touchmove', (e) => { 
+            wrapper.style.height = e.touches[0].clientY + 'px'; 
+        }, {passive: true});
 
         async function init() {
             try {
@@ -94,54 +96,53 @@
             } catch (e) { document.getElementById('gallery-grid').innerHTML = "Error loading data."; }
         }
 
-        function checkAdmin() {
-            if (prompt("Enter Password:") === "1981") {
-                document.getElementById('add-toggle').style.display = 'block';
-                document.getElementById('save-btn').style.display = 'block';
-                document.getElementById('logout-btn').style.display = 'block';
-                document.getElementById('admin-btn').style.display = 'none';
-                isEditMode = true; document.body.classList.add('edit-mode');
-            }
+        function toggleModal(id) { 
+            const m = document.getElementById(id);
+            m.style.display = m.style.display === 'flex' ? 'none' : 'flex';
         }
 
-        function toggleModal(show) { document.getElementById('modal-overlay').style.display = show ? 'flex' : 'none'; }
-
-        function addItem() {
-            state.push({
-                title: document.getElementById('new-title').value || "New Item",
-                url: document.getElementById('new-url').value,
-                img: document.getElementById('new-img').value,
-                tags: document.getElementById('new-tags').value
-            });
-            document.getElementById('save-confirm').style.display = 'block';
-            setTimeout(() => { document.getElementById('save-confirm').style.display = 'none'; }, 2000);
-            render();
+        function checkAdmin() {
+            if (prompt("Password:") === "1981") {
+                isEditMode = true;
+                document.body.classList.add('edit-mode');
+                document.getElementById('add-toggle').style.display = 'block';
+                document.getElementById('admin-btn').style.display = 'none';
+            }
         }
 
         function handleViewer(url) {
             const playerWrapper = document.getElementById('player-wrapper');
             const oldMedia = document.getElementById('media-player');
             const newMedia = url.includes('embed') ? document.createElement('iframe') : document.createElement('video');
-            
             newMedia.id = 'media-player';
             newMedia.src = url;
             if (newMedia.tagName === 'VIDEO') { newMedia.controls = true; newMedia.playsInline = true; }
             else { newMedia.frameBorder = "0"; newMedia.allowFullscreen = true; }
-            
             playerWrapper.replaceChild(newMedia, oldMedia);
             if (newMedia.tagName === 'VIDEO') newMedia.play();
         }
 
+        function addItem() {
+            state.push({
+                title: document.getElementById('new-title').value,
+                url: document.getElementById('new-url').value,
+                img: document.getElementById('new-img').value,
+                tags: document.getElementById('new-tags').value
+            });
+            document.getElementById('save-confirm').style.display = 'block';
+            render();
+        }
+
         function render() {
             const allTags = [...new Set(state.flatMap(r => r.tags ? r.tags.split(',') : []))].sort();
-            const tagContainer = document.getElementById('tag-container');
-            tagContainer.innerHTML = '';
+            const tagList = document.getElementById('tag-list');
+            tagList.innerHTML = '';
             allTags.forEach(t => {
-                const span = document.createElement('span');
-                span.className = `tag-pill ${selectedTags.has(t) ? 'active' : ''}`;
-                span.innerText = t;
-                span.onclick = () => { selectedTags.has(t) ? selectedTags.delete(t) : selectedTags.add(t); render(); };
-                tagContainer.appendChild(span);
+                const btn = document.createElement('button');
+                btn.className = `btn ${selectedTags.has(t) ? 'active' : ''}`;
+                btn.innerText = t;
+                btn.onclick = () => { selectedTags.has(t) ? selectedTags.delete(t) : selectedTags.add(t); render(); };
+                tagList.appendChild(btn);
             });
 
             const grid = document.getElementById('gallery-grid');
@@ -150,7 +151,7 @@
                 if (selectedTags.size > 0 && ![...selectedTags].every(t => r.tags?.includes(t.trim()))) return;
                 const d = document.createElement('div');
                 d.className = 'relic';
-                d.onclick = () => { if(!isEditMode) handleViewer(r.url); };
+                d.onclick = () => handleViewer(r.url);
                 d.innerHTML = `
                     <div class="thumb">${r.img ? `<img src="${r.img}">` : '▶'}</div>
                     <div style="font-size:10px;">${r.title}</div>
@@ -163,11 +164,12 @@
             });
         }
 
-        function edit(i, key) { const val = prompt(`Change ${key}:`, state[i][key]); if(val) { state[i][key] = val; render(); } }
+        function edit(i, key) { const val = prompt(`Change:`, state[i][key]); if(val) { state[i][key] = val; render(); } }
         function del(i) { if(confirm("Delete?")) { state.splice(i, 1); render(); } }
         function saveJson() {
-            const blob = new Blob([JSON.stringify(state, null, 2)], {type: "application/json"});
-            const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = "data.json"; a.click();
+            const a = document.createElement('a');
+            a.href = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(state, null, 2));
+            a.download = "data.json"; a.click();
         }
 
         init();
