@@ -20,7 +20,8 @@
             display: flex; align-items: center; justify-content: center; font-size: 10px;
         }
         
-        #media-player { width: 100%; height: 100%; background: #000; }
+        /* The player ID is shared by video and iframe */
+        #media-player { width: 100%; height: 100%; background: #000; display: block; }
         
         #header-controls { padding: 10px; display: flex; gap: 10px; position: fixed; top: 200px; width: 100%; background: var(--bg); z-index: 999; flex-wrap: wrap; }
         
@@ -32,7 +33,6 @@
         .tag-pill { border: 1px solid var(--border); padding: 5px 10px; cursor: pointer; font-size: 11px; text-transform: uppercase; border-radius: 4px; }
         .tag-pill.active { background: var(--accent); color: white; border-color: var(--accent); }
         
-        /* Edit Mode Add Panel */
         #add-panel { display: none; padding: 10px; border-bottom: 1px solid var(--border); background: #1a1a1a; margin-top: 60px; }
         body.edit-mode #add-panel { display: block; }
         .input-group { margin-bottom: 10px; }
@@ -68,9 +68,9 @@
 
     <div id="add-panel">
         <div class="input-group">
-            <input type="text" id="new-title" placeholder="Title (Optional)">
-            <input type="text" id="new-url" placeholder="Video URL">
-            <input type="text" id="new-img" placeholder="Cover Image Direct Link (Optional)">
+            <input type="text" id="new-title" placeholder="Title">
+            <input type="text" id="new-url" placeholder="Direct URL or Embed URL">
+            <input type="text" id="new-img" placeholder="Cover Image URL">
             <input type="text" id="new-tags" placeholder="Tags (comma separated)">
             <button class="btn" onclick="addItem()">Add Single Link</button>
         </div>
@@ -89,7 +89,6 @@
         const wrapper = document.getElementById('player-wrapper');
         const handle = document.getElementById('drag-handle');
 
-        handle.addEventListener('touchstart', (e) => { }, {passive: true});
         handle.addEventListener('touchmove', (e) => { 
             wrapper.style.height = e.touches[0].clientY + 'px'; 
             document.body.style.paddingTop = (e.touches[0].clientY + 120) + 'px';
@@ -102,6 +101,35 @@
                 render();
             } catch (e) { document.getElementById('gallery-grid').innerHTML = "Error loading data."; }
         }
+
+        // --- CORE VIEWER LOGIC ---
+        function handleViewer(url) {
+            const playerWrapper = document.getElementById('player-wrapper');
+            const oldMedia = document.getElementById('media-player');
+            let newMedia;
+            
+            // Check for embed keyword (works for thisvid, youtube, vimeo, etc)
+            if (url.includes('embed')) {
+                newMedia = document.createElement('iframe');
+                newMedia.src = url;
+                newMedia.frameBorder = "0";
+                newMedia.allowFullscreen = true;
+            } else {
+                newMedia = document.createElement('video');
+                newMedia.controls = true;
+                newMedia.playsInline = true;
+                newMedia.src = url;
+            }
+            
+            newMedia.id = 'media-player';
+            playerWrapper.replaceChild(newMedia, oldMedia);
+            
+            if (newMedia.tagName === 'VIDEO') {
+                newMedia.load();
+                newMedia.play();
+            }
+        }
+        // -------------------------
 
         function checkAdmin() {
             if (prompt("Enter Admin Password:") === "1981") {
@@ -119,23 +147,12 @@
                 img: document.getElementById('new-img').value,
                 tags: document.getElementById('new-tags').value
             });
-            document.getElementById('new-title').value = '';
-            document.getElementById('new-url').value = '';
-            document.getElementById('new-img').value = '';
-            document.getElementById('new-tags').value = '';
             render();
         }
 
         function addBulk() {
             const urls = document.getElementById('bulk-urls').value.split('\n');
-            urls.forEach(u => { if(u.trim()) state.push({ title: "New Item", url: u.trim(), img: "", tags: "" }); });
-            document.getElementById('bulk-urls').value = '';
-            render();
-        }
-
-        function toggleTag(tag) {
-            if (selectedTags.has(tag)) selectedTags.delete(tag);
-            else selectedTags.add(tag);
+            urls.forEach(u => { if(u.trim()) state.push({ title: "Imported Link", url: u.trim(), img: "", tags: "" }); });
             render();
         }
 
@@ -147,7 +164,7 @@
                 const span = document.createElement('span');
                 span.className = `tag-pill ${selectedTags.has(t) ? 'active' : ''}`;
                 span.innerText = t;
-                span.onclick = () => toggleTag(t);
+                span.onclick = () => { if(selectedTags.has(t)) selectedTags.delete(t); else selectedTags.add(t); render(); };
                 tagContainer.appendChild(span);
             });
 
@@ -155,8 +172,7 @@
             grid.innerHTML = '';
             state.forEach((r, i) => {
                 const rTags = r.tags ? r.tags.split(',') : [];
-                const isVisible = selectedTags.size === 0 || [...selectedTags].every(t => rTags.includes(t.trim()));
-                if (!isVisible) return;
+                if (selectedTags.size > 0 && ![...selectedTags].every(t => rTags.includes(t.trim()))) return;
 
                 const d = document.createElement('div');
                 d.className = 'relic';
@@ -185,17 +201,8 @@
 
         function logout() { location.reload(); }
         function toggleEdit() { isEditMode = !isEditMode; document.body.classList.toggle('edit-mode'); }
-        function handleViewer(url) {
-            const p = document.getElementById('media-player');
-            p.src = url; p.load(); p.play();
-        }
-        function edit(i, key) {
-            const val = prompt(`Change ${key}:`, state[i][key] || '');
-            if (val !== null) { state[i][key] = val; render(); }
-        }
-        function del(i) {
-            if (confirm("Delete this relic?")) { state.splice(i, 1); render(); }
-        }
+        function edit(i, key) { const val = prompt(`Change ${key}:`, state[i][key] || ''); if (val !== null) { state[i][key] = val; render(); } }
+        function del(i) { if (confirm("Delete this relic?")) { state.splice(i, 1); render(); } }
 
         init();
     </script>
