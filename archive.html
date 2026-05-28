@@ -10,8 +10,7 @@
         
         #player-wrapper { 
             position: fixed; top: 0; left: 0; width: 100%; height: 200px; 
-            background: #000; z-index: 1000; min-height: 100px; max-height: 80vh;
-            border-bottom: 8px solid var(--accent); touch-action: none;
+            background: #000; z-index: 1000; border-bottom: 8px solid var(--accent); touch-action: none;
         }
         
         #drag-handle { 
@@ -20,34 +19,34 @@
             display: flex; align-items: center; justify-content: center; font-size: 10px;
         }
         
-        /* The player ID is shared by video and iframe */
         #media-player { width: 100%; height: 100%; background: #000; display: block; }
         
-        #header-controls { padding: 10px; display: flex; gap: 10px; position: fixed; top: 200px; width: 100%; background: var(--bg); z-index: 999; flex-wrap: wrap; }
+        #header-controls { padding: 10px; display: flex; gap: 10px; position: fixed; top: 200px; width: 100%; background: var(--bg); z-index: 999; }
         
         #tag-container { 
-            padding: 10px 15px; position: fixed; top: 235px; width: 100%; 
-            background: var(--bg); z-index: 998; display: flex; flex-wrap: wrap; gap: 8px; 
-            border-bottom: 1px solid var(--border);
+            padding: 10px 15px; position: fixed; top: 240px; width: 100%; 
+            background: var(--bg); z-index: 998; display: flex; flex-wrap: wrap; gap: 8px; border-bottom: 1px solid var(--border);
         }
+        
         .tag-pill { border: 1px solid var(--border); padding: 5px 10px; cursor: pointer; font-size: 11px; text-transform: uppercase; border-radius: 4px; }
         .tag-pill.active { background: var(--accent); color: white; border-color: var(--accent); }
         
-        #add-panel { display: none; padding: 10px; border-bottom: 1px solid var(--border); background: #1a1a1a; margin-top: 60px; }
-        body.edit-mode #add-panel { display: block; }
-        .input-group { margin-bottom: 10px; }
-        input, textarea { width: 100%; background: #000; border: 1px solid var(--border); color: #fff; padding: 5px; box-sizing: border-box; }
+        /* Modal Popup Styling */
+        #modal-overlay { 
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
+            background: rgba(0,0,0,0.85); z-index: 2000; align-items: center; justify-content: center; 
+        }
+        #modal-content { background: #1a1a1a; padding: 20px; border: 1px solid var(--accent); width: 80%; max-width: 400px; position: relative; }
+        .close-btn { position: absolute; top: 5px; right: 10px; cursor: pointer; font-size: 20px; }
         
-        .btn { background: #1a1a1a; color: #fff; border: 1px solid var(--border); padding: 5px 10px; cursor: pointer; font-size: 10px; text-transform: uppercase; }
-        
+        .btn { background: #000; color: #fff; border: 1px solid var(--border); padding: 8px; cursor: pointer; font-size: 10px; text-transform: uppercase; }
         #gallery-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 15px; padding: 15px; }
-        .relic { border: 1px solid var(--border); padding: 5px; cursor: pointer; position: relative; background: #141414; }
+        .relic { border: 1px solid var(--border); padding: 5px; cursor: pointer; background: #141414; }
         .thumb { width: 100%; aspect-ratio: 16/9; background: #000; display: flex; align-items: center; justify-content: center; overflow: hidden; }
         .thumb img { width: 100%; height: 100%; object-fit: cover; }
-        .relic div { font-size: 10px; margin-top: 5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding: 0 5px; }
         
         .edit-ui { display: none; margin-top: 5px; border-top: 1px solid var(--border); padding-top: 5px; }
-        body.edit-mode .edit-ui { display: flex; flex-wrap: wrap; gap: 5px; }
+        body.edit-mode .edit-ui { display: flex; gap: 5px; }
     </style>
 </head>
 <body>
@@ -59,24 +58,23 @@
     
     <div id="header-controls">
         <button id="admin-btn" class="btn" onclick="checkAdmin()">Admin Login</button>
-        <button id="edit-toggle" class="btn" style="display:none;" onclick="toggleEdit()">Toggle Edit Mode</button>
-        <button id="save-btn" class="btn" style="display:none;" onclick="saveJson()">Save & Export Data</button>
-        <button id="logout-btn" class="btn" style="display:none;" onclick="logout()">Logout</button>
+        <button id="add-toggle" class="btn" style="display:none;" onclick="toggleModal(true)">Add New Link</button>
+        <button id="save-btn" class="btn" style="display:none;" onclick="saveJson()">Save & Export JSON</button>
+        <button id="logout-btn" class="btn" style="display:none;" onclick="location.reload()">Logout</button>
     </div>
 
     <div id="tag-container"></div>
 
-    <div id="add-panel">
-        <div class="input-group">
-            <input type="text" id="new-title" placeholder="Title">
-            <input type="text" id="new-url" placeholder="Direct URL or Embed URL">
-            <input type="text" id="new-img" placeholder="Cover Image URL">
-            <input type="text" id="new-tags" placeholder="Tags (comma separated)">
-            <button class="btn" onclick="addItem()">Add Single Link</button>
-        </div>
-        <div class="input-group">
-            <textarea id="bulk-urls" placeholder="Bulk Add: Paste one URL per line"></textarea>
-            <button class="btn" onclick="addBulk()">Add Bulk Links</button>
+    <div id="modal-overlay">
+        <div id="modal-content">
+            <span class="close-btn" onclick="toggleModal(false)">&times;</span>
+            <h3 style="margin-top:0">Add New Media</h3>
+            <input type="text" id="new-title" placeholder="Title" style="width:100%; margin-bottom:5px;">
+            <input type="text" id="new-url" placeholder="Direct or Embed URL" style="width:100%; margin-bottom:5px;">
+            <input type="text" id="new-img" placeholder="Cover Image URL" style="width:100%; margin-bottom:5px;">
+            <input type="text" id="new-tags" placeholder="Tags (comma separated)" style="width:100%; margin-bottom:10px;">
+            <button class="btn" onclick="addItem()">Save Link</button>
+            <p id="save-confirm" style="color:green; display:none; font-size:10px;">Saved successfully!</p>
         </div>
     </div>
     
@@ -87,12 +85,6 @@
         let isEditMode = false;
         let selectedTags = new Set();
         const wrapper = document.getElementById('player-wrapper');
-        const handle = document.getElementById('drag-handle');
-
-        handle.addEventListener('touchmove', (e) => { 
-            wrapper.style.height = e.touches[0].clientY + 'px'; 
-            document.body.style.paddingTop = (e.touches[0].clientY + 120) + 'px';
-        }, {passive: true});
 
         async function init() {
             try {
@@ -102,43 +94,17 @@
             } catch (e) { document.getElementById('gallery-grid').innerHTML = "Error loading data."; }
         }
 
-        // --- CORE VIEWER LOGIC ---
-        function handleViewer(url) {
-            const playerWrapper = document.getElementById('player-wrapper');
-            const oldMedia = document.getElementById('media-player');
-            let newMedia;
-            
-            // Check for embed keyword (works for thisvid, youtube, vimeo, etc)
-            if (url.includes('embed')) {
-                newMedia = document.createElement('iframe');
-                newMedia.src = url;
-                newMedia.frameBorder = "0";
-                newMedia.allowFullscreen = true;
-            } else {
-                newMedia = document.createElement('video');
-                newMedia.controls = true;
-                newMedia.playsInline = true;
-                newMedia.src = url;
-            }
-            
-            newMedia.id = 'media-player';
-            playerWrapper.replaceChild(newMedia, oldMedia);
-            
-            if (newMedia.tagName === 'VIDEO') {
-                newMedia.load();
-                newMedia.play();
-            }
-        }
-        // -------------------------
-
         function checkAdmin() {
-            if (prompt("Enter Admin Password:") === "1981") {
-                document.getElementById('edit-toggle').style.display = 'block';
+            if (prompt("Enter Password:") === "1981") {
+                document.getElementById('add-toggle').style.display = 'block';
                 document.getElementById('save-btn').style.display = 'block';
                 document.getElementById('logout-btn').style.display = 'block';
                 document.getElementById('admin-btn').style.display = 'none';
-            } else { alert("Access Denied"); }
+                isEditMode = true; document.body.classList.add('edit-mode');
+            }
         }
+
+        function toggleModal(show) { document.getElementById('modal-overlay').style.display = show ? 'flex' : 'none'; }
 
         function addItem() {
             state.push({
@@ -147,13 +113,23 @@
                 img: document.getElementById('new-img').value,
                 tags: document.getElementById('new-tags').value
             });
+            document.getElementById('save-confirm').style.display = 'block';
+            setTimeout(() => { document.getElementById('save-confirm').style.display = 'none'; }, 2000);
             render();
         }
 
-        function addBulk() {
-            const urls = document.getElementById('bulk-urls').value.split('\n');
-            urls.forEach(u => { if(u.trim()) state.push({ title: "Imported Link", url: u.trim(), img: "", tags: "" }); });
-            render();
+        function handleViewer(url) {
+            const playerWrapper = document.getElementById('player-wrapper');
+            const oldMedia = document.getElementById('media-player');
+            const newMedia = url.includes('embed') ? document.createElement('iframe') : document.createElement('video');
+            
+            newMedia.id = 'media-player';
+            newMedia.src = url;
+            if (newMedia.tagName === 'VIDEO') { newMedia.controls = true; newMedia.playsInline = true; }
+            else { newMedia.frameBorder = "0"; newMedia.allowFullscreen = true; }
+            
+            playerWrapper.replaceChild(newMedia, oldMedia);
+            if (newMedia.tagName === 'VIDEO') newMedia.play();
         }
 
         function render() {
@@ -164,45 +140,35 @@
                 const span = document.createElement('span');
                 span.className = `tag-pill ${selectedTags.has(t) ? 'active' : ''}`;
                 span.innerText = t;
-                span.onclick = () => { if(selectedTags.has(t)) selectedTags.delete(t); else selectedTags.add(t); render(); };
+                span.onclick = () => { selectedTags.has(t) ? selectedTags.delete(t) : selectedTags.add(t); render(); };
                 tagContainer.appendChild(span);
             });
 
             const grid = document.getElementById('gallery-grid');
             grid.innerHTML = '';
             state.forEach((r, i) => {
-                const rTags = r.tags ? r.tags.split(',') : [];
-                if (selectedTags.size > 0 && ![...selectedTags].every(t => rTags.includes(t.trim()))) return;
-
+                if (selectedTags.size > 0 && ![...selectedTags].every(t => r.tags?.includes(t.trim()))) return;
                 const d = document.createElement('div');
                 d.className = 'relic';
                 d.onclick = () => { if(!isEditMode) handleViewer(r.url); };
                 d.innerHTML = `
                     <div class="thumb">${r.img ? `<img src="${r.img}">` : '▶'}</div>
-                    <div>${r.title}</div>
+                    <div style="font-size:10px;">${r.title}</div>
                     <div class="edit-ui">
-                        <button onclick="event.stopPropagation(); edit(${i}, 'title')">Rename</button>
-                        <button onclick="event.stopPropagation(); edit(${i}, 'img')">Cover</button>
-                        <button onclick="event.stopPropagation(); edit(${i}, 'tags')">Tags</button>
-                        <button onclick="event.stopPropagation(); del(${i})">Delete</button>
+                        <button onclick="event.stopPropagation(); edit(${i}, 'title')">Edit</button>
+                        <button onclick="event.stopPropagation(); del(${i})">Del</button>
                     </div>
                 `;
                 grid.appendChild(d);
             });
         }
 
+        function edit(i, key) { const val = prompt(`Change ${key}:`, state[i][key]); if(val) { state[i][key] = val; render(); } }
+        function del(i) { if(confirm("Delete?")) { state.splice(i, 1); render(); } }
         function saveJson() {
-            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(state, null, 2));
-            const dl = document.createElement('a');
-            dl.setAttribute("href", dataStr);
-            dl.setAttribute("download", "data.json");
-            dl.click();
+            const blob = new Blob([JSON.stringify(state, null, 2)], {type: "application/json"});
+            const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = "data.json"; a.click();
         }
-
-        function logout() { location.reload(); }
-        function toggleEdit() { isEditMode = !isEditMode; document.body.classList.toggle('edit-mode'); }
-        function edit(i, key) { const val = prompt(`Change ${key}:`, state[i][key] || ''); if (val !== null) { state[i][key] = val; render(); } }
-        function del(i) { if (confirm("Delete this relic?")) { state.splice(i, 1); render(); } }
 
         init();
     </script>
