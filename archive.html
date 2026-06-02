@@ -87,7 +87,7 @@
                 render(); 
             } catch (e) { 
                 console.error(e);
-                document.getElementById('gallery-grid').innerHTML = "No data.json found. Please create one."; 
+                document.getElementById('gallery-grid').innerHTML = "No data.json found."; 
             }
         }
 
@@ -148,6 +148,7 @@
                     <div style="font-size:10px; margin-top:5px;">${r.title}</div>
                     <div class="edit-ui">
                         <button onclick="event.stopPropagation(); edit(${i}, 'title')">Rename</button>
+                        <button onclick="event.stopPropagation(); edit(${i}, 'url')">Link</button>
                         <button onclick="event.stopPropagation(); edit(${i}, 'img')">Thumbnail</button>
                         <button onclick="event.stopPropagation(); edit(${i}, 'tags')">Tags</button>
                         <button onclick="event.stopPropagation(); del(${i})">Delete</button>
