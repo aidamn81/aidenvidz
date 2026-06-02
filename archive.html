@@ -79,6 +79,29 @@
         let isEditMode = false;
         let selectedTags = new Set();
         const wrapper = document.getElementById('player-wrapper');
+        const handle = document.getElementById('drag-handle');
+        const controls = document.getElementById('header-controls');
+        let isResizing = false;
+
+        // Resize Logic
+        handle.addEventListener('pointerdown', (e) => {
+            isResizing = true;
+            document.body.style.userSelect = 'none';
+            e.preventDefault();
+        });
+
+        window.addEventListener('pointermove', (e) => {
+            if (!isResizing) return;
+            let newHeight = Math.max(50, e.clientY);
+            wrapper.style.height = newHeight + 'px';
+            document.body.style.paddingTop = newHeight + 'px';
+            controls.style.top = newHeight + 'px';
+        });
+
+        window.addEventListener('pointerup', () => {
+            isResizing = false;
+            document.body.style.userSelect = '';
+        });
 
         async function init() {
             try { 
