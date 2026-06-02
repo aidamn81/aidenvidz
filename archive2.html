@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>The Gothic Archive (Template)</title>
+    <title>The Gothic Archive</title>
     <style>
         :root { --bg: #0d0d0d; --accent: #800020; --border: #333; }
         body { background: var(--bg); color: #d9d9d9; font-family: monospace; margin: 0; padding-top: 220px; }
@@ -72,10 +72,10 @@
         </div>
     </div>
     
-    <div id="gallery-grid"></div>
+    <div id="gallery-grid">Loading...</div>
 
     <script>
-        let state = []; // Empty state for new template
+        let state = [];
         let isEditMode = false;
         let selectedTags = new Set();
         const wrapper = document.getElementById('player-wrapper');
@@ -83,6 +83,7 @@
         const controls = document.getElementById('header-controls');
         let isResizing = false;
 
+        // Resize Logic
         handle.addEventListener('pointerdown', (e) => {
             isResizing = true;
             document.body.style.userSelect = 'none';
@@ -101,6 +102,17 @@
             isResizing = false;
             document.body.style.userSelect = '';
         });
+
+        async function init() {
+            try { 
+                const res = await fetch('data.json?t=' + Date.now()); 
+                state = await res.json(); 
+                render(); 
+            } catch (e) { 
+                console.error(e);
+                document.getElementById('gallery-grid').innerHTML = "No data.json found."; 
+            }
+        }
 
         function toggleModal(id) { const m = document.getElementById(id); m.style.display = m.style.display === 'flex' ? 'none' : 'flex'; }
         
@@ -176,6 +188,8 @@
             a.href = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(state, null, 2));
             a.download = "data.json"; a.click();
         }
+
+        init();
     </script>
 </body>
 </html>
