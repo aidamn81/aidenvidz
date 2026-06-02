@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>The Gothic Archive</title>
+    <title>The Gothic Archive (Uploaded)</title>
     <style>
         :root { --bg: #0d0d0d; --accent: #800020; --border: #333; }
         body { background: var(--bg); color: #d9d9d9; font-family: monospace; margin: 0; padding-top: 220px; }
@@ -83,7 +83,6 @@
         const controls = document.getElementById('header-controls');
         let isResizing = false;
 
-        // Resize Logic
         handle.addEventListener('pointerdown', (e) => {
             isResizing = true;
             document.body.style.userSelect = 'none';
@@ -105,12 +104,11 @@
 
         async function init() {
             try { 
-                const res = await fetch('data.json?t=' + Date.now()); 
+                const res = await fetch('datasecond.json?t=' + Date.now()); 
                 state = await res.json(); 
                 render(); 
             } catch (e) { 
-                console.error(e);
-                document.getElementById('gallery-grid').innerHTML = "No data.json found."; 
+                document.getElementById('gallery-grid').innerHTML = "No datasecond.json found."; 
             }
         }
 
@@ -186,7 +184,7 @@
         function saveJson() {
             const a = document.createElement('a');
             a.href = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(state, null, 2));
-            a.download = "data.json"; a.click();
+            a.download = "datasecond.json"; a.click();
         }
 
         init();
