@@ -16,12 +16,17 @@
             min-height: 100vh; 
         }
         
-        /* Header placeholder */
         header { 
             width: 100%; 
-            padding: 40px 0; 
             text-align: center; 
-            border-bottom: 1px solid #333; 
+        }
+        
+        .banner-img { 
+            width: 100%; 
+            height: 250px; /* Adjust this height to your preference */
+            object-fit: cover; 
+            display: block; 
+            border-bottom: 2px solid #d4af37;
         }
         
         nav { 
@@ -49,7 +54,7 @@
 <body>
 
     <header>
-        <h1>Archive Navigation</h1>
+        <img src="arab.jpg" alt="Archive Banner" class="banner-img">
     </header>
 
     <nav>
