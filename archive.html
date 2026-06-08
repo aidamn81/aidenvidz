@@ -32,7 +32,7 @@
         #gallery-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 15px; padding: 15px; }
         .relic { border: 1px solid var(--border); padding: 5px; cursor: pointer; background: #141414; }
         
-        /* Updated to square aspect ratio */
+        /* Square Thumbnails */
         .thumb { width: 100%; aspect-ratio: 1/1; background: #000; display: flex; align-items: center; justify-content: center; overflow: hidden; }
         .thumb img { width: 100%; height: 100%; object-fit: cover; }
         
@@ -128,6 +128,12 @@
         }
 
         function handleViewer(url) {
+            // Check for hosts that block framing
+            if (url.includes('thisvid.com')) {
+                window.open(url, '_blank');
+                return;
+            }
+
             const playerWrapper = document.getElementById('player-wrapper');
             const oldMedia = document.getElementById('media-player');
             const newMedia = (url.includes('iframe') || url.includes('embed') || url.includes('player')) ? document.createElement('iframe') : document.createElement('video');
