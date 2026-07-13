@@ -127,20 +127,29 @@
             } 
         }
 
+        // Updated handleViewer to always attempt on-page load
         function handleViewer(url) {
-            // Check for hosts that block framing
-            if (url.includes('thisvid.com')) {
-                window.open(url, '_blank');
-                return;
-            }
-
             const playerWrapper = document.getElementById('player-wrapper');
             const oldMedia = document.getElementById('media-player');
-            const newMedia = (url.includes('iframe') || url.includes('embed') || url.includes('player')) ? document.createElement('iframe') : document.createElement('video');
+            
+            // Check if the URL ends with a known video format to use native player
+            const isVideoFile = url.match(/\.(mp4|webm|ogg)$/i);
+            
+            const newMedia = (isVideoFile) ? document.createElement('video') : document.createElement('iframe');
             newMedia.id = 'media-player'; 
             newMedia.src = url;
-            if (newMedia.tagName === 'VIDEO') { newMedia.controls = true; newMedia.playsInline = true; newMedia.autoplay = true; }
-            else { newMedia.frameBorder = "0"; newMedia.allowFullscreen = true; newMedia.style.width = "100%"; newMedia.style.height = "100%"; }
+
+            if (isVideoFile) { 
+                newMedia.controls = true; 
+                newMedia.playsInline = true; 
+                newMedia.autoplay = true; 
+            } else { 
+                newMedia.frameBorder = "0"; 
+                newMedia.allowFullscreen = true; 
+                newMedia.style.width = "100%"; 
+                newMedia.style.height = "100%"; 
+            }
+            
             playerWrapper.replaceChild(newMedia, oldMedia);
         }
 
