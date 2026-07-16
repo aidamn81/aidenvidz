@@ -18,7 +18,8 @@
             display: flex; align-items: center; justify-content: center; font-size: 10px; color: #fff;
         }
         
-        #media-player { width: 100%; height: 100%; background: #000; display: block; }
+        /* The player container */
+        #media-container { width: 100%; height: 100%; background: #000; display: block; }
         #header-controls { padding: 10px; display: flex; gap: 10px; position: fixed; top: 200px; width: 100%; background: var(--bg); z-index: 999; }
         
         .modal-overlay { 
@@ -32,7 +33,6 @@
         #gallery-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 15px; padding: 15px; }
         .relic { border: 1px solid var(--border); padding: 5px; cursor: pointer; background: #141414; }
         
-        /* Square Thumbnails */
         .thumb { width: 100%; aspect-ratio: 1/1; background: #000; display: flex; align-items: center; justify-content: center; overflow: hidden; }
         .thumb img { width: 100%; height: 100%; object-fit: cover; }
         
@@ -43,7 +43,7 @@
 <body>
 
     <div id="player-wrapper">
-        <video id="media-player" controls playsinline></video>
+        <div id="media-container"><video id="media-player" controls playsinline style="width:100%; height:100%;"></video></div>
         <div id="drag-handle">|| DRAG TO RESIZE ||</div>
     </div>
     
@@ -83,6 +83,7 @@
         const wrapper = document.getElementById('player-wrapper');
         const handle = document.getElementById('drag-handle');
         const controls = document.getElementById('header-controls');
+        const mediaContainer = document.getElementById('media-container');
         let isResizing = false;
 
         async function init() {
@@ -110,10 +111,7 @@
             controls.style.top = newHeight + 'px';
         });
 
-        window.addEventListener('pointerup', () => {
-            isResizing = false;
-            document.body.style.userSelect = '';
-        });
+        window.addEventListener('pointerup', () => { isResizing = false; document.body.style.userSelect = ''; });
 
         function toggleModal(id) { const m = document.getElementById(id); m.style.display = m.style.display === 'flex' ? 'none' : 'flex'; }
         
@@ -127,30 +125,31 @@
             } 
         }
 
-        // Updated handleViewer to always attempt on-page load
         function handleViewer(url) {
-            const playerWrapper = document.getElementById('player-wrapper');
-            const oldMedia = document.getElementById('media-player');
-            
-            // Check if the URL ends with a known video format to use native player
+            // Determine if it's a direct file or an embed page
             const isVideoFile = url.match(/\.(mp4|webm|ogg)$/i);
             
-            const newMedia = (isVideoFile) ? document.createElement('video') : document.createElement('iframe');
-            newMedia.id = 'media-player'; 
-            newMedia.src = url;
-
-            if (isVideoFile) { 
-                newMedia.controls = true; 
-                newMedia.playsInline = true; 
-                newMedia.autoplay = true; 
-            } else { 
-                newMedia.frameBorder = "0"; 
-                newMedia.allowFullscreen = true; 
-                newMedia.style.width = "100%"; 
-                newMedia.style.height = "100%"; 
-            }
+            mediaContainer.innerHTML = ''; // Clear current
             
-            playerWrapper.replaceChild(newMedia, oldMedia);
+            if (isVideoFile) {
+                const vid = document.createElement('video');
+                vid.id = 'media-player';
+                vid.src = url;
+                vid.controls = true;
+                vid.autoplay = true;
+                vid.style.width = '100%';
+                vid.style.height = '100%';
+                mediaContainer.appendChild(vid);
+            } else {
+                const frame = document.createElement('iframe');
+                frame.id = 'media-player';
+                frame.src = url;
+                frame.style.width = '100%';
+                frame.style.height = '100%';
+                frame.frameBorder = '0';
+                frame.allowFullscreen = true;
+                mediaContainer.appendChild(frame);
+            }
         }
 
         function addItem() {
