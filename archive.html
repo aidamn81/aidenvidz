@@ -18,7 +18,6 @@
             display: flex; align-items: center; justify-content: center; font-size: 10px; color: #fff;
         }
         
-        /* The player container */
         #media-container { width: 100%; height: 100%; background: #000; display: block; }
         #header-controls { padding: 10px; display: flex; gap: 10px; position: fixed; top: 200px; width: 100%; background: var(--bg); z-index: 999; }
         
@@ -126,28 +125,29 @@
         }
 
         function handleViewer(url) {
-            // Determine if it's a direct file or an embed page
-            const isVideoFile = url.match(/\.(mp4|webm|ogg)$/i);
+            mediaContainer.innerHTML = '';
             
-            mediaContainer.innerHTML = ''; // Clear current
+            // Check for common direct video file extensions
+            const isVideoFile = url.match(/\.(mp4|webm|ogg|mov)$/i);
             
             if (isVideoFile) {
                 const vid = document.createElement('video');
-                vid.id = 'media-player';
                 vid.src = url;
                 vid.controls = true;
                 vid.autoplay = true;
+                vid.playsInline = true;
                 vid.style.width = '100%';
                 vid.style.height = '100%';
+                vid.style.backgroundColor = '#000';
                 mediaContainer.appendChild(vid);
             } else {
                 const frame = document.createElement('iframe');
-                frame.id = 'media-player';
                 frame.src = url;
                 frame.style.width = '100%';
                 frame.style.height = '100%';
                 frame.frameBorder = '0';
                 frame.allowFullscreen = true;
+                frame.allow = "autoplay; encrypted-media";
                 mediaContainer.appendChild(frame);
             }
         }
