@@ -127,18 +127,21 @@
         function handleViewer(url) {
             mediaContainer.innerHTML = '';
             
-            // Check for common direct video file extensions
             const isVideoFile = url.match(/\.(mp4|webm|ogg|mov)$/i);
             
             if (isVideoFile) {
                 const vid = document.createElement('video');
-                vid.src = url;
                 vid.controls = true;
                 vid.autoplay = true;
                 vid.playsInline = true;
                 vid.style.width = '100%';
                 vid.style.height = '100%';
-                vid.style.backgroundColor = '#000';
+                
+                const source = document.createElement('source');
+                source.src = url;
+                source.type = 'video/mp4'; 
+                
+                vid.appendChild(source);
                 mediaContainer.appendChild(vid);
             } else {
                 const frame = document.createElement('iframe');
@@ -147,7 +150,7 @@
                 frame.style.height = '100%';
                 frame.frameBorder = '0';
                 frame.allowFullscreen = true;
-                frame.allow = "autoplay; encrypted-media";
+                frame.allow = "accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture";
                 mediaContainer.appendChild(frame);
             }
         }
