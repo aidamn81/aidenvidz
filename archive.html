@@ -79,17 +79,15 @@
         </div>
     </div>
     
-    <div id="gallery-grid">Searching database paths...</div>
+    <div id="gallery-grid">Connecting to Gothic Archive...</div>
 
     <script>
+        // CORRECT FIREBASE CONFIG FOR GOTHIC ARCHIVE
         const firebaseConfig = {
-            apiKey: "AIzaSyB95B-M07ZWK0SW5JFCt3uawB3erjjhMCM",
-            authDomain: "aidenvidz.firebaseapp.com",
-            databaseURL: "https://aidenvidz-default-rtdb.europe-west1.firebasedatabase.app",
-            projectId: "aidenvidz",
-            storageBucket: "aidenvidz.firebasestorage.app",
-            messagingSenderId: "881025264027",
-            appId: "1:881025264027:web:2497c49a00fcf29153593e"
+            apiKey: "AIzaSyAuNbY1Xv_ZF3kJah20qqPBz-IiiMAR9gE",
+            authDomain: "aidenstartpage.firebaseapp.com",
+            databaseURL: "https://aidenstartpage-default-rtdb.europe-west1.firebasedatabase.app",
+            projectId: "aidenstartpage"
         };
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
@@ -103,13 +101,11 @@
         const mediaContainer = document.getElementById('media-container');
         let isResizing = false;
 
-        // MULTI-PATH DATA RECOVERY SCANNER
         function init() {
             db.ref().on('value', (snapshot) => {
                 const rootData = snapshot.val() || {};
                 state = [];
 
-                // Parse standard nodes or user-specific nested paths
                 const parseNode = (node, pathName) => {
                     if (!node) return;
                     for (let id in node) {
@@ -127,13 +123,12 @@
                     }
                 };
 
-                // Scan all known historical nodes
-                if (rootData.vault) parseNode(rootData.vault, 'vault');
+                // Scan all historical node structures in your database
                 if (rootData.relics) parseNode(rootData.relics, 'relics');
                 if (rootData.links) parseNode(rootData.links, 'links');
+                if (rootData.vault) parseNode(rootData.vault, 'vault');
                 if (rootData.bookmarks) parseNode(rootData.bookmarks, 'bookmarks');
                 
-                // Scan nested archive path if present
                 if (rootData.archive) {
                     for (let uid in rootData.archive) {
                         if (rootData.archive[uid].relics) {
@@ -203,7 +198,7 @@
                 timestamp: Date.now()
             };
 
-            db.ref('vault').push(newItem);
+            db.ref('relics').push(newItem);
             document.getElementById('new-title').value = '';
             document.getElementById('new-url').value = '';
             document.getElementById('new-img').value = '';
@@ -227,7 +222,7 @@
             grid.innerHTML = '';
 
             if (state.length === 0) {
-                grid.innerHTML = 'No relics found in database.';
+                grid.innerHTML = 'No relics found in archive.';
                 return;
             }
 
