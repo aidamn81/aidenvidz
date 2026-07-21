@@ -4,6 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>The Gothic Archive</title>
+
+    <!-- Firebase Legacy SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-database-compat.js"></script>
+
     <style>
         :root { --bg: #0d0d0d; --accent: #800020; --border: #333; }
         body { background: var(--bg); color: #d9d9d9; font-family: monospace; margin: 0; padding-top: 220px; }
@@ -29,6 +34,8 @@
         .close-btn { position: absolute; top: 5px; right: 10px; cursor: pointer; font-size: 20px; }
         
         .btn { background: #000; color: #fff; border: 1px solid var(--border); padding: 8px; cursor: pointer; font-size: 10px; text-transform: uppercase; }
+        .btn.active { border-color: var(--accent); color: var(--accent); background: #1a1a1a; }
+
         #gallery-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 15px; padding: 15px; }
         .relic { border: 1px solid var(--border); padding: 5px; cursor: pointer; background: #141414; }
         
@@ -50,7 +57,6 @@
         <button id="admin-btn" class="btn" onclick="checkAdmin()">Admin Login</button>
         <button id="add-toggle" class="btn" style="display:none;" onclick="toggleModal('add-modal')">Add Link</button>
         <button id="tag-toggle" class="btn" onclick="toggleModal('tag-modal')">Filter Tags</button>
-        <button id="save-btn" class="btn" style="display:none;" onclick="saveJson()">Save JSON</button>
     </div>
 
     <div id="add-modal" class="modal-overlay">
@@ -73,9 +79,22 @@
         </div>
     </div>
     
-    <div id="gallery-grid">Loading...</div>
+    <div id="gallery-grid">Loading archive...</div>
 
     <script>
+        // --- FIREBASE CONFIGURATION ---
+        const firebaseConfig = {
+            apiKey: "AIzaSyB95B-M07ZWK0SW5JFCt3uawB3erjjhMCM",
+            authDomain: "aidenvidz.firebaseapp.com",
+            databaseURL: "https://aidenvidz-default-rtdb.europe-west1.firebasedatabase.app",
+            projectId: "aidenvidz",
+            storageBucket: "aidenvidz.firebasestorage.app",
+            messagingSenderId: "881025264027",
+            appId: "1:881025264027:web:2497c49a00fcf29153593e"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+
         let state = [];
         let isEditMode = false;
         let selectedTags = new Set();
@@ -85,17 +104,24 @@
         const mediaContainer = document.getElementById('media-container');
         let isResizing = false;
 
-        async function init() {
-            try { 
-                const res = await fetch('data.json?t=' + Date.now()); 
-                state = await res.json(); 
-                render(); 
-            } catch (e) { 
-                console.error(e);
-                document.getElementById('gallery-grid').innerHTML = "No data.json found."; 
-            }
+        // Initialize Realtime Listener (Replaces data.json fetch)
+        function init() {
+            db.ref('vault').on('value', (snapshot) => {
+                const data = snapshot.val();
+                state = [];
+                if (data) {
+                    for (let id in data) {
+                        state.push({ id, ...data[id] });
+                    }
+                }
+                render();
+            }, (error) => {
+                console.error(error);
+                document.getElementById('gallery-grid').innerHTML = "Error loading database.";
+            });
         }
 
+        // Draggable Player Handler
         handle.addEventListener('pointerdown', (e) => {
             isResizing = true;
             document.body.style.userSelect = 'none';
@@ -119,7 +145,6 @@
                 isEditMode = true; 
                 document.body.classList.add('edit-mode'); 
                 document.getElementById('add-toggle').style.display = 'block'; 
-                document.getElementById('save-btn').style.display = 'block'; 
                 document.getElementById('admin-btn').style.display = 'none'; 
             } 
         }
@@ -155,18 +180,29 @@
             }
         }
 
+        // Automatically Saves New Items to Firebase
         function addItem() {
-            state.push({
+            const newItem = {
                 title: document.getElementById('new-title').value,
                 url: document.getElementById('new-url').value,
                 img: document.getElementById('new-img').value,
-                tags: document.getElementById('new-tags').value
-            });
-            render(); toggleModal('add-modal');
+                tags: document.getElementById('new-tags').value,
+                timestamp: Date.now()
+            };
+
+            db.ref('vault').push(newItem);
+            
+            // Clear Inputs
+            document.getElementById('new-title').value = '';
+            document.getElementById('new-url').value = '';
+            document.getElementById('new-img').value = '';
+            document.getElementById('new-tags').value = '';
+
+            toggleModal('add-modal');
         }
 
         function render() {
-            const allTags = [...new Set(state.flatMap(r => r.tags ? r.tags.split(',') : []))].sort();
+            const allTags = [...new Set(state.flatMap(r => r.tags ? r.tags.split(',') : []))].map(t => t.trim()).filter(Boolean).sort();
             const tagList = document.getElementById('tag-list');
             tagList.innerHTML = '';
             allTags.forEach(t => {
@@ -179,7 +215,13 @@
 
             const grid = document.getElementById('gallery-grid');
             grid.innerHTML = '';
-            state.forEach((r, i) => {
+
+            if (state.length === 0) {
+                grid.innerHTML = 'No relics found in vault.';
+                return;
+            }
+
+            state.forEach((r) => {
                 if (selectedTags.size > 0 && ![...selectedTags].every(t => r.tags?.includes(t.trim()))) return;
                 const d = document.createElement('div');
                 d.className = 'relic';
@@ -188,23 +230,32 @@
                     <div class="thumb">${r.img ? `<img src="${r.img}">` : '▶'}</div>
                     <div style="font-size:10px; margin-top:5px;">${r.title}</div>
                     <div class="edit-ui">
-                        <button onclick="event.stopPropagation(); edit(${i}, 'title')">Rename</button>
-                        <button onclick="event.stopPropagation(); edit(${i}, 'url')">Link</button>
-                        <button onclick="event.stopPropagation(); edit(${i}, 'img')">Thumbnail</button>
-                        <button onclick="event.stopPropagation(); edit(${i}, 'tags')">Tags</button>
-                        <button onclick="event.stopPropagation(); del(${i})">Delete</button>
+                        <button onclick="event.stopPropagation(); edit('${r.id}', 'title')">Rename</button>
+                        <button onclick="event.stopPropagation(); edit('${r.id}', 'url')">Link</button>
+                        <button onclick="event.stopPropagation(); edit('${r.id}', 'img')">Thumbnail</button>
+                        <button onclick="event.stopPropagation(); edit('${r.id}', 'tags')">Tags</button>
+                        <button onclick="event.stopPropagation(); del('${r.id}')">Delete</button>
                     </div>
                 `;
                 grid.appendChild(d);
             });
         }
 
-        function edit(i, key) { const val = prompt(`Change ${key}:`, state[i][key]); if(val !== null) { state[i][key] = val; render(); } }
-        function del(i) { if(confirm("Are you sure you want to delete this?")) { state.splice(i, 1); render(); } }
-        function saveJson() {
-            const a = document.createElement('a');
-            a.href = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(state, null, 2));
-            a.download = "data.json"; a.click();
+        // Directly Updates Firebase Field
+        function edit(id, key) { 
+            const item = state.find(i => i.id === id);
+            if (!item) return;
+            const val = prompt(`Change ${key}:`, item[key] || ''); 
+            if(val !== null) { 
+                db.ref(`vault/${id}/${key}`).set(val);
+            } 
+        }
+
+        // Directly Deletes Item from Firebase
+        function del(id) { 
+            if(confirm("Are you sure you want to delete this relic?")) { 
+                db.ref(`vault/${id}`).remove(); 
+            } 
         }
 
         init();
