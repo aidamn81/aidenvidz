@@ -4,11 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>The Gothic Archive</title>
-
-    <!-- Firebase SDKs -->
-    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-database-compat.js"></script>
-
     <style>
         :root { --bg: #0d0d0d; --accent: #800020; --border: #333; }
         body { background: var(--bg); color: #d9d9d9; font-family: monospace; margin: 0; padding-top: 220px; }
@@ -57,6 +52,7 @@
         <button id="admin-btn" class="btn" onclick="checkAdmin()">Admin Login</button>
         <button id="add-toggle" class="btn" style="display:none;" onclick="toggleModal('add-modal')">Add Link</button>
         <button id="tag-toggle" class="btn" onclick="toggleModal('tag-modal')">Filter Tags</button>
+        <button id="save-btn" class="btn" style="display:none;" onclick="saveJson()">Export updated data.json</button>
     </div>
 
     <div id="add-modal" class="modal-overlay">
@@ -67,7 +63,7 @@
             <input type="text" id="new-url" placeholder="Direct or Embed URL" style="width:90%; margin-bottom:5px;">
             <input type="text" id="new-img" placeholder="Cover Image URL" style="width:90%; margin-bottom:5px;">
             <input type="text" id="new-tags" placeholder="Tags (comma separated)" style="width:90%; margin-bottom:10px;">
-            <button class="btn" onclick="addItem()">Save Link</button>
+            <button class="btn" onclick="addItem()">Add to Grid</button>
         </div>
     </div>
 
@@ -79,18 +75,9 @@
         </div>
     </div>
     
-    <div id="gallery-grid">Syncing database...</div>
+    <div id="gallery-grid">Loading from data.json...</div>
 
     <script>
-        const firebaseConfig = {
-            apiKey: "AIzaSyAuNbY1Xv_ZF3kJah20qqPBz-IiiMAR9gE",
-            authDomain: "aidenstartpage.firebaseapp.com",
-            databaseURL: "https://aidenstartpage-default-rtdb.europe-west1.firebasedatabase.app",
-            projectId: "aidenstartpage"
-        };
-        firebase.initializeApp(firebaseConfig);
-        const db = firebase.database();
-
         let state = [];
         let isEditMode = false;
         let selectedTags = new Set();
@@ -101,25 +88,23 @@
         let isResizing = false;
 
         async function init() {
-            db.ref('relics').on('value', async (snapshot) => {
-                const data = snapshot.val();
-                state = [];
+            try { 
+                const res = await fetch('data.json?t=' + Date.now()); 
+                const rawData = await res.json(); 
                 
-                if (data) {
-                    for (let id in data) {
-                        const item = data[id];
-                        // Flexible key resolution to prevent 'undefined'
-                        state.push({
-                            id,
-                            title: item.title || item.name || 'Untitled Relic',
-                            url: item.url || item.link || item.src || '',
-                            img: item.img || item.thumbnail || item.customThumb || item.image || '',
-                            tags: item.tags || item.playlist || ''
-                        });
-                    }
-                }
-                render();
-            });
+                // Normalizes property names regardless of variations in data.json
+                state = rawData.map(item => ({
+                    title: item.title || item.name || 'Untitled',
+                    url: item.url || item.link || item.src || '',
+                    img: item.img || item.thumbnail || item.customThumb || item.image || '',
+                    tags: item.tags || item.playlist || ''
+                }));
+
+                render(); 
+            } catch (e) { 
+                console.error(e);
+                document.getElementById('gallery-grid').innerHTML = "Failed to load data.json. Make sure data.json exists in repo root."; 
+            }
         }
 
         handle.addEventListener('pointerdown', (e) => {
@@ -145,13 +130,14 @@
                 isEditMode = true; 
                 document.body.classList.add('edit-mode'); 
                 document.getElementById('add-toggle').style.display = 'block'; 
+                document.getElementById('save-btn').style.display = 'block'; 
                 document.getElementById('admin-btn').style.display = 'none'; 
             } 
         }
 
         function handleViewer(url) {
             if (!url) {
-                alert("No URL found for this item.");
+                alert("No URL available for this item.");
                 return;
             }
 
@@ -160,24 +146,24 @@
             
             if (isVideoFile) {
                 const vid = document.createElement('video');
-                vid.controls = true; 
-                vid.autoplay = true; 
+                vid.controls = true;
+                vid.autoplay = true;
                 vid.playsInline = true;
-                vid.style.width = '100%'; 
+                vid.style.width = '100%';
                 vid.style.height = '100%';
                 
                 const source = document.createElement('source');
-                source.src = url; 
+                source.src = url;
                 source.type = 'video/mp4'; 
                 
                 vid.appendChild(source);
                 mediaContainer.appendChild(vid);
             } else {
                 const frame = document.createElement('iframe');
-                frame.src = url; 
-                frame.style.width = '100%'; 
+                frame.src = url;
+                frame.style.width = '100%';
                 frame.style.height = '100%';
-                frame.frameBorder = '0'; 
+                frame.frameBorder = '0';
                 frame.allowFullscreen = true;
                 frame.allow = "accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture";
                 mediaContainer.appendChild(frame);
@@ -185,21 +171,21 @@
         }
 
         function addItem() {
-            const newItem = {
+            state.push({
                 title: document.getElementById('new-title').value,
                 url: document.getElementById('new-url').value,
                 img: document.getElementById('new-img').value,
-                tags: document.getElementById('new-tags').value,
-                timestamp: Date.now()
-            };
-
-            db.ref('relics').push(newItem);
+                tags: document.getElementById('new-tags').value
+            });
             
             document.getElementById('new-title').value = '';
             document.getElementById('new-url').value = '';
             document.getElementById('new-img').value = '';
             document.getElementById('new-tags').value = '';
+            
+            render(); 
             toggleModal('add-modal');
+            alert("Item added to grid! Click 'Export updated data.json' and commit it to GitHub to save permanently.");
         }
 
         function render() {
@@ -218,11 +204,11 @@
             grid.innerHTML = '';
 
             if (state.length === 0) {
-                grid.innerHTML = 'No items found in database.';
+                grid.innerHTML = 'No items found in data.json.';
                 return;
             }
 
-            state.forEach((r) => {
+            state.forEach((r, i) => {
                 if (selectedTags.size > 0 && ![...selectedTags].every(t => r.tags?.includes(t.trim()))) return;
                 const d = document.createElement('div');
                 d.className = 'relic';
@@ -231,30 +217,43 @@
                     <div class="thumb">${r.img ? `<img src="${r.img}">` : '▶'}</div>
                     <div style="font-size:10px; margin-top:5px; word-break: break-word;">${r.title}</div>
                     <div class="edit-ui">
-                        <button onclick="event.stopPropagation(); edit('${r.id}', 'title')">Rename</button>
-                        <button onclick="event.stopPropagation(); edit('${r.id}', 'url')">Link</button>
-                        <button onclick="event.stopPropagation(); edit('${r.id}', 'img')">Thumbnail</button>
-                        <button onclick="event.stopPropagation(); edit('${r.id}', 'tags')">Tags</button>
-                        <button onclick="event.stopPropagation(); del('${r.id}')">Delete</button>
+                        <button onclick="event.stopPropagation(); edit(${i}, 'title')">Rename</button>
+                        <button onclick="event.stopPropagation(); edit(${i}, 'url')">Link</button>
+                        <button onclick="event.stopPropagation(); edit(${i}, 'img')">Thumbnail</button>
+                        <button onclick="event.stopPropagation(); edit(${i}, 'tags')">Tags</button>
+                        <button onclick="event.stopPropagation(); del(${i})">Delete</button>
                     </div>
                 `;
                 grid.appendChild(d);
             });
         }
 
-        function edit(id, key) { 
-            const item = state.find(i => i.id === id);
-            if (!item) return;
-            const val = prompt(`Change ${key}:`, item[key] || ''); 
+        function edit(i, key) { 
+            const val = prompt(`Change ${key}:`, state[i][key]); 
             if(val !== null) { 
-                db.ref(`relics/${id}/${key}`).set(val);
+                state[i][key] = val; 
+                render(); 
             } 
         }
 
-        function del(id) { 
-            if(confirm("Are you sure you want to delete this relic?")) { 
-                db.ref(`relics/${id}`).remove(); 
+        function del(i) { 
+            if(confirm("Are you sure you want to delete this item?")) { 
+                state.splice(i, 1); 
+                render(); 
             } 
+        }
+        
+        function saveJson() {
+            const dataStr = JSON.stringify(state, null, 2);
+            const blob = new Blob([dataStr], { type: "application/json" });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = "data.json"; 
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
         }
 
         init();
