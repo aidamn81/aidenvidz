@@ -19,7 +19,7 @@
         }
         
         #media-container { width: 100%; height: 100%; background: #000; display: block; }
-        #header-controls { padding: 10px; display: flex; gap: 10px; position: fixed; top: 200px; width: 100%; background: var(--bg); z-index: 999; }
+        #header-controls { padding: 10px; display: flex; gap: 10px; position: fixed; top: 200px; width: 100%; background: var(--bg); z-index: 999; flex-wrap: wrap; }
         
         .modal-overlay { 
             display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
@@ -52,7 +52,8 @@
         <button id="admin-btn" class="btn" onclick="checkAdmin()">Admin Login</button>
         <button id="add-toggle" class="btn" style="display:none;" onclick="toggleModal('add-modal')">Add Link</button>
         <button id="tag-toggle" class="btn" onclick="toggleModal('tag-modal')">Filter Tags</button>
-        <button id="save-btn" class="btn" style="display:none;" onclick="saveJson()">Export updated data.json</button>
+        <button id="token-btn" class="btn" style="display:none;" onclick="setGitHubToken()">Set GH Token</button>
+        <span id="save-status" style="font-size:10px; align-self:center; color:var(--accent);"></span>
     </div>
 
     <div id="add-modal" class="modal-overlay">
@@ -63,7 +64,7 @@
             <input type="text" id="new-url" placeholder="Direct or Embed URL" style="width:90%; margin-bottom:5px;">
             <input type="text" id="new-img" placeholder="Cover Image URL" style="width:90%; margin-bottom:5px;">
             <input type="text" id="new-tags" placeholder="Tags (comma separated)" style="width:90%; margin-bottom:10px;">
-            <button class="btn" onclick="addItem()">Add to Grid</button>
+            <button class="btn" onclick="addItem()">Save Link Direct To GitHub</button>
         </div>
     </div>
 
@@ -78,9 +79,16 @@
     <div id="gallery-grid">Loading from data.json...</div>
 
     <script>
+        const REPO_OWNER = "aidamn81";
+        const REPO_NAME = "aidenvidz";
+        const FILE_PATH = "data.json";
+
         let state = [];
+        let fileSha = "";
         let isEditMode = false;
         let selectedTags = new Set();
+        let ghToken = localStorage.getItem('gh_token') || "";
+
         const wrapper = document.getElementById('player-wrapper');
         const handle = document.getElementById('drag-handle');
         const controls = document.getElementById('header-controls');
@@ -89,10 +97,13 @@
 
         async function init() {
             try { 
-                const res = await fetch('data.json?t=' + Date.now()); 
-                const rawData = await res.json(); 
+                const res = await fetch(`https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/${FILE_PATH}?t=` + Date.now());
+                const fileData = await res.json();
                 
-                // Normalizes property names regardless of variations in data.json
+                fileSha = fileData.sha;
+                const rawJson = decodeURIComponent(escape(atob(fileData.content)));
+                const rawData = JSON.parse(rawJson);
+                
                 state = rawData.map(item => ({
                     title: item.title || item.name || 'Untitled',
                     url: item.url || item.link || item.src || '',
@@ -103,7 +114,7 @@
                 render(); 
             } catch (e) { 
                 console.error(e);
-                document.getElementById('gallery-grid').innerHTML = "Failed to load data.json. Make sure data.json exists in repo root."; 
+                document.getElementById('gallery-grid').innerHTML = "Failed to load data.json via GitHub API."; 
             }
         }
 
@@ -130,9 +141,62 @@
                 isEditMode = true; 
                 document.body.classList.add('edit-mode'); 
                 document.getElementById('add-toggle').style.display = 'block'; 
-                document.getElementById('save-btn').style.display = 'block'; 
+                document.getElementById('token-btn').style.display = 'block';
                 document.getElementById('admin-btn').style.display = 'none'; 
+                if (!ghToken) setGitHubToken();
             } 
+        }
+
+        function setGitHubToken() {
+            const token = prompt("Enter GitHub Personal Access Token (for direct cloud saves):", ghToken);
+            if (token !== null) {
+                ghToken = token.trim();
+                localStorage.setItem('gh_token', ghToken);
+            }
+        }
+
+        // Pushes the updated JSON directly into GitHub repository without downloads
+        async function commitToGitHub() {
+            if (!ghToken) {
+                alert("GitHub Token required to save directly! Click 'Set GH Token'.");
+                setGitHubToken();
+                if (!ghToken) return;
+            }
+
+            const status = document.getElementById('save-status');
+            status.innerText = "SAVING TO GITHUB...";
+
+            try {
+                const updatedContent = btoa(unescape(encodeURIComponent(JSON.stringify(state, null, 2))));
+                const payload = {
+                    message: "Auto-update data.json via Gothic Archive interface",
+                    content: updatedContent,
+                    sha: fileSha
+                };
+
+                const res = await fetch(`https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/${FILE_PATH}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Authorization': `token ${ghToken}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(payload)
+                });
+
+                const resData = await res.json();
+                if (res.ok) {
+                    fileSha = resData.content.sha;
+                    status.innerText = "SAVED TO CLOUD!";
+                    setTimeout(() => { status.innerText = ""; }, 3000);
+                } else {
+                    alert("GitHub Save Failed: " + (resData.message || "Invalid Token"));
+                    status.innerText = "SAVE FAILED";
+                }
+            } catch (err) {
+                console.error(err);
+                alert("Error connecting to GitHub API.");
+                status.innerText = "ERROR";
+            }
         }
 
         function handleViewer(url) {
@@ -146,31 +210,22 @@
             
             if (isVideoFile) {
                 const vid = document.createElement('video');
-                vid.controls = true;
-                vid.autoplay = true;
-                vid.playsInline = true;
-                vid.style.width = '100%';
-                vid.style.height = '100%';
-                
+                vid.controls = true; vid.autoplay = true; vid.playsInline = true;
+                vid.style.width = '100%'; vid.style.height = '100%';
                 const source = document.createElement('source');
-                source.src = url;
-                source.type = 'video/mp4'; 
-                
+                source.src = url; source.type = 'video/mp4'; 
                 vid.appendChild(source);
                 mediaContainer.appendChild(vid);
             } else {
                 const frame = document.createElement('iframe');
-                frame.src = url;
-                frame.style.width = '100%';
-                frame.style.height = '100%';
-                frame.frameBorder = '0';
-                frame.allowFullscreen = true;
+                frame.src = url; frame.style.width = '100%'; frame.style.height = '100%';
+                frame.frameBorder = '0'; frame.allowFullscreen = true;
                 frame.allow = "accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture";
                 mediaContainer.appendChild(frame);
             }
         }
 
-        function addItem() {
+        async function addItem() {
             state.push({
                 title: document.getElementById('new-title').value,
                 url: document.getElementById('new-url').value,
@@ -185,7 +240,7 @@
             
             render(); 
             toggleModal('add-modal');
-            alert("Item added to grid! Click 'Export updated data.json' and commit it to GitHub to save permanently.");
+            await commitToGitHub();
         }
 
         function render() {
@@ -228,32 +283,21 @@
             });
         }
 
-        function edit(i, key) { 
+        async function edit(i, key) { 
             const val = prompt(`Change ${key}:`, state[i][key]); 
             if(val !== null) { 
                 state[i][key] = val; 
                 render(); 
+                await commitToGitHub();
             } 
         }
 
-        function del(i) { 
+        async function del(i) { 
             if(confirm("Are you sure you want to delete this item?")) { 
                 state.splice(i, 1); 
                 render(); 
+                await commitToGitHub();
             } 
-        }
-        
-        function saveJson() {
-            const dataStr = JSON.stringify(state, null, 2);
-            const blob = new Blob([dataStr], { type: "application/json" });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = "data.json"; 
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            URL.revokeObjectURL(url);
         }
 
         init();
